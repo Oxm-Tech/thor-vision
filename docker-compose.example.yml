@@ -1,0 +1,45 @@
+services:
+  thor-vision:
+    build: .
+    image: thor-vision:latest
+    container_name: thor-vision
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data:rw        # persistencia: events.db + snapshots + logs + metadata
+    runtime: nvidia                # requiere NVIDIA Container Toolkit
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - TZ=America/Mexico_City     # ajusta a tu zona horaria
+      - LOG_LEVEL=INFO
+      - INSIGHTFACE_HOME=/app/data/models
+      - INFER_THREADS=4
+      - OMP_NUM_THREADS=4
+      - MKL_NUM_THREADS=4
+      - OPENBLAS_NUM_THREADS=4
+      # Nemotron (LLM en DGX Spark o servidor remoto)
+      - NEMOTRON_ENDPOINT=http://<IP_DGX>:8003/v1/chat/completions
+      - NEMOTRON_MODEL=nemotron-omni
+      # Motion-gated scheduling
+      - NEMOTRON_MIN_INTERVAL_S=30
+      - NEMOTRON_MAX_INTERVAL_S=120
+      - NEMOTRON_MOTION_THRESHOLD=0.04
+      # Retención de datos
+      - SNAPSHOT_PERIODIC_S=600
+      - RETENTION_INTERVAL_S=3600
+      - RETENTION_MAX_EVENTS=200000
+      - RETENTION_MAX_SNAPSHOT_GB=50
+      - RETENTION_MAX_AGE_DAYS=30
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"

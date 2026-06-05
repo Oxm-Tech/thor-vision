@@ -1,0 +1,22 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+pipeline:
+  mode: "vision"          # passthrough | vision
+  device: "cpu"
+  detection_fps: 1.0
+  detection_confidence: 0.40
+
+faces:
+  db_path: "/app/data/metadata/faces.json"
+  recognition_threshold: 0.40
+
+dashboard:
+  title: "THOR Vision"
+  grid_cols: 3
+  theme: "dark"
+  refresh_status_ms: 5000
+
+logging:
+  level: "INFO"

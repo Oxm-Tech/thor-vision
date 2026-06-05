@@ -1,0 +1,41 @@
+# Configuración con datos sensibles
+config/cameras.yml
+config/settings.yml
+.env
+
+# Datos en runtime
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Archivos macOS
+.DS_Store
+._*
+**/.DS_Store
+**/._*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Docker
+docker-compose.yml
+
+# Modelos e imágenes grandes
+*.pt
+*.onnx
+*.trt
+*.engine
+*.jpg
+*.jpeg
+*.png
+*.snap
+
+# Logs
+*.log
+logs/

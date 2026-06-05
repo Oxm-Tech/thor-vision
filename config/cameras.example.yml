@@ -1,0 +1,26 @@
+global:
+  frame_width: 1280
+  frame_height: 720
+  snapshot_path: /app/data/snapshots
+  log_path: /app/data/logs
+  reconnect_interval_s: 5
+  buffer_size: 30
+  stream_fps: 10
+  jpeg_quality: 65
+
+cameras:
+  - id: cam-01
+    name: "Cámara Entrada"
+    rtsp_url: "rtsp://usuario:contraseña@192.168.X.X:554/profile2/media.smp"
+    enabled: true
+    zone: "exterior"
+    priority: high
+
+  - id: cam-02
+    name: "Cámara Interior"
+    rtsp_url: "rtsp://usuario:contraseña@192.168.X.X:554/profile2/media.smp"
+    enabled: true
+    zone: "interior"
+    priority: normal
+
+  # Agrega más cámaras siguiendo el mismo patrón

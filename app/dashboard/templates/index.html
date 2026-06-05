@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THOR Vision — OXM Tech</title>
+<style>
+:root {
+  --oxm-blue:       #1E78C2;
+  --oxm-blue-dark:  #155A96;
+  --oxm-blue-glow:  rgba(30, 120, 194, 0.15);
+  --oxm-gray:       #595959;
+  --bg-primary:     #0E1117;
+  --bg-card:        #161B24;
+  --bg-panel:       #1C2130;
+  --border:         #252C3A;
+  --border-active:  #1E78C2;
+  --text-primary:   #E8EDF3;
+  --text-secondary: #8B949E;
+  --text-muted:     #484F58;
+  --green-live:     #3FB950;
+  --yellow-warn:    #D29922;
+  --red-alert:      #F85149;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.header-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 0; margin-right: 24px;
+}
+.brand-logo { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.5px; }
+.brand-oxm  { color: var(--oxm-gray); }
+.brand-tech { color: var(--oxm-blue); }
+.brand-divider { width:1px; height:22px; background:var(--border); margin: 0 16px; }
+.header-title { font-size:.88rem; font-weight:500; color:var(--text-secondary); }
+
+/* ── Metrics bar ── */
+.metrics-bar { display:flex; align-items:center; gap:4px; flex:1; }
+
+/* ── Personas counter in header ── */
+.persons-counter {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--oxm-blue-glow);
+  border: 1px solid var(--oxm-blue-dark);
+  min-width: 80px;
+  margin-left: 4px;
+}
+.persons-label { font-size:.65rem; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); font-weight:600; }
+.persons-value { font-size:1.4rem; font-weight:800; color:var(--oxm-blue); font-variant-numeric:tabular-nums; line-height:1; }
+.persons-unit  { font-size:.6rem; color:var(--text-muted); margin-top:-1px; }
+
+/* ── Gauge card ── */
+.gauge-card {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:10px 14px; border-radius:8px;
+  background:rgba(255,255,255,.03); border:1px solid var(--border);
+  min-width:90px; position:relative; transition:background .3s;
+}
+.gauge-card:hover { background:rgba(255,255,255,.06); }
+.gauge-label { font-size:.65rem; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); font-weight:600; }
+.gauge-svg { width:64px; height:36px; overflow:visible; }
+.gauge-track { fill:none; stroke:rgba(255,255,255,.06); stroke-width:5; stroke-linecap:round; }
+.gauge-fill  { fill:none; stroke-width:5; stroke-linecap:round; transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1); }
+.gauge-value { font-size:.95rem; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1; }
+.gauge-unit  { font-size:.6rem; color:var(--text-muted); margin-top:-2px; }
+.gauge-card.warn  .gauge-value { color:var(--yellow-warn); }
+.gauge-card.alert .gauge-value { color:var(--red-alert); }
+
+/* ── Clock ── */
+.header-clock {
+  font-size:.82rem; color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
+  padding:14px 0 14px 20px;
+  border-left:1px solid var(--border);
+  margin-left:12px;
+  white-space:nowrap;
+}
+
+/* ── Main ── */
+main {
+  flex:1; padding:18px 24px;
+  display:grid;
+  grid-template-columns: 1fr 380px;
+  gap:14px;
+  align-items:start;
+  min-height:0;
+}
+.main-left  { display:flex; flex-direction:column; gap:14px; min-width:0; }
+.main-right { position:sticky; top:14px; }
+
+/* ── Camera grid ── */
+.cam-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+
+/* ── Camera card ── */
+.cam-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-left:3px solid transparent; border-radius:8px;
+  overflow:hidden; transition:border-color .3s; position:relative;
+}
+.cam-card.live         { border-left-color:var(--oxm-blue); }
+.cam-card.warn         { border-left-color:var(--yellow-warn); }
+.cam-card.reconnecting { border-left-color:var(--red-alert); }
+.cam-card.disabled     { border-left-color:var(--text-muted); opacity:.5; }
+
+.cam-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px; border-bottom:1px solid var(--border);
+}
+.cam-name { font-size:.82rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%; }
+.cam-badge { display:flex; align-items:center; gap:5px; font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.dot.live         { background:var(--green-live); box-shadow:0 0 6px var(--green-live); }
+.dot.warn         { background:var(--yellow-warn); }
+.dot.reconnecting { background:var(--red-alert); animation:pulse-dot 1.2s ease-in-out infinite; }
+.dot.connecting   { background:var(--text-muted); }
+.dot.disabled     { background:var(--text-muted); }
+@keyframes pulse-dot {
+  0%,100% { opacity:1; box-shadow:0 0 4px var(--red-alert); }
+  50%      { opacity:.3; box-shadow:none; }
+}
+.badge-text.live         { color:var(--green-live); }
+.badge-text.reconnecting { color:var(--red-alert); }
+.badge-text.connecting   { color:var(--text-muted); }
+.badge-text.disabled     { color:var(--text-muted); }
+
+.cam-video-wrap { position:relative; width:100%; aspect-ratio:16/9; background:#0a0c10; overflow:hidden; }
+.cam-video-wrap img { width:100%; height:100%; object-fit:contain; display:block; }
+
+.cam-overlay {
+  position:absolute; inset:0;
+  background:rgba(10,12,16,.72);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  opacity:0; pointer-events:none; transition:opacity .3s;
+}
+.cam-overlay.visible { opacity:1; }
+.overlay-icon { font-size:2rem; animation:spin 2s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.overlay-text { font-size:.78rem; color:var(--red-alert); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+
+.cam-footer { display:flex; justify-content:space-between; align-items:center; padding:6px 12px; gap:6px; }
+.cam-zone { font-size:.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.cam-right { display:flex; align-items:center; gap:8px; }
+.cam-fps { font-size:.7rem; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.cam-fps.active { color:var(--oxm-blue); }
+.cam-persons {
+  font-size:.7rem; font-weight:700; color:var(--oxm-blue);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.cam-persons:empty { display:none; }
+
+/* ── Nemotron activity bar ── */
+.cam-activity {
+  padding:4px 12px 5px;
+  font-size:.68rem; color:var(--text-secondary);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  border-top:1px solid var(--border);
+  min-height:22px;
+}
+.cam-activity:empty { display:none; }
+.cam-activity .act-alert {
+  color:var(--red-alert); font-weight:600;
+}
+
+/* ── Faces panel ── */
+.faces-panel {
+  margin-top:14px;
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:8px; padding:12px 16px;
+}
+.faces-panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.faces-panel-title {
+  font-size:.76rem; font-weight:600;
+  color:var(--text-secondary); text-transform:uppercase; letter-spacing:.5px;
+}
+.faces-list { display:flex; flex-wrap:wrap; gap:6px; min-height:24px; }
+.face-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--bg-panel); border:1px solid var(--border);
+  border-radius:20px; padding:3px 10px 3px 7px;
+  font-size:.74rem; color:var(--text-secondary);
+  transition:border-color .2s;
+}
+.face-chip.known { border-color:var(--green-live); color:var(--text-primary); }
+.face-chip-dot { width:5px; height:5px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
+.face-chip.known .face-chip-dot { background:var(--green-live); box-shadow:0 0 4px var(--green-live); }
+.face-chip-cam { font-size:.62rem; color:var(--text-muted); }
+.faces-empty { font-size:.75rem; color:var(--text-muted); font-style:italic; }
+
+/* ── Footer ── */
+footer {
+  background:var(--bg-panel); border-top:1px solid var(--border);
+  padding:10px 24px;
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.footer-summary { display:flex; gap:20px; font-size:.78rem; color:var(--text-secondary); }
+.footer-summary .sum-item { display:flex; align-items:center; gap:5px; }
+.sum-val              { font-weight:600; color:var(--text-primary); }
+.sum-val.live         { color:var(--green-live); }
+.sum-val.persons      { color:var(--oxm-blue); }
+.sum-val.reconnecting { color:var(--red-alert); }
+.footer-right { display:flex; align-items:center; gap:16px; }
+.ws-indicator { display:flex; align-items:center; gap:5px; font-size:.72rem; color:var(--text-muted); }
+.ws-dot { width:5px; height:5px; border-radius:50%; background:var(--text-muted); }
+.ws-dot.connected { background:var(--green-live); }
+.footer-uptime { font-size:.75rem; color:var(--text-muted); }
+
+/* ── Responsive ── */
+@media (max-width:1200px) {
+  main { grid-template-columns: 1fr; }
+  .main-right { position:static; }
+  .chat-panel { height:420px; }
+  .cam-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:700px)  {
+  .cam-grid { grid-template-columns:1fr; }
+  .metrics-bar { display:none; }
+}
+
+/* ── Chat panel ── */
+.chat-panel {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  display:flex; flex-direction:column;
+  height: calc(100vh - 180px);
+  min-height:480px;
+  overflow:hidden;
+}
+.chat-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-panel);
+}
+.chat-title {
+  font-size:.78rem; font-weight:700;
+  letter-spacing:.4px; text-transform:uppercase;
+  color:var(--text-primary);
+  display:flex; align-items:center; gap:8px;
+}
+.chat-title .dot-ai {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--oxm-blue); box-shadow:0 0 6px var(--oxm-blue);
+}
+.chat-status {
+  font-size:.65rem; color:var(--text-muted); letter-spacing:.3px;
+}
+.chat-messages {
+  flex:1; overflow-y:auto;
+  padding:14px;
+  display:flex; flex-direction:column; gap:10px;
+  scrollbar-width:thin; scrollbar-color:#333 transparent;
+}
+.chat-messages::-webkit-scrollbar { width:6px; }
+.chat-messages::-webkit-scrollbar-thumb { background:#2a3142; border-radius:3px; }
+.chat-msg {
+  max-width:88%;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:.82rem;
+  line-height:1.45;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+}
+.chat-msg-user {
+  align-self:flex-end;
+  background:var(--oxm-blue);
+  color:#fff;
+  border-bottom-right-radius:3px;
+}
+.chat-msg-assistant {
+  align-self:flex-start;
+  background:var(--bg-panel);
+  color:var(--text-primary);
+  border:1px solid var(--border);
+  border-bottom-left-radius:3px;
+}
+.chat-msg-error {
+  align-self:flex-start;
+  background:rgba(248,81,73,.12);
+  color:var(--red-alert);
+  border:1px solid rgba(248,81,73,.3);
+}
+.chat-msg.loading {
+  color:var(--text-muted); font-style:italic;
+}
+.chat-msg.loading::after {
+  content:" ●";
+  animation: dot-blink 1s steps(3,end) infinite;
+}
+@keyframes dot-blink {
+  0%,20% { opacity:.2; }
+  50%   { opacity:1; }
+  100%  { opacity:.2; }
+}
+.chat-input-wrap {
+  display:flex; gap:8px; padding:10px 12px;
+  border-top:1px solid var(--border);
+  background:var(--bg-panel);
+}
+.chat-input {
+  flex:1;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  color:var(--text-primary);
+  padding:8px 12px;
+  border-radius:6px;
+  font-size:.82rem;
+  font-family:inherit;
+  outline:none;
+}
+.chat-input:focus { border-color:var(--oxm-blue); }
+.chat-input:disabled { opacity:.5; }
+.chat-send {
+  background:var(--oxm-blue);
+  color:#fff; border:none;
+  padding:0 14px;
+  border-radius:6px;
+  font-size:.82rem; font-weight:600;
+  cursor:pointer;
+  transition:background .15s;
+}
+.chat-send:hover:not(:disabled) { background:var(--oxm-blue-dark); }
+.chat-send:disabled { opacity:.5; cursor:not-allowed; }
+.chat-hint {
+  font-size:.66rem; color:var(--text-muted);
+  padding:0 14px 8px; line-height:1.3;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <span class="brand-logo">
+      <span class="brand-oxm">oxm</span><span class="brand-tech">tech</span>
+    </span>
+    <div class="brand-divider"></div>
+    <span class="header-title">THOR Vision</span>
+  </div>
+
+  <div class="metrics-bar" id="metrics-bar"></div>
+
+  <div class="persons-counter">
+    <span class="persons-label">Personas</span>
+    <span class="persons-value" id="h-persons">0</span>
+    <span class="persons-unit">en cámaras</span>
+  </div>
+
+  <div class="header-clock" id="clock">—</div>
+</header>
+
+<main>
+  <div class="main-left">
+    <div class="cam-grid" id="cam-grid"></div>
+
+    <div class="faces-panel">
+      <div class="faces-panel-header">
+        <span class="faces-panel-title">Reconocimiento facial</span>
+        <span style="font-size:.7rem;color:var(--text-muted)" id="faces-count">0 rostros</span>
+      </div>
+      <div class="faces-list" id="faces-list">
+        <span class="faces-empty">Sin rostros detectados</span>
+      </div>
+    </div>
+  </div>
+
+  <aside class="main-right">
+    <div class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-title">
+          <span class="dot-ai"></span>
+          Asistente Nemotron
+        </div>
+        <span class="chat-status" id="chat-status">listo</span>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg chat-msg-assistant">
+          Hola. Puedes preguntarme qué están viendo las cámaras en este momento. Por ejemplo:
+          <br>· ¿Hay personas en cowork?
+          <br>· ¿Qué cámaras tienen actividad?
+          <br>· ¿Hay alguna alerta activa?
+        </div>
+      </div>
+      <form class="chat-input-wrap" id="chat-form" autocomplete="off">
+        <input type="text" id="chat-input" class="chat-input"
+               placeholder="Pregunta sobre las cámaras…"
+               maxlength="500" required>
+        <button type="submit" class="chat-send" id="chat-send">Enviar</button>
+      </form>
+      <div class="chat-hint">
+        Las respuestas se generan con Nemotron usando las últimas observaciones de cada cámara.
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="footer-summary">
+    <div class="sum-item">Cámaras <span class="sum-val" id="f-total">—</span></div>
+    <div class="sum-item">
+      <span class="dot live" style="width:7px;height:7px"></span>
+      <span class="sum-val live" id="f-live">—</span> en vivo
+    </div>
+    <div class="sum-item">
+      <span class="dot reconnecting" style="width:7px;height:7px"></span>
+      <span class="sum-val reconnecting" id="f-recon">—</span> reconectando
+    </div>
+    <div class="sum-item">
+      <span class="sum-val persons" id="f-persons">0</span> personas detectadas
+    </div>
+  </div>
+  <div class="footer-right">
+    <div class="ws-indicator">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-label">conectando...</span>
+    </div>
+    <div class="footer-uptime" id="f-uptime">uptime —</div>
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// GAUGE ENGINE
+// ══════════════════════════════════════════════════════════════
+const GAUGE_R   = 28, GAUGE_CX = 32, GAUGE_CY = 34;
+const CIRCUMF   = GAUGE_R * Math.PI;
+
+function arcPoint(cx, cy, r, angle) {
+  return [cx + r * Math.cos(Math.PI + angle), cy + r * Math.sin(Math.PI + angle)];
+}
+function arcPath(cx, cy, r, startAngle, endAngle) {
+  const [x1,y1] = arcPoint(cx,cy,r,startAngle);
+  const [x2,y2] = arcPoint(cx,cy,r,endAngle);
+  const la = (endAngle - startAngle) > Math.PI ? 1 : 0;
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${la} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+function createGaugeCard(id, label, stops) {
+  const gradId = `grad-${id}`;
+  const trackD = arcPath(GAUGE_CX, GAUGE_CY, GAUGE_R, 0, Math.PI);
+  return `
+  <div class="gauge-card" id="gcard-${id}">
+    <span class="gauge-label">${label}</span>
+    <svg class="gauge-svg" viewBox="0 0 64 36">
+      <defs>
+        <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="${stops[0]}"/>
+          <stop offset="50%"  stop-color="${stops[1]}"/>
+          <stop offset="100%" stop-color="${stops[2]}"/>
+        </linearGradient>
+      </defs>
+      <path class="gauge-track" d="${trackD}"/>
+      <path class="gauge-fill" id="gfill-${id}" d="${trackD}"
+        stroke="url(#${gradId})"
+        stroke-dasharray="${CIRCUMF.toFixed(2)} ${CIRCUMF.toFixed(2)}"
+        stroke-dashoffset="${CIRCUMF.toFixed(2)}"/>
+    </svg>
+    <span class="gauge-value" id="gval-${id}">—</span>
+    <span class="gauge-unit"  id="gunit-${id}"></span>
+  </div>`;
+}
+function updateGauge(id, pct, label, unit='', warnAt=70, alertAt=90) {
+  const fill = document.getElementById(`gfill-${id}`);
+  const val  = document.getElementById(`gval-${id}`);
+  const unitEl = document.getElementById(`gunit-${id}`);
+  const card = document.getElementById(`gcard-${id}`);
+  if (!fill || !val) return;
+  const clamped = Math.max(0, Math.min(100, pct));
+  fill.style.strokeDashoffset = (CIRCUMF * (1 - clamped/100)).toFixed(2);
+  val.textContent = label;
+  if (unitEl) unitEl.textContent = unit;
+  card.classList.remove('warn','alert');
+  if (pct >= alertAt) card.classList.add('alert');
+  else if (pct >= warnAt) card.classList.add('warn');
+}
+const GAUGES = [
+  { id:'cpu',  label:'CPU',   stops:['#1E78C2','#38B2FF','#7DD8FF'] },
+  { id:'ram',  label:'RAM',   stops:['#155A96','#1E78C2','#38B2FF'] },
+  { id:'temp', label:'TEMP',  stops:['#1E78C2','#D29922','#F85149'] },
+  { id:'gpu',  label:'GPU',   stops:['#0D4F8C','#1E78C2','#5BAAFF'] },
+  { id:'disk', label:'DISCO', stops:['#595959','#888888','#AAAAAA'] },
+];
+function initGauges() {
+  document.getElementById('metrics-bar').innerHTML =
+    GAUGES.map(g => createGaugeCard(g.id, g.label, g.stops)).join('');
+}
+function updateMetrics(sys) {
+  if (!sys) return;
+  updateGauge('cpu',  sys.cpu_pct??0,   `${sys.cpu_pct??0}%`,              '',  75, 90);
+  updateGauge('ram',  sys.ram_pct??0,   `${sys.ram_used_gb??'—'} GB`,      '',  80, 95);
+  updateGauge('temp', Math.min((sys.temp_c??0)/100*100,100),
+                                        `${sys.temp_c??0}°`,               'C', 65, 80);
+  updateGauge('gpu',  sys.gpu_pct??0,   `${sys.gpu_pct??0}%`,              '',  80, 95);
+  updateGauge('disk', sys.disk_pct??0,  `${sys.disk_used_gb??'—'}`,        'GB',75, 90);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CAMERA GRID
+// ══════════════════════════════════════════════════════════════
+let initialized = false;
+
+function initGrid(cameras) {
+  const grid = document.getElementById('cam-grid');
+  grid.innerHTML = '';
+  cameras.forEach(cam => {
+    const card = document.createElement('div');
+    card.className = 'cam-card connecting';
+    card.id = `card-${cam.id}`;
+    card.innerHTML = `
+      <div class="cam-header">
+        <span class="cam-name">${cam.name}</span>
+        <div class="cam-badge">
+          <div class="dot connecting" id="dot-${cam.id}"></div>
+          <span class="badge-text connecting" id="badge-${cam.id}">conectando</span>
+        </div>
+      </div>
+      <div class="cam-video-wrap">
+        <img id="img-${cam.id}" alt="${cam.name}">
+        <div class="cam-overlay" id="overlay-${cam.id}">
+          <span class="overlay-icon">↺</span>
+          <span class="overlay-text">Reconectando...</span>
+        </div>
+      </div>
+      <div class="cam-footer">
+        <span class="cam-zone">${cam.zone||''}</span>
+        <div class="cam-right">
+          <span class="cam-persons" id="pct-${cam.id}"></span>
+          <span class="cam-fps" id="fps-${cam.id}">— fps</span>
+        </div>
+      </div>
+      <div class="cam-activity" id="nem-act-${cam.id}"></div>`;
+    grid.appendChild(card);
+  });
+  // Iniciar polling de snapshots para cada cámara (después de DOM listo)
+  cameras.forEach(cam => startSnapshotPolling(cam.id));
+  initialized = true;
+}
+
+function updateCard(cam) {
+  const card    = document.getElementById(`card-${cam.id}`);
+  const dot     = document.getElementById(`dot-${cam.id}`);
+  const badge   = document.getElementById(`badge-${cam.id}`);
+  const fpsEl   = document.getElementById(`fps-${cam.id}`);
+  const overlay = document.getElementById(`overlay-${cam.id}`);
+  if (!card) return;
+  const state = cam.state || 'connecting';
+  const labels = { streaming:'LIVE', reconnecting:'RECON', connecting:'...', disabled:'OFF', stopped:'STOP' };
+  card.className = `cam-card ${state==='streaming'?'live':state}`;
+  dot.className  = `dot ${state==='streaming'?'live':state}`;
+  badge.className = `badge-text ${state==='streaming'?'live':state}`;
+  badge.textContent = labels[state] || state;
+  const fps = cam.fps || 0;
+  fpsEl.textContent = fps > 0 ? `${fps} fps` : '— fps';
+  fpsEl.className   = 'cam-fps' + (fps > 0 ? ' active' : '');
+  // Overlay solo cuando la cámara backend no está streaming
+  // (el snapshot polling maneja sus propios errores)
+  if (state !== 'streaming' && state !== 'live') {
+    overlay.classList.add('visible');
+  }
+  // Si vuelve a streaming, reiniciar polling si estaba detenido
+  if (state === 'streaming' && (!_pollers[cam.id] || !_pollers[cam.id].running)) {
+    startSnapshotPolling(cam.id);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SNAPSHOT POLLING — evita el límite de 6 conexiones HTTP/1.1
+//   - MJPEG mantiene la conexión abierta indefinidamente.
+//   - Con 10 cámaras, las últimas 4 quedaban bloqueadas.
+//   - Snapshot polling usa conexiones cortas que se liberan rápido.
+// ══════════════════════════════════════════════════════════════
+const POLL_INTERVAL_MS = 200;   // 5 fps por cámara — suficiente para vigilancia
+const _pollers = {};            // cam_id → { running, errors }
+
+function startSnapshotPolling(camId) {
+  if (_pollers[camId]) _pollers[camId].running = false;
+  const state = { running: true, errors: 0 };
+  _pollers[camId] = state;
+
+  const visible = document.getElementById(`img-${camId}`);
+  if (!visible) return;
+
+  function fetchNext() {
+    if (!state.running) return;
+    const next = new Image();
+    next.onload = () => {
+      if (!state.running) return;
+      visible.src = next.src;             // swap atómico
+      state.errors = 0;
+      const ov = document.getElementById(`overlay-${camId}`);
+      if (ov) ov.classList.remove('visible');
+      setTimeout(fetchNext, POLL_INTERVAL_MS);
+    };
+    next.onerror = () => {
+      if (!state.running) return;
+      state.errors += 1;
+      if (state.errors >= 3) {
+        const ov = document.getElementById(`overlay-${camId}`);
+        if (ov) ov.classList.add('visible');
+      }
+      // backoff: 1s, 2s, 4s, máx 8s
+      const delay = Math.min(1000 * Math.pow(2, state.errors - 1), 8000);
+      setTimeout(fetchNext, delay);
+    };
+    next.src = `/api/snapshot/${camId}?t=${Date.now()}`;
+  }
+  fetchNext();
+}
+
+function stopSnapshotPolling(camId) {
+  if (_pollers[camId]) _pollers[camId].running = false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// DETECTIONS
+// ══════════════════════════════════════════════════════════════
+function updateDetections(detections, totalPersons) {
+  const total = totalPersons || 0;
+
+  // Header counter
+  const hpEl = document.getElementById('h-persons');
+  if (hpEl) hpEl.textContent = total;
+
+  // Footer counter
+  const fpEl = document.getElementById('f-persons');
+  if (fpEl) fpEl.textContent = total;
+
+  // Per-camera badges + Nemotron activity
+  const _SKIP_ALERTS = new Set(['error','empty response','bad json','encode failed','unreachable','']);
+  for (const [camId, d] of Object.entries(detections||{})) {
+    // Personas
+    const pctEl = document.getElementById(`pct-${camId}`);
+    if (pctEl) {
+      const n = d.person_count || 0;
+      pctEl.textContent = n > 0 ? `👤 ${n}` : '';
+    }
+    // Actividad Nemotron
+    const actEl = document.getElementById(`nem-act-${camId}`);
+    if (actEl && d.nemotron && d.nemotron.activity !== 'error') {
+      const activity = (d.nemotron.activity || '').trim();
+      const alerts   = (d.nemotron.alerts || []).filter(a => !_SKIP_ALERTS.has(String(a).trim()));
+      let html = '';
+      if (alerts.length > 0) {
+        html += `<span class="act-alert">⚠ ${alerts[0]}</span>`;
+        if (activity) html += ' · ';
+      }
+      if (activity) html += activity;
+      actEl.innerHTML = html;
+    } else if (actEl) {
+      actEl.textContent = '';
+    }
+  }
+
+  // Faces panel
+  _updateFacesPanel(detections);
+}
+
+function _updateFacesPanel(detections) {
+  const list      = document.getElementById('faces-list');
+  const countEl   = document.getElementById('faces-count');
+  if (!list) return;
+
+  const allFaces = [];
+  for (const [camId, d] of Object.entries(detections||{})) {
+    for (const face of d.faces||[]) {
+      allFaces.push({ name: face.name, confidence: face.confidence, cam_id: camId });
+    }
+  }
+
+  if (countEl) countEl.textContent = `${allFaces.length} rostro${allFaces.length!==1?'s':''}`;
+
+  if (allFaces.length === 0) {
+    list.innerHTML = '<span class="faces-empty">Sin rostros detectados</span>';
+    return;
+  }
+
+  list.innerHTML = allFaces.map(f => {
+    const known = f.name !== 'Desconocido';
+    const conf  = known ? ` <span class="face-chip-cam">${Math.round(f.confidence*100)}%</span>` : '';
+    return `<div class="face-chip ${known?'known':''}">
+      <div class="face-chip-dot"></div>
+      <span>${f.name}</span>${conf}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FOOTER
+// ══════════════════════════════════════════════════════════════
+function updateFooter(summary) {
+  if (!summary) return;
+  const set = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v??'—'; };
+  set('f-total', summary.total);
+  set('f-live',  summary.live);
+  set('f-recon', summary.reconnecting);
+  if (summary.uptime_s!=null) {
+    const h=Math.floor(summary.uptime_s/3600);
+    const m=Math.floor((summary.uptime_s%3600)/60);
+    const s=summary.uptime_s%60;
+    set('f-uptime',`uptime ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA APPLY
+// ══════════════════════════════════════════════════════════════
+function applyStats(data) {
+  if (!initialized && data.cameras) initGrid(data.cameras);
+  (data.cameras||[]).forEach(updateCard);
+  updateMetrics(data.system);
+  updateFooter(data.summary);
+  updateDetections(data.detections, data.total_persons);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════════════
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════════════════════════════════
+// WEBSOCKET
+// ══════════════════════════════════════════════════════════════
+let wsRetry = 2000;
+function connectWS() {
+  const dot   = document.getElementById('ws-dot');
+  const label = document.getElementById('ws-label');
+  const ws    = new WebSocket(`ws://${location.host}/ws/events`);
+  ws.onopen = () => {
+    wsRetry = 2000;
+    dot.className = 'ws-dot connected';
+    label.textContent = 'en vivo';
+  };
+  ws.onmessage = (e) => {
+    try { const d = JSON.parse(e.data); if (d.type==='stats_update') applyStats(d); }
+    catch {}
+  };
+  ws.onclose = ws.onerror = () => {
+    dot.className = 'ws-dot';
+    label.textContent = 'reconectando...';
+    setTimeout(connectWS, wsRetry);
+    wsRetry = Math.min(wsRetry*1.5, 30000);
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ══════════════════════════════════════════════════════════════
+initGauges();
+
+fetch('/api/stats')
+  .then(r=>r.json()).then(applyStats)
+  .catch(()=>setTimeout(()=>fetch('/api/stats').then(r=>r.json()).then(applyStats),3000));
+
+fetch('/api/detections')
+  .then(r=>r.json())
+  .then(d=>updateDetections(d.cameras, d.total_persons))
+  .catch(()=>{});
+
+connectWS();
+
+// ══════════════════════════════════════════════════════════════
+// CHAT — Asistente Nemotron sobre observaciones de cámaras
+// ══════════════════════════════════════════════════════════════
+const chatHistory = [];           // memoria de turnos (cliente)
+const MAX_HISTORY = 10;
+
+// session_id persistente por browser para historial entre refreshes
+const _sessionKey = 'thor_chat_session_id';
+let chatSessionId = localStorage.getItem(_sessionKey);
+if (!chatSessionId) {
+  chatSessionId = (crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'sess-' + Math.random().toString(36).slice(2) + Date.now().toString(36));
+  localStorage.setItem(_sessionKey, chatSessionId);
+}
+
+const chatMsgsEl   = document.getElementById('chat-messages');
+const chatFormEl   = document.getElementById('chat-form');
+const chatInputEl  = document.getElementById('chat-input');
+const chatSendEl   = document.getElementById('chat-send');
+const chatStatusEl = document.getElementById('chat-status');
+
+// Cargar historial previo del servidor al inicio
+async function _loadChatHistory() {
+  try {
+    const resp = await fetch(`/api/chat/history?session_id=${encodeURIComponent(chatSessionId)}&limit=50`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.messages || data.messages.length === 0) return;
+    // Quitar el mensaje placeholder inicial (solo si solo hay 1 mensaje de bienvenida)
+    if (chatMsgsEl.children.length === 1) chatMsgsEl.innerHTML = '';
+    for (const m of data.messages) {
+      _appendChatMessage(m.role, m.content);
+      chatHistory.push({ role: m.role, content: m.content });
+    }
+    while (chatHistory.length > MAX_HISTORY * 2) chatHistory.shift();
+    chatStatusEl.textContent = `${data.count} mensaje(s) cargado(s)`;
+  } catch (err) {
+    // silencioso: no romper la UI si falla el load
+  }
+}
+
+function _appendChatMessage(role, text, opts = {}) {
+  const div = document.createElement('div');
+  const id  = `cmsg-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  div.id = id;
+  let cls = `chat-msg chat-msg-${role}`;
+  if (opts.loading) cls += ' loading';
+  if (opts.error)   cls = 'chat-msg chat-msg-error';
+  div.className = cls;
+  div.textContent = text;
+  chatMsgsEl.appendChild(div);
+  chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  return id;
+}
+
+chatFormEl.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = chatInputEl.value.trim();
+  if (!msg) return;
+
+  // UI: mensaje del usuario + bloquear input
+  _appendChatMessage('user', msg);
+  chatInputEl.value = '';
+  chatInputEl.disabled = true;
+  chatSendEl.disabled = true;
+  chatStatusEl.textContent = 'pensando…';
+
+  const loadingId = _appendChatMessage('assistant', 'Analizando observaciones', { loading:true });
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Id': chatSessionId,
+      },
+      body:    JSON.stringify({
+        message: msg,
+        history: chatHistory.slice(-MAX_HISTORY),
+      }),
+    });
+    const data = await resp.json();
+
+    const node = document.getElementById(loadingId);
+    if (node) {
+      node.classList.remove('loading');
+      if (data.error) {
+        node.className   = 'chat-msg chat-msg-error';
+        node.textContent = data.response || 'Error desconocido';
+      } else {
+        node.textContent = data.response || '(sin respuesta)';
+        chatHistory.push({ role:'user',      content: msg });
+        chatHistory.push({ role:'assistant', content: data.response });
+        // Mantener historial acotado
+        while (chatHistory.length > MAX_HISTORY * 2) chatHistory.shift();
+      }
+    }
+    const ms  = data.ms ? `${data.ms}ms` : '';
+    const ctx = data.context_cameras != null ? ` · ctx ${data.context_cameras} cám` : '';
+    chatStatusEl.textContent = `listo${ctx}${ms ? ' · ' + ms : ''}`;
+  } catch (err) {
+    const node = document.getElementById(loadingId);
+    if (node) {
+      node.className   = 'chat-msg chat-msg-error';
+      node.textContent = 'Error de red: ' + err.message;
+    }
+    chatStatusEl.textContent = 'error';
+  } finally {
+    chatInputEl.disabled = false;
+    chatSendEl.disabled  = false;
+    chatInputEl.focus();
+  }
+});
+
+// Cargar historial al inicio (después de WS para no bloquear el primer paint)
+setTimeout(_loadChatHistory, 300);
+</script>
+</body>
+</html>
