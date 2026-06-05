@@ -103,7 +103,7 @@ async def lifespan(app: FastAPI):
     from app.vision.nemotron_analyzer import NemotronAnalyzer
     from app.vision.nemotron_worker   import NemotronWorker
 
-    nemotron_endpoint = os.environ.get("NEMOTRON_ENDPOINT",  "http://192.168.0.200:8003")
+    nemotron_endpoint = os.environ.get("NEMOTRON_ENDPOINT",  "http://localhost:8003")
     nemotron_model    = os.environ.get("NEMOTRON_MODEL",     "nemotron-omni")
     nemotron_min_s    = float(os.environ.get("NEMOTRON_MIN_INTERVAL_S",   "30"))
     nemotron_max_s    = float(os.environ.get("NEMOTRON_MAX_INTERVAL_S",  "120"))

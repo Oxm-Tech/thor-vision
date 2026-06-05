@@ -1,25 +1,39 @@
 #!/bin/bash
-# Verifica conectividad RTSP de todas las cámaras
+# Verifica conectividad RTSP de todas las cámaras configuradas en cameras.yml
+# Uso: ./scripts/check_cameras.sh [IP1] [IP2] ...
+#
+# Ejemplo con IPs específicas:
+#   ./scripts/check_cameras.sh 192.168.1.100 192.168.1.101
+#
+# O edita el arreglo CAMERAS con las IPs de tu instalación:
+
 CAMERAS=(
-  "113:192.168.20.113"
-  "115:192.168.20.115"
-  "118:192.168.20.118"
-  "120:192.168.20.120"
-  "189:192.168.20.189"
-  "191:192.168.20.191"
-  "215:192.168.20.215"
-  "227:192.168.20.227"
-  "228:192.168.20.228"
-  "236:192.168.20.236"
+  # "nombre:ip"
+  # "cam-entrada:192.168.X.X"
+  # "cam-interior:192.168.X.X"
 )
+
+# Si se pasan IPs como argumentos, usarlas
+if [ $# -gt 0 ]; then
+  CAMERAS=()
+  for ip in "$@"; do
+    CAMERAS+=("cam:$ip")
+  done
+fi
+
+if [ ${#CAMERAS[@]} -eq 0 ]; then
+  echo "Uso: $0 [IP1] [IP2] ..."
+  echo "  O edita el arreglo CAMERAS en este script."
+  exit 1
+fi
 
 echo "=== THOR Vision — Camera Check ==="
 for entry in "${CAMERAS[@]}"; do
   name="${entry%%:*}"
   ip="${entry##*:}"
   if nc -z -w2 "$ip" 554 2>/dev/null; then
-    echo "  ✓ cam-$name  $ip:554 REACHABLE"
+    echo "  ✓ $name  $ip:554 REACHABLE"
   else
-    echo "  ✗ cam-$name  $ip:554 UNREACHABLE"
+    echo "  ✗ $name  $ip:554 UNREACHABLE"
   fi
 done

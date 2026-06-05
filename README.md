@@ -15,6 +15,8 @@ Corre sobre **Jetson NVIDIA** con Docker.
 - Persistencia en SQLite: eventos, snapshots y conversaciones
 - Retención automática configurable
 
+---
+
 ## Arquitectura
 
 ```
@@ -34,25 +36,29 @@ Cámaras IP (RTSP)
       │
       ▼
  FastAPI :8080
-      ├── /              → Dashboard (grid + chat)
-      ├── /api/stream/{cam_id}  → MJPEG stream
-      ├── /api/status    → estado de cámaras
-      ├── /api/chat      → chat con Nemotron sobre las cámaras
-      ├── /api/events    → historial de eventos
-      ├── /api/snapshots → galería de snapshots
-      └── /ws/detections → WebSocket tiempo real
+      ├── /                        → Dashboard (grid + chat)
+      ├── /api/stream/{cam_id}     → MJPEG stream
+      ├── /api/status              → estado de cámaras
+      ├── /api/chat                → chat con Nemotron
+      ├── /api/events              → historial de eventos
+      ├── /api/snapshots           → galería de snapshots
+      └── /ws/detections           → WebSocket tiempo real
 ```
+
+---
 
 ## Requisitos
 
-- Jetson NVIDIA (Orin / Thor o compatible) con JetPack 6.x
-- Docker + NVIDIA Container Toolkit
-- Acceso a un servidor con Nemotron corriendo en `/v1/chat/completions`
+- Jetson NVIDIA (Orin / Thor o compatible) con [JetPack 6.x](https://developer.nvidia.com/embedded/jetpack)
+- [Docker](https://docs.docker.com/engine/install/) + [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+- Servidor con [Nemotron](https://build.nvidia.com/nvidia/nemotron-4-340b-instruct) corriendo en `/v1/chat/completions` (compatible con OpenAI API)
 - Cámaras IP con stream RTSP
+
+---
 
 ## Setup
 
-### 1. Clonar y configurar
+### 1. Clonar
 
 ```bash
 git clone https://github.com/Oxm-Tech/thor-vision.git
@@ -63,32 +69,23 @@ cd thor-vision
 
 ```bash
 cp config/cameras.example.yml config/cameras.yml
-# Editar con las URLs RTSP y credenciales de tus cámaras
-nano config/cameras.yml
+nano config/cameras.yml   # agregar URLs RTSP y credenciales
 ```
 
-### 3. Configurar settings
-
-```bash
-cp config/settings.example.yml config/settings.yml
-# Ajustar si es necesario (puerto, resolución, etc.)
-```
-
-### 4. Configurar docker-compose
+### 3. Configurar docker-compose
 
 ```bash
 cp docker-compose.example.yml docker-compose.yml
-# Editar la IP del servidor Nemotron
-nano docker-compose.yml
+nano docker-compose.yml   # ajustar IP del servidor Nemotron
 ```
 
-### 5. Crear carpeta de datos
+### 4. Crear carpetas de datos
 
 ```bash
 mkdir -p data/snapshots data/logs data/metadata
 ```
 
-### 6. Levantar
+### 5. Levantar
 
 ```bash
 make build
@@ -99,7 +96,7 @@ Acceder en: `http://<IP_JETSON>:8080`
 
 ---
 
-## Comandos disponibles (Makefile)
+## Comandos (Makefile)
 
 | Comando | Descripción |
 |---|---|
@@ -107,7 +104,7 @@ Acceder en: `http://<IP_JETSON>:8080`
 | `make dev` | Levantar con logs en consola |
 | `make down` | Detener |
 | `make logs` | Ver logs en tiempo real |
-| `make build` | Rebuildar imagen |
+| `make build` | Rebuildar imagen Docker |
 | `make status` | Estado del servicio + health check |
 | `make cameras` | Ver estado de cámaras vía API |
 | `make reload` | Reiniciar sin rebuildar |
@@ -115,20 +112,20 @@ Acceder en: `http://<IP_JETSON>:8080`
 
 ---
 
-## Variables de entorno principales
+## Variables de entorno
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `NEMOTRON_ENDPOINT` | — | URL del servidor LLM (requerido) |
+| `NEMOTRON_ENDPOINT` | `http://localhost:8003` | URL del servidor LLM |
 | `NEMOTRON_MODEL` | `nemotron-omni` | Modelo a usar |
 | `NEMOTRON_MIN_INTERVAL_S` | `30` | Cooldown mínimo entre análisis por cámara |
 | `NEMOTRON_MAX_INTERVAL_S` | `120` | Heartbeat máximo sin movimiento |
-| `NEMOTRON_MOTION_THRESHOLD` | `0.04` | Fracción de píxeles para disparar análisis |
+| `NEMOTRON_MOTION_THRESHOLD` | `0.04` | Fracción de píxeles para disparar análisis (0–1) |
 | `SNAPSHOT_PERIODIC_S` | `600` | Snapshot programado cada N segundos |
 | `RETENTION_MAX_EVENTS` | `200000` | Máximo de eventos en SQLite |
 | `RETENTION_MAX_SNAPSHOT_GB` | `50` | Máximo de GB de snapshots en disco |
 | `RETENTION_MAX_AGE_DAYS` | `30` | Días máximos de retención de snapshots |
-| `LOG_LEVEL` | `INFO` | Nivel de logging |
+| `LOG_LEVEL` | `INFO` | Nivel de logging (`DEBUG`, `INFO`, `WARNING`) |
 
 ---
 
@@ -155,7 +152,7 @@ thor-vision/
 │   │   ├── nemotron_analyzer.py ← cliente HTTP a Nemotron
 │   │   ├── detection_store.py   ← estado en vivo de todas las cámaras
 │   │   ├── face_db.py           ← base de datos de rostros conocidos
-│   │   └── worker.py            ← worker genérico
+│   │   └── worker.py            ← worker genérico de visión
 │   ├── storage/
 │   │   ├── db.py                ← EventDB (SQLite WAL)
 │   │   ├── snapshot_manager.py  ← guarda JPGs en disco
@@ -190,7 +187,7 @@ Los datos se guardan en `./data/` (montado en `/app/data` dentro del contenedor)
 
 ```
 data/
-├── events.db          ← SQLite WAL (eventos Nemotron + chat + snapshots index)
+├── events.db          ← SQLite WAL (eventos Nemotron + chat + index snapshots)
 ├── snapshots/
 │   └── cam-01/
 │       └── 20260605/
@@ -204,4 +201,27 @@ data/
 
 ---
 
-Desarrollado por **OXM Tech** — [oxmtech.com](https://oxmtech.com)
+## Stack tecnológico
+
+| Componente | Tecnología | Docs |
+|---|---|---|
+| Framework API | [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/) | REST + WebSocket |
+| Visión computacional | [OpenCV](https://docs.opencv.org/) | Captura RTSP, motion detection |
+| Detección de objetos | [Ultralytics YOLOv8](https://docs.ultralytics.com/) | Detección de personas |
+| Reconocimiento facial | [InsightFace](https://github.com/deepinsight/insightface) + [ONNX Runtime](https://onnxruntime.ai/) | Identificación de rostros |
+| LLM / Análisis semántico | [NVIDIA Nemotron](https://build.nvidia.com/nvidia/nemotron-4-340b-instruct) vía [OpenAI-compatible API](https://platform.openai.com/docs/api-reference) | Descripción de escenas |
+| Persistencia | SQLite (WAL mode) | Eventos, snapshots, chat |
+| Templates | [Jinja2](https://jinja.palletsprojects.com/) | Dashboard HTML |
+| Configuración | [PyYAML](https://pyyaml.org/) | `cameras.yml`, `settings.yml` |
+| Hardware | [NVIDIA Jetson](https://developer.nvidia.com/embedded-computing) + [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/) | Edge AI |
+
+---
+
+## Autores
+
+| Autor | Rol |
+|---|---|
+| [Diego Reyes](https://github.com/Diegooxm) | Desarrollo principal, arquitectura |
+| [Brayan Iván López Carlos](https://github.com/brayanlopez-oxm) | Desarrollo, integración de hardware |
+
+**OXM Tech** — [oxmtech.com](https://oxmtech.com)
