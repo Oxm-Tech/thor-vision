@@ -1,8 +1,15 @@
 # THOR Vision
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NVIDIA](https://img.shields.io/badge/NVIDIA-Jetson%20AGX%20Thor-76b900?logo=nvidia&logoColor=white)](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-agx-thor/)
+[![JetPack](https://img.shields.io/badge/JetPack-R36.4-blue)](https://developer.nvidia.com/embedded/jetpack)
+[![CUDA](https://img.shields.io/badge/CUDA-12.8-76b900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+
 Sistema de vigilancia inteligente con análisis de escena en tiempo real usando **Nemotron** (LLM multimodal) corriendo en un **DGX Spark** remoto.
 
-Corre sobre **Jetson NVIDIA** con Docker.
+Corre sobre **Jetson NVIDIA AGX Thor** con Docker.
 
 ---
 
