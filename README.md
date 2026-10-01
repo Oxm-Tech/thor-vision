@@ -7,49 +7,36 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-Sistema de vigilancia inteligente con análisis de escena en tiempo real usando **Nemotron** (LLM multimodal) corriendo en un **DGX Spark** remoto.
+Sistema de vigilancia inteligente que combina **YOLO** (personas), **InsightFace** (identidad) y un **VLM** remoto (semántica de la escena) sobre cámaras RTSP, con decodificación por hardware (GStreamer + NVDEC).
 
-Corre sobre **Jetson NVIDIA AGX Thor** con Docker.
+Corre sobre **NVIDIA Jetson AGX Thor** con Docker. El VLM se consume vía un gateway OpenAI-compatible. Ver [INTEGRATION.md](INTEGRATION.md) para el contrato de API y el flujo de trabajo.
 
 ---
 
 ## ¿Qué hace?
 
-- Captura streams RTSP de múltiples cámaras IP simultáneamente
-- Analiza escenas con Nemotron (motion-gated: solo llama al LLM cuando hay movimiento)
-- Dashboard web en tiempo real: grid de cámaras, estado, snapshots
-- Chat IA: pregunta sobre lo que ven las cámaras en lenguaje natural
-- Persistencia en SQLite: eventos, snapshots y conversaciones
-- Retención automática configurable
+- Captura RTSP con GStreamer + NVDEC (fallback FFmpeg) y resolución nativa por cámara
+- Movimiento nativo de la cámara (SUNAPI) para decidir cuándo llamar al VLM
+- Pre-roll de 6 s en memoria para análisis retroactivo
+- Tracker de visitas por cámara e identidad por rostro (sujetos, renombrar, fusionar)
+- Análisis de escena por cámara con prompts editables (`config/scenes.yml`)
+- Dashboard: grid, estado del pipeline, conexiones, personas, histórico, reportes y chat flotante
+- Persistencia en SQLite con retención configurable; datos biométricos sin nombre caducan (`UNNAMED_TTL_DAYS`)
 
 ---
 
-## Arquitectura
+## Flujo
 
 ```
-Cámaras IP (RTSP)
-      │
-      ▼
- CaptureManager          ← un thread por cámara
-      │
-      ├──► FrameBuffer   ← buffer circular en memoria
-      │
-      ▼
- NemotronWorker          ← motion detection → análisis LLM
-      │
-      ├──► DetectionStore  ← estado en vivo (memoria)
-      ├──► EventDB         ← persistencia SQLite
-      └──► SnapshotManager ← JPGs en disco
-      │
-      ▼
- FastAPI :8080
-      ├── /                        → Dashboard (grid + chat)
-      ├── /api/stream/{cam_id}     → MJPEG stream
-      ├── /api/status              → estado de cámaras
-      ├── /api/chat                → chat con Nemotron
-      ├── /api/events              → historial de eventos
-      ├── /api/snapshots           → galería de snapshots
-      └── /ws/detections           → WebSocket tiempo real
+RTSP ─► GStreamer+NVDEC ─► FrameBuffer ─► pre-roll (JPEG 0.25 s × 6 s)
+                               │
+                  YOLO personas (0.5/2/4 fps según movimiento)
+                               │
+                  InsightFace (rostro) ─► VisitManager ─► subjects / person_visits
+                               │
+                  VLM (por movimiento + persona, o al cerrar la visita) ─► events
+                               │
+                       FastAPI :8080  (dashboard, API, WebSocket)
 ```
 
 ---

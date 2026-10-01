@@ -137,6 +137,7 @@ class VisionModels:
         if self._face_app is None:
             return []
         try:
+            from app.vision.visits import face_yaw
             detected = self._face_app.get(frame)
             faces = []
             for face in detected:
