@@ -20,6 +20,11 @@ from app.api.routes_people  import router as people_router
 from app.utils.logger import setup_logging
 
 setup_logging(os.environ.get("LOG_LEVEL", "INFO"))
+
+def _env(new, old, default=None):
+    """VLM_* tiene prioridad; NEMOTRON_* se conserva como respaldo para despliegues existentes."""
+    return os.environ.get(new) or os.environ.get(old) or default
+
 logger = logging.getLogger(__name__)
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "dashboard", "templates")
@@ -141,22 +146,22 @@ async def lifespan(app: FastAPI):
     from app.vision.vlm_analyzer import VLMAnalyzer
     from app.vision.vlm_worker   import VLMWorker
 
-    nemotron_endpoint = os.environ.get("NEMOTRON_ENDPOINT",  "http://localhost:8003")
-    nemotron_model    = os.environ.get("NEMOTRON_MODEL", "thor-vision")
-    nemotron_api_key  = os.environ.get("NEMOTRON_API_KEY")
-    nemotron_min_s    = float(os.environ.get("NEMOTRON_MIN_INTERVAL_S",   "30"))
-    nemotron_max_s    = float(os.environ.get("NEMOTRON_MAX_INTERVAL_S",  "120"))
-    nemotron_motion   = float(os.environ.get("NEMOTRON_MOTION_THRESHOLD", "0.04"))
+    vlm_endpoint = _env("VLM_ENDPOINT", "NEMOTRON_ENDPOINT",  "http://localhost:8003")
+    vlm_model    = _env("VLM_MODEL", "NEMOTRON_MODEL", "thor-vision")
+    vlm_api_key  = _env("VLM_API_KEY", "NEMOTRON_API_KEY")
+    vlm_min_s    = float(_env("VLM_MIN_INTERVAL_S", "NEMOTRON_MIN_INTERVAL_S",   "30"))
+    vlm_max_s    = float(_env("VLM_MAX_INTERVAL_S", "NEMOTRON_MAX_INTERVAL_S",  "120"))
+    vlm_motion   = float(_env("VLM_MOTION_THRESHOLD", "NEMOTRON_MOTION_THRESHOLD", "0.04"))
     snapshot_periodic = float(os.environ.get("SNAPSHOT_PERIODIC_S",       "600"))
-    video_window_s    = float(os.environ.get("NEMOTRON_VIDEO_WINDOW_S",  "3"))
+    video_window_s    = float(_env("VLM_VIDEO_WINDOW_S", "NEMOTRON_VIDEO_WINDOW_S",  "3"))
 
     analyzer = VLMAnalyzer(
-        endpoint      = nemotron_endpoint,
-        model         = nemotron_model,
+        endpoint      = vlm_endpoint,
+        model         = vlm_model,
         max_tokens    = 420,
         timeout       = 25,
         video_timeout = 60,
-        api_key       = nemotron_api_key,
+        api_key       = vlm_api_key,
         max_width     = int(os.environ.get("VLM_MAX_WIDTH", "1280")),
         max_height    = int(os.environ.get("VLM_MAX_HEIGHT", "720")),
     )
@@ -176,8 +181,8 @@ async def lifespan(app: FastAPI):
     )
     app.state.report_stop = report_stop
 
-    native_min_s  = float(os.environ.get("NEMOTRON_NATIVE_MIN_INTERVAL_S", "30"))
-    idle_beat_s   = float(os.environ.get("NEMOTRON_IDLE_HEARTBEAT_S",     "900"))
+    native_min_s  = float(_env("VLM_NATIVE_MIN_INTERVAL_S", "NEMOTRON_NATIVE_MIN_INTERVAL_S", "30"))
+    idle_beat_s   = float(_env("VLM_IDLE_HEARTBEAT_S", "NEMOTRON_IDLE_HEARTBEAT_S",     "900"))
 
     from app.vision.scenes import Scenes
     scenes = Scenes()
@@ -199,9 +204,9 @@ async def lifespan(app: FastAPI):
                 buffer              = buf,
                 store               = detection_store,
                 analyzer            = analyzer,
-                min_interval_s      = nemotron_min_s,
-                max_interval_s      = nemotron_max_s,
-                motion_threshold    = nemotron_motion,
+                min_interval_s      = vlm_min_s,
+                max_interval_s      = vlm_max_s,
+                motion_threshold    = vlm_motion,
                 db                  = db,
                 snapshots           = snapshots,
                 snapshot_periodic_s = snapshot_periodic,
@@ -222,12 +227,12 @@ async def lifespan(app: FastAPI):
             from app.vision.vlm_analyzer import MONITOR_DETAIL_PROMPT
 
             detail_analyzer = VLMAnalyzer(
-                endpoint      = nemotron_endpoint,
-                model         = nemotron_model,
+                endpoint      = vlm_endpoint,
+                model         = vlm_model,
                 max_tokens    = 300,
                 timeout       = 25,
                 video_timeout = 60,
-                api_key       = nemotron_api_key,
+                api_key       = vlm_api_key,
                 user_prompt   = MONITOR_DETAIL_PROMPT,
                 max_width     = 960,
                 # cam-cowork es 16:9 nativo (1920x1080) — sin este max_height
@@ -264,7 +269,7 @@ async def lifespan(app: FastAPI):
     logger.info(
         "Started — %d cams | YOLO 0.5fps | VLM motion-gated min=%.0fs max=%.0fs | endpoint=%s",
         len(config.enabled_cameras),
-        nemotron_min_s, nemotron_max_s, nemotron_endpoint,
+        vlm_min_s, vlm_max_s, vlm_endpoint,
     )
     yield
 

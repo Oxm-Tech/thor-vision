@@ -52,10 +52,10 @@ def vlm_health(request: Request):
     Existe porque el analizador puede quedarse mudo sin que nada lo note:
     en julio 2026 estuvo caído 3 días y el dashboard seguía viéndose normal.
     """
-    endpoint = os.environ.get("NEMOTRON_ENDPOINT", "")
+    endpoint = (os.environ.get("VLM_ENDPOINT") or os.environ.get("NEMOTRON_ENDPOINT", ""))
     # Lo que se PIDE al endpoint. Con gateway de por medio suele ser un
     # alias (ej. "thor-vision"), no el modelo real que atiende.
-    model    = os.environ.get("NEMOTRON_MODEL", "")
+    model    = (os.environ.get("VLM_MODEL") or os.environ.get("NEMOTRON_MODEL", ""))
     store    = getattr(request.app.state, "detection_store", None)
     analyzer = getattr(request.app.state, "vlm_analyzer", None)
     model_real = getattr(analyzer, "last_model", None) if analyzer else None

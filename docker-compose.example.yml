@@ -30,9 +30,9 @@ services:
       - LOG_LEVEL=INFO
       - INSIGHTFACE_HOME=/app/data/models
       # ── Analizador semántico (VLM en Spark01) ─────────────────────────
-      - NEMOTRON_ENDPOINT=http://<LLM_GATEWAY>:<PORT>
-      - NEMOTRON_MODEL=<MODEL_ALIAS>
-      - NEMOTRON_API_KEY=<API_KEY>
+      - VLM_ENDPOINT=http://<LLM_GATEWAY>:<PORT>
+      - VLM_MODEL=<MODEL_ALIAS>
+      - VLM_API_KEY=<API_KEY>
       # Pipeline de detalle de pantallas para cam-cowork (experimento).
       # Kill-switch explícito: false hasta confirmar en logs que arranca
       # limpio y que no agrega presión al gateway (ver CLAUDE.md).

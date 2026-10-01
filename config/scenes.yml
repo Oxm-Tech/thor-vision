@@ -24,6 +24,7 @@ alert_catalog:
   fuego_humo:              "fuego, humo o chispas"
   puerta_abierta:          "puerta, porton o reja que deberia estar cerrada aparece abierta"
   animal:                  "animal (perro, gato, etc.) dentro de un area interior"
+  uso_telefono_exterior:   "persona en el exterior (calle, banqueta, moto o auto estacionado) mirando o usando su telefono celular"
 
 cameras:
   cam-189:
@@ -34,6 +35,7 @@ cameras:
       farol muy brillante; al fondo arboles y autos estacionados en la calle.
       Imagen infrarroja/nocturna con ruido en la noche.
     focus:
+      - persona de pie, sentada o sobre una moto/auto que mira o usa su telefono celular (alerta uso_telefono_exterior, severidad low)
       - personas que caminan pegadas al muro/rejas del inmueble o se detienen frente a el
       - personas que vuelven a pasar o observan (merodeo)
       - vehiculos que se detienen frente al inmueble o se estacionan y quedan con gente adentro
@@ -42,7 +44,7 @@ cameras:
       - autos ya estacionados que no se mueven
       - transeuntes que solo cruzan de lado a lado sin detenerse
       - destellos del farol, reflejos, hojas, sombras de arboles, ruido infrarrojo
-    alert_types: [merodeo, acceso_no_autorizado, vehiculo_detenido, manipulacion_vehiculo, grupo_inusual, fuego_humo]
+    alert_types: [merodeo, acceso_no_autorizado, vehiculo_detenido, manipulacion_vehiculo, grupo_inusual, fuego_humo, uso_telefono_exterior]
     night_person: note
     vehicles: true
 
@@ -53,12 +55,13 @@ cameras:
       calle a la izquierda, banqueta amplia al centro, muro con rejas del
       inmueble a la derecha, cochera/porton de un vecino al fondo.
     focus:
+      - persona de pie, sentada o sobre una moto/auto que mira o usa su telefono celular (alerta uso_telefono_exterior, severidad low)
       - personas que caminan pegadas al muro/rejas del inmueble o se detienen
       - merodeo (pasar varias veces, mirar hacia adentro, probar la reja)
       - vehiculos que se detienen o se estacionan frente al inmueble
     ignore:
       - autos ya estacionados, transeuntes de paso, reflejos, hojas, sombras, ruido infrarrojo
-    alert_types: [merodeo, acceso_no_autorizado, vehiculo_detenido, manipulacion_vehiculo, grupo_inusual, fuego_humo]
+    alert_types: [merodeo, acceso_no_autorizado, vehiculo_detenido, manipulacion_vehiculo, grupo_inusual, fuego_humo, uso_telefono_exterior]
     night_person: note
     vehicles: true
 

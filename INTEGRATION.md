@@ -28,9 +28,9 @@ Documento vivo para quien desarrolla sobre THOR Vision (Thor en producción, for
 
 **Base de datos** (`data/events.db`, SQLite): `events`, `snapshots`, `subjects`, `person_visits`, `face_sightings`, `reports`, `chat_messages`, `dashboard_visits`. Los cambios de esquema se hacen con `ALTER TABLE` idempotente; nada de borrar columnas.
 
-**Evento del VLM** (`events.type = "nemotron"`, `schema: 2`): `people, persons[], vehicles, activity, scene, relevant, alerts, alert_types, severity, confidence, yolo_people, people_mismatch`. El tipo `"nemotron"` se conserva por compatibilidad con ~200k filas.
+**Evento del VLM** (`events.type = "nemotron"`, `schema: 2`): `people, persons[], vehicles, activity, scene, relevant, alerts, alert_types, severity, confidence, yolo_people, people_mismatch`. El tipo `"nemotron"`, la clave JSON `nemotron` de `/api/detections` y el directorio `data/debug/nemotron/` se conservan por compatibilidad con datos ya guardados; renombrarlos requiere una migración.
 
-**Variables de entorno** (ver `docker-compose.example.yml`): `NEMOTRON_ENDPOINT/MODEL/API_KEY`, `NATIVE_MOTION_ENABLED`, `PREROLL_ENABLED`, `FACE_*`, `UNNAMED_TTL_DAYS`, `RETENTION_*`, `UMAMI_*`.
+**Variables de entorno** (ver `docker-compose.example.yml`): `VLM_ENDPOINT/MODEL/API_KEY` (los `NEMOTRON_*` antiguos siguen funcionando como respaldo), `NATIVE_MOTION_ENABLED`, `PREROLL_ENABLED`, `FACE_*`, `UNNAMED_TTL_DAYS`, `RETENTION_*`, `UMAMI_*`.
 
 ## Cómo añadir una integración
 
