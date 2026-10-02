@@ -875,6 +875,41 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .tl-tip-r b { margin-left:auto; padding-left:12px; font-variant-numeric:tabular-nums; }
 .tl-hint { padding-top:6px; font-size:.7rem; color:var(--text-secondary); }
 @media (max-width:700px){ .tl { margin:0 8px 10px; } .tl-hint { display:none; } }
+
+/* ── Línea de tiempo: curvas, vidrio y animación ── */
+.tl { background:linear-gradient(135deg, rgba(34,41,58,.78), rgba(18,22,30,.62)); backdrop-filter:blur(16px) saturate(1.25);
+  -webkit-backdrop-filter:blur(16px) saturate(1.25); border:1px solid rgba(255,255,255,.08); border-radius:18px;
+  box-shadow:0 24px 60px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06); }
+.tl-chip, .tl-leg, .tl-btn { border-radius:999px; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.09); }
+.tl-btn { min-width:30px; }
+.tl-leg:hover, .tl-btn:hover { background:rgba(255,255,255,.09); }
+#tl-svg .tl-band { stroke:var(--bg-card); stroke-width:1.5; stroke-linejoin:round; opacity:.92; }
+#tl-svg .tl-glow { fill:url(#tl-fade); pointer-events:none; }
+#tl-svg .tl-total { fill:none; stroke:rgba(232,237,243,.92); stroke-width:2; stroke-linecap:round; }
+#tl-svg .tl-proj { stroke-dasharray:4 5; opacity:.8; }
+#tl-svg .tl-hgrid { stroke:rgba(255,255,255,.05); stroke-dasharray:2 4; }
+#tl-svg .tl-pt { fill:var(--bg-card); stroke:#fff; stroke-width:2; }
+#tl-svg .tl-bubr { fill:rgba(12,15,20,.92); stroke:rgba(255,255,255,.18); }
+#tl-svg .tl-bubt { fill:var(--text-primary); font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; }
+#tl-svg.tl-anim .tl-gen { animation:tl-reveal 1.1s cubic-bezier(.2,.7,.2,1) both; }
+#tl-svg.tl-anim .tl-dot { animation:tl-pop .5s ease-out both; }
+@keyframes tl-reveal { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+@keyframes tl-pop { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
+#tl-svg .tl-dot { transform-box:fill-box; transform-origin:center; transition:r .15s; }
+#tl-svg .tl-dot:hover { r:6; }
+
+/* ── Vision Agent (Morphic) embebido ── */
+.va-frame { display:none; flex-direction:column; width:min(980px, calc(100vw - 36px)); height:min(86vh, 900px); margin-bottom:10px;
+  background:rgba(18,22,30,.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,.55); }
+.main-right.chat-open.va-morphic .va-frame { display:flex; }
+.main-right.chat-open.va-morphic .chat-panel { display:none; }
+.va-frame-head { display:flex; align-items:center; gap:6px; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,.08); }
+.va-frame-title { font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-size:.8rem; color:var(--text-primary); }
+.va-frame-sp { flex:1; }
+.va-fbtn { width:28px; height:28px; border:0; border-radius:8px; background:transparent; color:var(--text-secondary); cursor:pointer; font-size:.95rem; }
+.va-fbtn:hover { background:rgba(255,255,255,.08); color:var(--text-primary); }
+#va-iframe { flex:1; width:100%; border:0; background:#0e1117; }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -940,6 +975,17 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 
   <aside class="main-right" id="chat-dock">
     <button class="chat-fab" id="chat-fab" title="Vision Agent" aria-label="Abrir Vision Agent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+    <div class="va-frame" id="va-frame">
+      <div class="va-frame-head">
+        <span class="dot-ai"></span><span class="va-frame-title">Vision Agent</span>
+        <span class="va-frame-sp"></span>
+        <button type="button" class="va-fbtn" id="va-new" title="Nueva conversación">＋</button>
+        <button type="button" class="va-fbtn" id="va-tab" title="Abrir en pestaña">↗</button>
+        <button type="button" class="va-fbtn" id="va-classic" title="Chat clásico">⇄</button>
+        <button type="button" class="va-fbtn" id="va-min" title="Minimizar">—</button>
+      </div>
+      <iframe id="va-iframe" title="Vision Agent" loading="lazy"></iframe>
+    </div>
     <div class="chat-panel">
       <div class="chat-header">
         <div class="chat-title">
@@ -2409,14 +2455,50 @@ function _tlLegend(){
     + `<i style="background:${g.color}"></i>${g.label}<b>${counts[i]}</b></button>`).join('');
 }
 
-function _tlRender(){
+function _tlMono(pts, cont){
+  const n = pts.length;
+  if (!n) return '';
+  const f = v => v.toFixed(1);
+  if (n < 3) return (cont ? '' : 'M') + pts.map(p => `${f(p[0])},${f(p[1])}`).join(' L');
+  const d = [], m = [];
+  for (let i = 0; i < n - 1; i++) d.push((pts[i + 1][1] - pts[i][1]) / ((pts[i + 1][0] - pts[i][0]) || 1));
+  m.push(d[0]);
+  for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2);
+  m.push(d[n - 2]);
+  for (let i = 0; i < n - 1; i++){
+    if (d[i] === 0){ m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
+    if (h > 9){ const t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+  }
+  let out = (cont ? '' : 'M') + `${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 0; i < n - 1; i++){
+    const dx = (pts[i + 1][0] - pts[i][0]) / 3;
+    out += ` C${f(pts[i][0] + dx)},${f(pts[i][1] + m[i] * dx)} ${f(pts[i + 1][0] - dx)},${f(pts[i + 1][1] - m[i + 1] * dx)} ${f(pts[i + 1][0])},${f(pts[i + 1][1])}`;
+  }
+  return out;
+}
+
+function _tlBubble(at){
+  const g = TL.geom, bub = document.getElementById('tl-bub');
+  if (!g || !bub || !g.totals) return;
+  const k = Math.max(0, Math.min(g.totals.length - 1, Math.floor((at.ts - g.since) / g.bucket)));
+  const x = g.xc(k), y = g.ys(g.totals[k]);
+  const label = String(g.totals[k]);
+  const w = 14 + label.length * 7;
+  bub.querySelector('circle').setAttribute('cx', x); bub.querySelector('circle').setAttribute('cy', y);
+  const r = bub.querySelector('rect'); r.setAttribute('x', x - w / 2); r.setAttribute('y', y - 28); r.setAttribute('width', w);
+  const t = bub.querySelector('text'); t.setAttribute('x', x); t.setAttribute('y', y - 15); t.textContent = label;
+  bub.setAttribute('visibility', 'visible');
+}
+
+function _tlRender(animate){
   const svg = document.getElementById('tl-svg');
   const plot = document.getElementById('tl-plot');
   if (!svg || !TL.data) return;
   const [since, until] = [TL.data.since, TL.data.until];
   const cams = TL.data.cams;
   const W = Math.max(320, plot.clientWidth);
-  const LW = 118, PR = 10, GH = 62, LH = 20, AX = 18, TOP = 6;
+  const LW = 118, PR = 10, GH = 118, LH = 20, AX = 18, TOP = 22;
   const lanes0 = TOP + GH + 10;
   const H = lanes0 + cams.length * LH + AX;
   const PW = W - LW - PR;
@@ -2442,21 +2524,36 @@ function _tlRender(){
     out.push(`<line class="tl-grid${newDay ? ' day' : ''}" x1="${xx}" x2="${xx}" y1="${TOP}" y2="${H - AX}"/>`);
     out.push(`<text class="tl-ax" x="${xx}" y="${H - 5}" text-anchor="middle">${_tlFmt(t, TL.span >= 72 || newDay)}</text>`);
   }
-  // carril general: columnas apiladas en orden fijo de grupos
+  // carril general: areas apiladas suaves (interpolacion monotona) + linea del total
   out.push(`<text class="tl-lbl" x="8" y="${TOP + 14}">General</text>`);
-  out.push(`<text class="tl-lbl2" x="8" y="${TOP + 28}">máx ${maxT}/${bucket >= 3600 ? (bucket / 3600) + ' h' : (bucket / 60) + ' min'}</text>`);
-  out.push(`<line class="tl-base" x1="${LW}" x2="${LW + PW}" y1="${TOP + GH}" y2="${TOP + GH}"/>`);
-  const bw = Math.max(1, PW / nb - 2);
-  counts.forEach((c, b) => {
-    let y = TOP + GH;
-    const bx = (LW + b * (PW / nb) + 1).toFixed(1);
-    c.forEach((n, gi) => {
-      if (!n) return;
-      const h = Math.max(2, n / maxT * (GH - 8));
-      y -= h;
-      out.push(`<rect x="${bx}" y="${(y + 1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, h - 1).toFixed(1)}" rx="1" fill="${TL_GROUPS[gi].color}"/>`);
-    });
+  out.push(`<text class="tl-lbl2" x="8" y="${TOP + 28}">alertas por ${bucket >= 3600 ? (bucket / 3600) + ' h' : (bucket / 60) + ' min'}</text>`);
+  const yb = TOP + GH, ys = n => yb - n / maxT * (GH - 10);
+  [0.5, 1].forEach(f => {
+    const yy = ys(maxT * f).toFixed(1);
+    out.push(`<line class="tl-hgrid" x1="${LW}" x2="${LW + PW}" y1="${yy}" y2="${yy}"/><text class="tl-ax" x="${LW - 6}" y="${(+yy + 3).toFixed(1)}" text-anchor="end">${Math.round(maxT * f)}</text>`);
   });
+  out.push(`<line class="tl-base" x1="${LW}" x2="${LW + PW}" y1="${yb}" y2="${yb}"/>`);
+  const xc = k => LW + (k + 0.5) * (PW / nb);
+  const cum = counts.map(c => { let acc = 0; return c.map(n => (acc += n)); });
+  const totals = counts.map(c => c.reduce((p, q) => p + q, 0));
+  TL.geom.xc = xc; TL.geom.ys = ys; TL.geom.totals = totals;
+  const band = [];
+  TL_GROUPS.forEach((g, gi) => {
+    if (!counts.some(c => c[gi])) return;
+    const top = cum.map((c, k) => [xc(k), ys(c[gi])]);
+    const bot = cum.map((c, k) => [xc(k), ys(gi ? c[gi - 1] : 0)]).reverse();
+    band.push(`<path class="tl-band" d="${_tlMono(top)} L${_tlMono(bot, true)} Z" fill="${g.color}"/>`);
+  });
+  const tpts = totals.map((n, k) => [xc(k), ys(n)]);
+  const live = !TL.end;
+  const solid = live && tpts.length > 2 ? tpts.slice(0, -1) : tpts;
+  out.push(`<defs><linearGradient id="tl-fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".10"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`);
+  out.push(`<g class="tl-gen">${band.join('')}`
+    + `<path class="tl-glow" d="${_tlMono(tpts)} L${xc(nb - 1).toFixed(1)},${yb} L${xc(0).toFixed(1)},${yb} Z"/>`
+    + `<path class="tl-total" d="${_tlMono(solid)}"/>`
+    + (live && tpts.length > 2 ? `<path class="tl-total tl-proj" d="M${tpts[tpts.length - 2].join(',')} L${tpts[tpts.length - 1].join(',')}"/>` : '')
+    + `</g>`);
+  out.push(`<g id="tl-bub" visibility="hidden"><circle class="tl-pt" r="4.5"/><rect class="tl-bubr" rx="8" height="18"/><text class="tl-bubt" text-anchor="middle"></text></g>`);
   // carriles por cámara
   cams.forEach((c, i) => {
     const y = lanes0 + i * LH;
@@ -2482,6 +2579,7 @@ function _tlRender(){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.innerHTML = out.join('');
+  svg.classList.toggle('tl-anim', !!animate);
 
   // resumen
   const total = evs.length;
@@ -2498,7 +2596,7 @@ async function tlLoad(){
   try {
     const d = await (await fetch(`/api/timeline?since=${since.toFixed(0)}&until=${until.toFixed(0)}`)).json();
     TL.data = d;
-    _tlRender();
+    _tlRender(true);
   } catch (_) { document.getElementById('tl-sum').textContent = 'sin datos'; }
 }
 
@@ -2581,7 +2679,8 @@ function _tlAskSel(kind){
     : `¿Qué pasó ${camName ? 'en ' + camName + ' ' : ''}${range}? Resume las alertas y quién estaba.`;
   const dock = document.getElementById('chat-dock');
   if (dock && !dock.classList.contains('chat-open')) document.getElementById('chat-fab')?.click();
-  vaAsk(q, { since: TL.sel.since, until: TL.sel.until, cam_id: TL.sel.cam || null });
+  if (vaMode() === 'morphic') vaOpenMorphic(q);
+  else vaAsk(q, { since: TL.sel.since, until: TL.sel.until, cam_id: TL.sel.cam || null });
 }
 
 function initTimeline(){
@@ -2624,10 +2723,12 @@ function initTimeline(){
       return;
     }
     _tlTip(ev, at);
+    if (!at.hit) _tlBubble(at); else document.getElementById('tl-bub')?.setAttribute('visibility', 'hidden');
   });
   plot.addEventListener('mouseleave', () => {
     document.getElementById('tl-tip').hidden = true;
     const cross = document.getElementById('tl-cross'); if (cross) cross.setAttribute('visibility', 'hidden');
+    document.getElementById('tl-bub')?.setAttribute('visibility', 'hidden');
   });
   plot.addEventListener('mousedown', ev => {
     if (ev.target.id !== 'tl-hit') return;
@@ -2665,6 +2766,35 @@ function initTimeline(){
   TL.timer = setInterval(() => { if (!TL.end && !body.hidden && !TL.drag) tlLoad(); }, 60000);
 }
 _onDomReady(initTimeline);
+
+// ── Vision Agent completo (Morphic en :3200) dentro del dock ─────────────────
+const VA_BASE = `${location.protocol}//${location.hostname}:3200`;
+function vaMode(){ try { return localStorage.getItem('thor_va_mode') || 'morphic'; } catch (_) { return 'morphic'; } }
+function vaSetMode(m){ try { localStorage.setItem('thor_va_mode', m); } catch (_) {} document.getElementById('chat-dock')?.classList.toggle('va-morphic', m === 'morphic'); }
+function vaOpenMorphic(q){
+  const dock = document.getElementById('chat-dock');
+  const fr = document.getElementById('va-iframe');
+  if (!dock || !fr) return;
+  vaSetMode('morphic');
+  if (!dock.classList.contains('chat-open')) document.getElementById('chat-fab')?.click();
+  const want = q ? `${VA_BASE}/search?q=${encodeURIComponent(q)}` : (fr.dataset.loaded ? null : `${VA_BASE}/`);
+  if (want){ fr.src = want; fr.dataset.loaded = '1'; }
+}
+function initVisionAgentFrame(){
+  vaSetMode(vaMode());
+  document.getElementById('chat-fab')?.addEventListener('click', () => { if (vaMode() === 'morphic') vaOpenMorphic(); });
+  document.getElementById('va-new')?.addEventListener('click', () => { const fr = document.getElementById('va-iframe'); fr.src = `${VA_BASE}/`; fr.dataset.loaded = '1'; });
+  document.getElementById('va-tab')?.addEventListener('click', () => window.open(document.getElementById('va-iframe').src || `${VA_BASE}/`, '_blank', 'noopener'));
+  document.getElementById('va-classic')?.addEventListener('click', () => vaSetMode('classic'));
+  document.getElementById('va-min')?.addEventListener('click', () => document.getElementById('chat-min')?.click());
+  const head = document.querySelector('#chat-dock .chat-header .chat-title');
+  if (head && !document.getElementById('va-back')){
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'va-back'; b.className = 'va-fbtn'; b.title = 'Vision Agent completo'; b.textContent = '⇄';
+    b.addEventListener('click', () => vaOpenMorphic());
+    head.after(b);
+  }
+}
+_onDomReady(initVisionAgentFrame);
 
 function initChatDock(){
   const dock = document.getElementById('chat-dock');
