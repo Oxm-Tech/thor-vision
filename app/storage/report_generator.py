@@ -73,7 +73,7 @@ def generate_report(db: EventDB, analyzer, period_hours: float = 24.0,
         # responde en <1s, pero un reporte de este largo agotó el timeout de
         # 90s dos veces seguidas con el gateway sano) — esto no bloquea
         # ninguna UI en vivo, corre en background o bajo demanda explícita.
-        text = complete_text(report_llm(analyzer), messages, max_tokens=900, temperature=0.2, timeout=60)
+        text = complete_text(report_llm(analyzer), messages, max_tokens=1600, temperature=0.2, timeout=120)
     except Exception as e:
         logger.warning("report_generator: fallo llamando al gateway: %s", e)
         text = ""
