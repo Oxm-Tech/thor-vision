@@ -770,6 +770,18 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important;
     transition-duration:.001ms !important; scroll-behavior:auto !important; }
 }
+
+.md-h { font-weight:700; margin:8px 0 4px; color:var(--text, #e8ecf2); }
+.md-h1, .md-h2 { font-size:1.02rem; } .md-h3, .md-h4 { font-size:.95rem; color:var(--oxm-blue); }
+.md-list { margin:4px 0 4px 18px; padding:0; } .md-list .md-list { margin-top:2px; }
+.md-hr { border:0; border-top:1px solid var(--border); margin:8px 0; }
+.md-quote { border-left:3px solid var(--oxm-blue); padding-left:8px; color:var(--text-muted); }
+.md-table-wrap { overflow-x:auto; margin:6px 0; }
+.md-table { border-collapse:collapse; font-size:.82rem; } .md-table th, .md-table td { border:1px solid var(--border); padding:3px 6px; text-align:left; }
+.chat-imgs { display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:6px; margin-top:8px; }
+.chat-img { display:flex; flex-direction:column; gap:2px; text-decoration:none; color:var(--text-muted); font-size:.72rem; }
+.chat-img img { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
+.chat-img:hover img { border-color:var(--oxm-blue); }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -2378,29 +2390,63 @@ function _escapeHtml(s){
 function _inlineMd(s){
   return s
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
-// El modelo responde en markdown (negritas, listas) y antes se pintaba con
-// textContent, asi que se veian los asteriscos crudos. Se escapa PRIMERO y
-// luego se formatea: el texto del LLM nunca puede inyectar HTML.
+// Se escapa PRIMERO y luego se formatea: el texto del LLM nunca puede inyectar HTML.
 function _renderMarkdown(text){
-  const lines = _escapeHtml(text).split('\n');
-  let html = '', inList = false;
+  const lines = _escapeHtml(text || '').split('\n');
+  let html = '', stack = [], table = null;
+  const closeLists = (to = 0) => { while (stack.length > to) html += `</${stack.pop().tag}>`; };
+  const flushTable = () => {
+    if (!table) return;
+    const [head, ...rows] = table;
+    html += '<div class="md-table-wrap"><table class="md-table"><thead><tr>' + head.map(c => `<th>${_inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>'
+      + rows.map(r => '<tr>' + r.map(c => `<td>${_inlineMd(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
+    table = null;
+  };
   for (const raw of lines){
-    const line = raw.trim();
-    const li = line.match(/^(?:[*\-•]|\d+\.)\s+(.*)$/);
-    if (li){
-      if (!inList){ html += '<ul class="md-list">'; inList = true; }
-      html += `<li>${_inlineMd(li[1])}</li>`;
+    const line = raw.replace(/\s+$/, '');
+    const t = line.trim();
+    if (/^\|.*\|$/.test(t)){
+      closeLists();
+      const cells = t.slice(1, -1).split('|').map(c => c.trim());
+      if (cells.every(c => /^:?-{2,}:?$/.test(c))) continue;
+      (table = table || []).push(cells);
       continue;
     }
-    if (inList){ html += '</ul>'; inList = false; }
-    if (!line){ continue; }
-    html += `<div class="md-p">${_inlineMd(line)}</div>`;
+    flushTable();
+    const li = line.match(/^(\s*)([*\-•]|\d+\.)\s+(.*)$/);
+    if (li){
+      const depth = Math.floor(li[1].replace(/\t/g, '  ').length / 2) + 1;
+      const tag = /\d/.test(li[2]) ? 'ol' : 'ul';
+      while (stack.length > depth) html += `</${stack.pop().tag}>`;
+      while (stack.length < depth){ html += `<${tag} class="md-list">`; stack.push({tag}); }
+      html += `<li>${_inlineMd(li[3])}</li>`;
+      continue;
+    }
+    closeLists();
+    if (!t) continue;
+    const h = t.match(/^(#{1,4})\s+(.*)$/);
+    if (h){ html += `<div class="md-h md-h${h[1].length}">${_inlineMd(h[2])}</div>`; continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)){ html += '<hr class="md-hr">'; continue; }
+    if (t.startsWith('&gt; ')){ html += `<div class="md-quote">${_inlineMd(t.slice(5))}</div>`; continue; }
+    html += `<div class="md-p">${_inlineMd(t)}</div>`;
   }
-  if (inList) html += '</ul>';
+  flushTable(); closeLists();
   return html;
+}
+
+function _renderChatImages(images){
+  if (!Array.isArray(images) || !images.length) return '';
+  return '<div class="chat-imgs">' + images.map(i => {
+    const url = String(i.url || '');
+    if (!/^\/api\/snapshots\/file\/\d+$/.test(url)) return '';
+    const cap = _escapeHtml(`${i.hora || ''} · ${i.cam || ''}`);
+    return `<a class="chat-img" href="${url}" target="_blank" rel="noopener" title="${_escapeHtml(i.texto || '')}">`
+         + `<img src="${url}" alt="${cap}" loading="lazy"><span>${cap}</span></a>`;
+  }).join('') + '</div>';
 }
 
 function _appendChatMessage(role, text, opts = {}) {
@@ -2456,7 +2502,7 @@ chatFormEl.addEventListener('submit', async (e) => {
         node.className   = 'chat-msg chat-msg-error';
         node.textContent = data.response || 'Error desconocido';
       } else {
-        node.textContent = data.response || '(sin respuesta)';
+        node.innerHTML = _renderMarkdown(data.response || '(sin respuesta)') + _renderChatImages(data.images);
         chatHistory.push({ role:'user',      content: msg });
         chatHistory.push({ role:'assistant', content: data.response });
         // Mantener historial acotado

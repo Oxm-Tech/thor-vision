@@ -19,6 +19,16 @@ from app.vision.llm_text import complete_text
 SKILLS_DIR = os.environ.get("SKILLS_DIR", "/app/config/skills")
 
 
+def report_llm(analyzer):
+    """Modelo del reporte: REPORT_MODEL (con REPORT_API_KEY o CHAT_API_KEY) o, si no, el del VLM."""
+    import types
+    model = os.environ.get("REPORT_MODEL")
+    if not model:
+        return analyzer
+    key = os.environ.get("REPORT_API_KEY") or os.environ.get("CHAT_API_KEY") or getattr(analyzer, "api_key", None)
+    return types.SimpleNamespace(endpoint=analyzer.endpoint, model=model, api_key=key)
+
+
 def load_skill(name: str, default: str) -> str:
     try:
         with open(os.path.join(SKILLS_DIR, f"{name}.md"), encoding="utf-8") as f:
@@ -63,7 +73,7 @@ def generate_report(db: EventDB, analyzer, period_hours: float = 24.0,
         # responde en <1s, pero un reporte de este largo agotó el timeout de
         # 90s dos veces seguidas con el gateway sano) — esto no bloquea
         # ninguna UI en vivo, corre en background o bajo demanda explícita.
-        text = complete_text(analyzer, messages, max_tokens=900, temperature=0.4, timeout=60)
+        text = complete_text(report_llm(analyzer), messages, max_tokens=900, temperature=0.2, timeout=60)
     except Exception as e:
         logger.warning("report_generator: fallo llamando al gateway: %s", e)
         text = ""

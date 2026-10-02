@@ -41,13 +41,13 @@ def _stream_once(req, timeout: int) -> str:
 
 
 def complete_text(analyzer, messages: list, max_tokens: int = 900,
-                  temperature: float = 0.4, timeout: int = 90) -> str:
+                  temperature: float = 0.4, timeout: int = 90, thinking: bool = False) -> str:
     payload = json.dumps({
         "model":                analyzer.model,
         "max_tokens":           max_tokens,
         "temperature":          temperature,
         "stream":               True,
-        "chat_template_kwargs": {"enable_thinking": False},
+        "chat_template_kwargs": {"enable_thinking": thinking},
         "messages":             messages,
     }).encode()
 

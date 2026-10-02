@@ -84,8 +84,18 @@ def _question_needs_history(question: str) -> bool:
 
 def compose_chat_system(skill: str, total_cams: int, context_block: str,
                         facts_text: str = "", facts_label: str = "",
-                        history_block: str = "", hist_kind: str = "") -> str:
-    parts = [skill, f"Cámaras en el sistema: {total_cams}.", "## Estado actual por cámara:", context_block]
+                        history_block: str = "", hist_kind: str = "",
+                        images: Optional[list] = None) -> str:
+    parts = [skill, f"Cámaras en el sistema: {total_cams}.",
+             "Capacidades del sistema: la interfaz muestra automáticamente las capturas de las alertas "
+             "cuando el usuario las pide; nunca digas que no tienes acceso a imágenes.",
+             "## Estado actual por cámara:", context_block]
+    if images is not None:
+        if images:
+            lst = "\n".join(f"- {i['hora']} · {i['cam']} · {i['texto']}" for i in images)
+            parts += [f"## Capturas adjuntas a esta respuesta ({len(images)})", lst]
+        else:
+            parts += ["## Capturas adjuntas a esta respuesta", "(no hay alertas con captura en el periodo pedido)"]
     if facts_text:
         parts += [f"## Hechos exactos del periodo ({facts_label})", facts_text]
     if history_block:
@@ -175,6 +185,57 @@ _RANGE_RES = [
     (re.compile(r"\b(?:ahorita|justo\s+ahora|en\s+este\s+momento)\b", re.I),
      lambda m: 1.0),
 ]
+
+
+_IMG_RE = re.compile(r"\b(captur\w*|imag\w*|fotos?|snapshots?|mu[eé]str\w*|ens[eé][nñ]\w*|ver\s+(?:la|las|el|los)\s+alertas?)\b", re.I)
+
+
+def _explicit_hours(question: str) -> Optional[float]:
+    for rx, fn in _RANGE_RES:
+        m = rx.search(question or "")
+        if m:
+            return fn(m)
+    return None
+
+
+def _norm_txt(s: str) -> str:
+    import unicodedata
+    return unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+
+
+def _alert_images(db, config, question: str, history: list, limit: int = 8) -> list:
+    """Capturas de las alertas del periodo y camaras a las que se refiere la pregunta (o el turno anterior)."""
+    prev_user = [m.content for m in history if m.role == "user"]
+    hours = _explicit_hours(question)
+    ref = question
+    if hours is None:
+        for q in reversed(prev_user):
+            hours = _explicit_hours(q)
+            if hours is not None:
+                ref = q
+                break
+    hours = hours or 1.0
+    names = {c.id: c.name for c in config.cameras}
+    nq = _norm_txt(question + " " + ref)
+    cams = [cid for cid, nm in names.items() if _norm_txt(nm) in nq]
+    until = time.time(); since = until - hours * 3600
+    sql = ("SELECT s.id, e.ts, e.cam_id, e.data FROM events e JOIN snapshots s ON s.event_id = e.id "
+           "WHERE e.type='nemotron' AND e.has_alert=1 AND e.ts>=? AND e.ts<=?")
+    args = [since, until]
+    if cams:
+        sql += " AND e.cam_id IN (%s)" % ",".join("?" * len(cams)); args += cams
+    sql += " ORDER BY e.ts DESC LIMIT ?"; args.append(limit)
+    with db._lock:
+        rows = db._conn.execute(sql, args).fetchall()
+    out = []
+    for sid, ts, cam, data in rows:
+        try:
+            act = (json.loads(data or "{}").get("activity") or "")[:140]
+        except Exception:
+            act = ""
+        out.append({"url": f"/api/snapshots/file/{sid}", "cam": names.get(cam, cam),
+                    "hora": time.strftime("%H:%M", time.localtime(ts)), "texto": act})
+    return out
 
 
 def _infer_history_hours(question: str) -> float:
@@ -347,6 +408,8 @@ def _build_camera_context(store, config) -> tuple[str, int]:
     now = time.time()
 
     for cam_id, det in store.get_all().items():
+        if cam_id not in cam_names:
+            continue
         nem = det.nemotron
         if not nem or nem.get("activity") == "error":
             continue
@@ -389,6 +452,23 @@ def chat(req: ChatRequest, request: Request,
     # Asignar session_id si no vino
     session_id = (x_session_id or "").strip() or str(uuid.uuid4())
 
+    history = list(req.history or [])
+    if not history and db is not None and x_session_id:
+        try:
+            history = [ChatMessage(role=m["role"], content=m["content"])
+                       for m in db.query_chat_history(session_id, limit=20)
+                       if m.get("role") in ("user", "assistant") and m.get("content")]
+        except Exception as e:
+            logger.warning("Chat: no se pudo cargar la memoria de la sesion: %s", e)
+
+    images = None
+    if db is not None and _IMG_RE.search(req.message or ""):
+        try:
+            images = _alert_images(db, config, req.message, history)
+        except Exception as e:
+            logger.warning("Chat: fallo buscando capturas: %s", e)
+            images = []
+
     context_block, n_ctx = _build_camera_context(store, config)
     total_cams = len(config.cameras)
 
@@ -424,14 +504,14 @@ def chat(req: ChatRequest, request: Request,
     system_prompt = compose_chat_system(
         load_skill("chat", _DEFAULT_CHAT_SKILL), total_cams, context_block,
         facts_text=facts_text, facts_label=hist_label,
-        history_block=history_block, hist_kind=hist_kind)
+        history_block=history_block, hist_kind=hist_kind, images=images)
 
     # Construir mensajes — system + últimos turnos (acotados) + nuevo.
     # Se recorre del más nuevo al más viejo insertando en la posición 1, así
     # que al agotarse el presupuesto se descartan los turnos más antiguos.
     messages = [{"role": "system", "content": system_prompt}]
     hist_chars = 0
-    for m in reversed(req.history[-10:]):
+    for m in reversed(history[-10:]):
         if m.role not in ("user", "assistant") or not m.content:
             continue
         if hist_chars + len(m.content) > _CHAT_HISTORY_MAX_CHARS:
@@ -514,6 +594,7 @@ def chat(req: ChatRequest, request: Request,
 
         return {
             "response":         text,
+            "images":           images or [],
             "context_cameras":  n_ctx,
             "history_events":   n_hist,
             "history_hours":    hist_hours,
