@@ -521,6 +521,22 @@ class VisitManager:
                         tr.subject_id = None
             return self.db.delete_subject(sid)
 
+    def known_present(self, cam_id: str, max_age_s: float = 20.0) -> list:
+        now = time.time()
+        out = set()
+        with self._lock:
+            for tr in self._tracks.get(cam_id, ()):
+                if now - tr.last_ts > max_age_s:
+                    continue
+                name, _ = self._known_name(tr)
+                if not name and tr.subject_id is not None:
+                    subj = self._subjects.get(tr.subject_id) or {}
+                    if subj.get("named"):
+                        name = subj.get("name")
+                if name:
+                    out.add(str(name).strip())
+        return sorted(out)
+
     def snapshot(self) -> dict:
         with self._lock:
             active = {c: sum(1 for t in ts if t.visit_id is not None) for c, ts in self._tracks.items()}

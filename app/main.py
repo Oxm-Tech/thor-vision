@@ -184,8 +184,11 @@ async def lifespan(app: FastAPI):
     native_min_s  = float(_env("VLM_NATIVE_MIN_INTERVAL_S", "NEMOTRON_NATIVE_MIN_INTERVAL_S", "30"))
     idle_beat_s   = float(_env("VLM_IDLE_HEARTBEAT_S", "NEMOTRON_IDLE_HEARTBEAT_S",     "900"))
 
+    from app.vision import scenes as scenes_mod
     from app.vision.scenes import Scenes
     scenes = Scenes()
+    if getattr(app.state, "visits", None) is not None:
+        scenes_mod.KNOWN_PRESENT = app.state.visits.known_present
     require_person = os.environ.get("VLM_REQUIRE_PERSON", "true").lower() == "true"
     sustain_s      = float(os.environ.get("VLM_MOTION_SUSTAIN_S", "10"))
 

@@ -21,10 +21,10 @@ known_pets:
 alert_catalog:
   persona_en_suelo:        "persona caida, tirada o inmovil en el piso"
   acceso_no_autorizado:    "persona entrando o intentando entrar a una zona restringida o forzando una puerta/reja"
-  merodeo:                 "persona que permanece o vuelve a pasar frente al inmueble mirando o probando accesos, sin ir de paso"
+  merodeo:                 "persona que se detiene frente al muro/reja/puerta del inmueble, mira hacia adentro o vuelve a pasar; caminar de paso NO es merodeo"
   persona_nocturna:        "presencia de persona en horario nocturno en un area que deberia estar vacia"
   vehiculo_detenido:       "vehiculo que se detiene, estaciona o permanece frente al acceso"
-  manipulacion_vehiculo:   "persona tocando, abriendo o forzando un vehiculo"
+  manipulacion_vehiculo:   "persona forzando o abriendo un vehiculo que no es suyo (recargarse o rozarlo NO cuenta)"
   grupo_inusual:           "grupo de 3 o mas personas donde normalmente hay 0-1"
   objeto_abandonado:       "paquete, bolsa o bulto dejado sin dueno visible"
   fuego_humo:              "fuego, humo o chispas"
@@ -45,8 +45,10 @@ cameras:
       - personas que caminan pegadas al muro/rejas del inmueble o se detienen frente a el
       - personas que vuelven a pasar o observan (merodeo)
       - vehiculos que se detienen frente al inmueble o se estacionan y quedan con gente adentro
-      - personas tocando un vehiculo estacionado
+      - personas que intentan abrir o forzan un vehiculo estacionado
     ignore:
+      - personas que se recargan, se apoyan o pasan la mano por un auto estacionado sin abrirlo
+      - transeuntes que caminan pegados al muro sin detenerse
       - autos ya estacionados que no se mueven
       - transeuntes que solo cruzan de lado a lado sin detenerse
       - destellos del farol, reflejos, hojas, sombras de arboles, ruido infrarrojo
@@ -66,6 +68,8 @@ cameras:
       - merodeo (pasar varias veces, mirar hacia adentro, probar la reja)
       - vehiculos que se detienen o se estacionan frente al inmueble
     ignore:
+      - personas que se recargan, se apoyan o pasan la mano por un auto estacionado sin abrirlo
+      - transeuntes que caminan pegados al muro sin detenerse
       - autos ya estacionados, transeuntes de paso, reflejos, hojas, sombras, ruido infrarrojo
     alert_types: [merodeo, acceso_no_autorizado, vehiculo_detenido, manipulacion_vehiculo, grupo_inusual, fuego_humo, uso_telefono_exterior]
     night_person: note
@@ -79,21 +83,23 @@ cameras:
       esta montada rotada: la imagen sale de lado (vertical 1080x1920);
       interpreta la escena aunque se vea girada.
     focus:
+      - es la PUERTA PRINCIPAL del inmueble: persona que llega y espera, mira hacia adentro o intenta abrir (merodeo)
       - cualquier persona que entra, sube o baja por la escalera
       - persona caida o tirada en escalones o piso
-      - persona que llega al acceso y espera o intenta abrir
     ignore:
       - la palmera y objetos decorativos, luces de emergencia, ruido por poca luz
-    alert_types: [persona_en_suelo, acceso_no_autorizado, persona_nocturna, objeto_abandonado, fuego_humo, puerta_abierta]
+    alert_types: [persona_en_suelo, acceso_no_autorizado, persona_nocturna, objeto_abandonado, fuego_humo, puerta_abierta, merodeo]
     night_person: alert
+    weekend_mode: alert_all             # actividad en fin de semana es alerta
+    known_exempt: [merodeo, persona_nocturna, acceso_no_autorizado]   # solo desconocidos
     vehicles: false
 
   cam-sala-juntas:
     name: Sala de Juntas
     where: >
-      Interior, sala de descanso con sofas (tambien mesa y sillas). Uso esperado:
-      personal descansando o conversando en horario laboral. Sillas y sofas
-      vacios no son personas.
+      Interior, sala de juntas con mesa de reuniones y sillas. Uso esperado:
+      reuniones y trabajo del personal, a veces hasta tarde entre semana.
+      Sillas vacias no son personas.
     focus:
       - cuantas personas hay y si estan en reunion, de pie o de paso
       - la sala ocupada fuera de horario laboral
@@ -121,6 +127,7 @@ cameras:
       - el auto blanco y los objetos guardados estaticos, ruido infrarrojo, reflejos en la pared
     alert_types: [manipulacion_vehiculo, acceso_no_autorizado, persona_nocturna, objeto_abandonado, persona_en_suelo, fuego_humo, animal]
     night_person: alert
+    known_exempt: [acceso_no_autorizado, persona_nocturna, manipulacion_vehiculo]   # solo desconocidos
     vehicles: true
 
   cam-228:
@@ -135,6 +142,7 @@ cameras:
       - oscuridad, ruido de imagen, puntos de luz aislados
     alert_types: [acceso_no_autorizado, manipulacion_vehiculo, persona_nocturna, vehiculo_detenido, puerta_abierta, fuego_humo]
     night_person: alert
+    known_exempt: [acceso_no_autorizado, persona_nocturna, manipulacion_vehiculo]   # solo desconocidos
     vehicles: true
 
   cam-120:
@@ -143,7 +151,7 @@ cameras:
       Interior, acceso al cuarto de site (equipo de red/servidores). En la
       noche la imagen es casi negra con algunos puntos de luz de equipos.
     focus:
-      - CUALQUIER persona frente a la puerta o dentro del site
+      - CUALQUIER persona frente a la puerta o dentro del site es alerta acceso_no_autorizado, a cualquier hora
       - la puerta abierta o alguien manipulando equipos
     ignore:
       - los LEDs de los equipos y el ruido por poca luz
@@ -166,6 +174,8 @@ cameras:
       - plantas movidas por el viento en el patio, reflejos en el vidrio, luces del refrigerador
     alert_types: [persona_nocturna, persona_en_suelo, animal, fuego_humo, acceso_no_autorizado]
     night_person: alert
+    night_hours: [0, 7]                 # alerta de 00:00 a 07:00
+    known_exempt: [persona_nocturna]    # personas conocidas en cuadro no generan alerta nocturna
     vehicles: false
 
   cam-cowork:

@@ -48,11 +48,16 @@ class SceneContext:
     weekday_night: Optional[tuple] = None   # horario nocturno propio de lunes a viernes
     weekend_mode: Optional[str] = None      # "note" = fin de semana sin alerta nocturna
     known_pets: list = field(default_factory=list)
+    cam_night: Optional[tuple] = None       # horario nocturno propio de la camara (todos los dias)
+    known_exempt: frozenset = frozenset()    # tipos que NO alertan si hay una persona conocida en cuadro
 
     def _rule(self, now: Optional[float] = None) -> tuple:
         lt = time.localtime(now or time.time())
         weekend = lt.tm_wday >= 5
-        a, b = (self.weekday_night if (self.weekday_night and not weekend) else self.night_hours)
+        if weekend and self.weekend_mode == "alert_all":
+            return True, "alert", True
+        base = self.cam_night or self.night_hours
+        a, b = (self.weekday_night if (self.weekday_night and not weekend) else base)
         h = lt.tm_hour
         night = (h >= a or h < b) if a > b else (a <= h < b)
         mode = self.weekend_mode if (weekend and self.weekend_mode) else self.night_person
@@ -85,6 +90,8 @@ class SceneContext:
                          + "; ".join(self.known_pets))
         if weekend and self.weekend_mode == "note":
             lines.append("FIN DE SEMANA: el uso casual de esta area es normal; no generes persona_nocturna.")
+        if weekend and self.weekend_mode == "alert_all":
+            lines.append("FIN DE SEMANA: aqui no deberia haber actividad; cualquier persona visible es alerta persona_nocturna.")
         if night and mode == "alert":
             lines.append("REGLA NOCTURNA: aqui no deberia haber nadie de noche; "
                          "cualquier persona visible es alerta persona_nocturna.")
@@ -127,6 +134,8 @@ class Scenes:
                 weekday_night=tuple(c["weekday_night"]) if c.get("weekday_night") else None,
                 weekend_mode=c.get("weekend_mode"),
                 known_pets=list(raw.get("known_pets") or []),
+                cam_night=tuple(c["night_hours"]) if c.get("night_hours") else None,
+                known_exempt=frozenset(c.get("known_exempt") or []),
             )
         logger.info("scenes: %d camaras con contexto de escena", len(self._by_cam))
 
@@ -136,6 +145,10 @@ class Scenes:
 
 def _clip(s, n: int) -> str:
     return " ".join(str(s or "").split())[:n]
+
+
+# lo fija main.py: cam_id -> nombres de personas conocidas en cuadro ahora
+KNOWN_PRESENT = None
 
 
 def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[int] = None) -> dict:
@@ -176,6 +189,18 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
         types.remove("persona_nocturna")
         if not types:
             alerts = []
+    if scene.known_exempt and types and KNOWN_PRESENT is not None:
+        try:
+            known = KNOWN_PRESENT(scene.cam_id)
+        except Exception:
+            known = []
+        if known:
+            result["known_people"] = known
+            kept = [t for t in types if t not in scene.known_exempt]
+            if len(kept) != len(types):
+                types = kept
+                if not types:
+                    alerts = []
 
     relevant = result.get("relevant") is True
     if not relevant and not types:
