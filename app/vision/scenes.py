@@ -152,7 +152,8 @@ def _clip(s, n: int) -> str:
 KNOWN_PRESENT = None
 
 
-def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[int] = None) -> dict:
+def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[int] = None,
+                     posture: Optional[dict] = None) -> dict:
     """Valida y sanea la respuesta del VLM contra el esquema por camara."""
     if not isinstance(result, dict) or result.get("activity") == "error":
         return result
@@ -196,6 +197,14 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
         blob = (act + " " + " ".join(alerts)).lower()
         if re.search(r"mascota|pug|shiba|perro negro peque|perros? (de la casa|conocid)", blob):
             types.remove("animal")
+            if not types:
+                alerts = []
+    if "persona_en_suelo" in types:
+        no_person = yolo_people == 0
+        not_lying = posture is not None and posture.get("max_aspect", 1.0) < 0.8
+        if no_person or not_lying:
+            types.remove("persona_en_suelo")
+            result["floor_unconfirmed"] = True
             if not types:
                 alerts = []
     if "persona_nocturna" in types and not scene.night_alert():

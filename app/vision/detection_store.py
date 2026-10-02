@@ -20,11 +20,19 @@ class FaceDetection:
     yaw: float = 0.0
 
 
+def _count_objects(objects) -> dict:
+    out: dict = {}
+    for o in objects or []:
+        out[o["c"]] = out.get(o["c"], 0) + 1
+    return out
+
+
 @dataclass
 class CameraDetection:
     cam_id: str
     person_count: int = 0
     person_bboxes: list = field(default_factory=list)
+    objects: list = field(default_factory=list)   # [{c, conf, b}] autos, perros, bolsas...
     faces: list = field(default_factory=list)
     updated_at: float = 0.0
     inference_ms: float = 0.0
@@ -109,6 +117,7 @@ class DetectionStore:
                     ],
                     "nemotron": d.nemotron,
                     "yolo_persons": d.yolo_persons,
+                    "objects": _count_objects(d.objects),
                     "yolo_ts": d.yolo_ts,
                     "updated_at": d.updated_at,
                     "inference_ms": round(d.inference_ms, 1),

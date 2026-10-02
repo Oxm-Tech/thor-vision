@@ -143,7 +143,9 @@ class VLMAnalyzer:
         if scene is None:
             return result
         yolo = (context or {}).get("person_count")
-        return normalize_result(result, scene, yolo if isinstance(yolo, int) else None)
+        aspects = (context or {}).get("aspects")
+        posture = {"max_aspect": max(aspects) if aspects else 0.0} if isinstance(aspects, list) else None
+        return normalize_result(result, scene, yolo if isinstance(yolo, int) else None, posture)
 
     def analyze(self, frame: np.ndarray, context: dict = None,
                 tag: str = "frame", scene=None) -> dict:
@@ -237,9 +239,16 @@ class VLMAnalyzer:
 
     @staticmethod
     def _person_hint(context: Optional[dict]) -> str:
+        objs = (context or {}).get("objects") or {}
+        obj_line = ("YOLO tambien ve: " + ", ".join(f"{n} {k}" for k, n in objs.items()) + ". "
+                    "Usalo para confirmar vehiculos, perros y bultos; no nombres objetos que no veas.\n") if objs else ""
         u = VLMAnalyzer._union_box(context or {})
         if not u:
-            return ""
+            if context and context.get("person_count") == 0:
+                return (obj_line + "El detector YOLO no ve personas en este encuadre ahora: no reportes personas "
+                        "ni 'persona en el suelo' salvo que las veas con total claridad; ropa u objetos en el "
+                        "piso no son personas.\n")
+            return obj_line
         x1, y1, x2, y2, fw, fh = u
         cx, cy = (x1 + x2) / 2 / fw, (y1 + y2) / 2 / fh
         horiz = "izquierda" if cx < .34 else ("centro" if cx < .67 else "derecha")
@@ -249,7 +258,7 @@ class VLMAnalyzer:
         crop = ("La 2a imagen es un recorte ampliado de esa zona: revisala primero; "
                 "si hay una persona cuentala y describe su ropa y que hace. "
                 if context.get("_has_crop") else "")
-        return (f"Un detector de personas (YOLO) marco {n} persona(s) en la zona {horiz}-{vert} "
+        return (obj_line + f"Un detector de personas (YOLO) marco {n} persona(s) en la zona {horiz}-{vert} "
                 f"del encuadre (alto ~{size}% de la imagen; puede ser pequena o lejana). "
                 f"{crop}Si de verdad no hay ninguna persona (p. ej. es un objeto), "
                 f"pon people=0.\n")

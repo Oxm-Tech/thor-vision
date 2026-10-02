@@ -33,6 +33,13 @@ def _face_sharpness(crop) -> float:
     return sharpness(crop, 64) if crop is not None and crop.size else 0.0
 
 
+# Clases COCO que importan en THOR (el resto se ignora). Misma pasada que las personas: costo marginal.
+_OBJECT_NAMES = {1: "bicicleta", 2: "auto", 3: "moto", 5: "autobus", 7: "camion", 15: "gato", 16: "perro",
+                 24: "mochila", 26: "bolso", 28: "maleta"}
+_OBJECTS_ENABLED = os.environ.get("YOLO_OBJECTS_ENABLED", "true").lower() == "true"
+_OBJECT_MIN_CONF = float(os.environ.get("YOLO_OBJECT_CONF", "0.35"))
+
+
 class VisionModels:
     def __init__(self, device: str = "cpu", yolo_conf: float = 0.25):
         self.device = device
@@ -75,12 +82,13 @@ class VisionModels:
 
     def process(self, frame: np.ndarray, cam_id: str, face_db: FaceDB) -> CameraDetection:
         t0 = time.monotonic()
-        person_bboxes = self._detect_persons(frame)
+        person_bboxes, objects = self._detect(frame)
         faces = self._detect_faces(frame, face_db, person_bboxes)
         return CameraDetection(
             cam_id=cam_id,
             person_count=len(person_bboxes),
             person_bboxes=person_bboxes,
+            objects=objects,
             faces=faces,
             updated_at=time.time(),
             inference_ms=(time.monotonic() - t0) * 1000,
@@ -88,27 +96,35 @@ class VisionModels:
             frame_h=int(frame.shape[0]),
         )
 
-    def _detect_persons(self, frame: np.ndarray) -> list:
+    def _detect(self, frame: np.ndarray) -> tuple:
+        """(personas [(x1,y1,x2,y2)], objetos [{c, conf, b}]) en una sola pasada."""
         if self._yolo is None:
-            return []
+            return [], []
         try:
+            classes = [0] + (list(_OBJECT_NAMES) if _OBJECTS_ENABLED else [])
             results = self._yolo(
                 frame,
-                classes=[0],          # class 0 = person
+                classes=classes,
                 conf=self.yolo_conf,
                 imgsz=640,
                 verbose=False,
                 device=self.device,
             )
-            bboxes = []
+            persons, objects = [], []
             for r in results:
                 for box in r.boxes:
-                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                    bboxes.append((x1, y1, x2, y2))
-            return bboxes
+                    cls = int(box.cls[0])
+                    bb = tuple(map(int, box.xyxy[0].tolist()))
+                    if cls == 0:
+                        persons.append(bb)
+                    elif cls in _OBJECT_NAMES:
+                        conf = float(box.conf[0])
+                        if conf >= _OBJECT_MIN_CONF:
+                            objects.append({"c": _OBJECT_NAMES[cls], "conf": round(conf, 2), "b": bb})
+            return persons, objects
         except Exception as exc:
             logger.debug("YOLO error: %s", exc)
-            return []
+            return [], []
 
     # Defensa en profundidad ademas del det_thresh de prepare(): si algo
     # cambia esa config mas adelante, esto sigue filtrando falsos positivos

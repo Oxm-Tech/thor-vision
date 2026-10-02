@@ -20,6 +20,13 @@ _FAKE_ALERTS = {"error", "empty response", "bad json", "encode failed",
                 "unreachable", ""}
 
 
+def _summarize_objects(objects) -> dict:
+    out: dict = {}
+    for o in objects or []:
+        out[o["c"]] = out.get(o["c"], 0) + 1
+    return out
+
+
 class VLMWorker(threading.Thread):
     """
     Worker por cámara con disparo por movimiento.
@@ -215,6 +222,8 @@ class VLMWorker(threading.Thread):
                     context = {
                         "person_count": detection.yolo_persons,
                         "person_bboxes": [tuple(b) for b in (detection.person_bboxes or [])[:4]],
+                        "objects": _summarize_objects(detection.objects),
+                        "aspects": [round((b[2] - b[0]) / max(1, b[3] - b[1]), 2) for b in (detection.person_bboxes or [])[:6]],
                         "frame_wh": (int(frame.shape[1]), int(frame.shape[0])),
                         "faces": [
                             {"name": f.name, "confidence": round(f.confidence, 2)}
