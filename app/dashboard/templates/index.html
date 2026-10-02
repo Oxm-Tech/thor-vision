@@ -941,6 +941,19 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .pet-b { padding:5px 4px; border:1px solid var(--border); border-radius:6px; background:rgba(255,255,255,.04); color:var(--text-primary); font-size:.72rem; cursor:pointer; }
 .pet-b:hover { border-color:var(--oxm-blue); }
 .pet-descartar { grid-column:1 / -1; color:var(--text-secondary); }
+.pet-sug { font-size:.72rem; padding:0 8px 4px; color:var(--oxm-blue); }
+.pet-b.sug { border-color:var(--oxm-blue); background:var(--oxm-blue-glow); }
+
+.ppl-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:10px; }
+.ppl-card img { height:120px; object-fit:cover; }
+.ppl-noface { height:120px; display:grid; place-items:center; font-size:.72rem; color:var(--text-secondary); background:#0b0e13; }
+.ppl-name { padding:6px 8px 0; font-weight:600; font-size:.82rem; }
+.ppl-sug { font-size:.7rem; padding:0 8px 4px; color:var(--oxm-blue); }
+.ppl-sim { padding:0 6px 6px; font-size:.72rem; }
+.ppl-simrow { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.ppl-simrow img { width:34px !important; height:34px !important; border-radius:6px; }
+.ppl-simrow span { flex:1; line-height:1.2; }
+.ppl-link { color:var(--oxm-blue); margin-left:8px; }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -973,6 +986,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <div class="header-clock" id="clock">—</div>
   <button class="hdr-btn" id="btn-history" title="Histórico de eventos" aria-label="Histórico de eventos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <button class="hdr-btn" id="btn-spot" title="Cómo funciona OXM Vision (animación)" aria-label="Cómo funciona OXM Vision (animación)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></button>
+  <button class="hdr-btn" id="btn-ppl" title="Clasificar personas: empleados e invitados" aria-label="Clasificar personas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14c3 0 5 1.8 5 4.5"/></svg></button>
   <button class="hdr-btn" id="btn-veh" title="Vehículos estacionados" aria-label="Vehículos estacionados"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 12h14"/></svg></button>
   <button class="hdr-btn" id="btn-pets" title="Etiquetar mascotas" aria-label="Etiquetar mascotas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 12c-3 0-5 3-5 5 0 1.6 1.3 2.5 2.8 2.5 1.1 0 1.5-.5 2.2-.5s1.1.5 2.2.5c1.5 0 2.8-.9 2.8-2.5 0-2-2-5-5-5z"/></svg></button>
   <button class="hdr-btn" id="btn-conn" title="Conexiones a las cámaras" aria-label="Conexiones a las cámaras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg></button>
@@ -2915,23 +2929,28 @@ _onDomReady(initVehicles);
 function initPets(){
   const btn = document.getElementById('btn-pets'), modal = document.getElementById('pets-modal');
   if (!btn || !modal) return;
-  const LAB = [['negro', 'Negro pequeño'], ['shiba', 'Shiba café'], ['pug', 'Pug'], ['otro', 'Otro'], ['descartar', 'Descartar']];
+  const LAB = [['akamaru', 'Akamaru'], ['mojo', 'Mojo-jojo'], ['gigi', 'Gigi'], ['otro', 'Otro'], ['descartar', 'Descartar']];
+  const NAME = Object.fromEntries(LAB);
+  let sortBy = 'random';
   async function stats(){
     try {
       const d = await (await fetch('/api/pets/stats')).json();
       const c = d.counts || {};
       document.getElementById('pet-stats').innerHTML = LAB.map(([k, n]) => `<span class="tl-chip">${n} <b>${c[k] || 0}</b></span>`).join('') + `<span class="tl-chip">Sin etiquetar <b>${c.sin_etiqueta || 0}</b></span>`
-        + (d.ready_to_train ? '<span class="tl-chip pet-ready">Listo para entrenar</span>' : '');
+        + (d.ready_to_train ? '<span class="tl-chip pet-ready">Listo para el ajuste fino</span>' : '');
     } catch (e) {}
   }
   async function more(){
     const g = document.getElementById('pet-grid');
     try {
-      const d = await (await fetch('/api/pets/crops?unlabeled=1&limit=12')).json();
+      const d = await (await fetch(`/api/pets/crops?unlabeled=1&limit=12&order=${sortBy}`)).json();
       if (!d.crops.length){ g.innerHTML = '<p class="pet-help">No quedan recortes por etiquetar. Se siguen recolectando conforme aparecen perros.</p>'; return; }
-      g.innerHTML = d.crops.map(c => `<div class="pet-card" data-id="${c.id}"><img src="/api/pets/crops/${c.id}/image" loading="lazy" alt="">
-        <div class="pet-meta">${_escapeHtml(c.cam)} · ${_escapeHtml(new Date(c.ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }))}</div>
-        <div class="pet-btns">${LAB.map(([k, n]) => `<button type="button" class="pet-b pet-${k}" data-l="${k}">${n}</button>`).join('')}</div></div>`).join('');
+      g.innerHTML = d.crops.map(c => {
+        const sug = c.pred ? `<div class="pet-sug">Sugerido: <b>${_escapeHtml(NAME[c.pred] || c.pred)}</b> ${Math.round((c.pred_conf || 0) * 100)}%</div>` : '';
+        return `<div class="pet-card" data-id="${c.id}"><img src="/api/pets/crops/${c.id}/image" loading="lazy" alt="">
+        <div class="pet-meta">${_escapeHtml(c.cam)} · ${_escapeHtml(new Date(c.ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }))}</div>${sug}
+        <div class="pet-btns">${LAB.map(([k, n]) => `<button type="button" class="pet-b pet-${k}${c.pred === k ? ' sug' : ''}" data-l="${k}">${n}</button>`).join('')}</div></div>`;
+      }).join('');
     } catch (e) { document.getElementById('pet-msg').textContent = 'Error al cargar recortes'; }
   }
   btn.addEventListener('click', () => { modal.hidden = false; stats(); more(); });
@@ -2939,6 +2958,14 @@ function initPets(){
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
   document.getElementById('pets-close')?.addEventListener('click', close);
   document.getElementById('pet-more')?.addEventListener('click', () => { stats(); more(); });
+  document.getElementById('pet-train')?.addEventListener('click', async () => {
+    const msg = document.getElementById('pet-msg'); msg.textContent = 'Entrenando con tus etiquetas…';
+    try {
+      const r = await (await fetch('/api/pets/suggest', { method:'POST' })).json();
+      msg.textContent = r.ok ? `Entrenado con ${r.trained_on} etiquetas${r.cv_accuracy != null ? ' · acierto en validación cruzada ' + Math.round(r.cv_accuracy * 100) + '%' : ''} · ${r.suggested} sugerencias` : (r.reason || 'No se pudo entrenar');
+      sortBy = 'confident'; stats(); more();
+    } catch (e) { msg.textContent = 'Error al entrenar'; }
+  });
   document.getElementById('pet-grid')?.addEventListener('click', async e => {
     const b = e.target.closest('.pet-b'); if (!b) return;
     const card = b.closest('.pet-card');
@@ -2949,6 +2976,122 @@ function initPets(){
   });
 }
 _onDomReady(initPets);
+
+// ── Clasificación de personas (por revisar / empleados / invitados) y asistencia ─────────
+function initPeopleAdmin(){
+  const btn = document.getElementById('btn-ppl'), modal = document.getElementById('ppl-modal');
+  if (!btn || !modal) return;
+  const CAT = { revisar:'Por revisar', empleado:'Empleado', invitado:'Invitado' };
+  const HELP = {
+    revisar: 'Toda persona nueva llega aquí automáticamente. Clasifícala como Empleado (entra al reporte de asistencia) o Invitado (solo cantidades y capturas). "Sugerido" marca a quienes ya tienen nombre.',
+    empleado: 'Personal de OXM: se les calcula la asistencia con las cámaras interiores. Nunca caducan.',
+    invitado: 'Externos: no tienen reporte de asistencia, solo conteos y capturas. Sus datos se conservan 90 días.',
+  };
+  let cat = 'revisar';
+  const ago = ts => _fmtAgo(Date.now() / 1000 - ts);
+  async function counts(){
+    try {
+      const d = (await (await fetch('/api/people/overview')).json()).categories;
+      for (const k of ['revisar', 'empleado', 'invitado']) document.getElementById('ppl-n-' + k).textContent = (d[k] || {}).total || 0;
+    } catch (e) {}
+  }
+  function card(p){
+    const sug = p.suggested ? `<div class="ppl-sug">Sugerido: ${CAT[p.suggested]}</div>` : '';
+    const b = ['empleado', 'invitado', 'revisar'].filter(k => k !== p.category).map(k => `<button type="button" class="pet-b" data-a="cat" data-c="${k}">${k === 'revisar' ? 'A revisar' : CAT[k]}</button>`).join('');
+    return `<div class="pet-card ppl-card" data-id="${p.id}">
+      ${p.has_face ? `<img src="/api/subjects/${p.id}/face" loading="lazy" alt="">` : '<div class="ppl-noface">sin rostro</div>'}
+      <div class="ppl-name">${_escapeHtml(p.name)}</div>
+      <div class="pet-meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${_escapeHtml(p.cams.slice(0, 3).join(', '))}</div>${sug}
+      <div class="pet-btns">${b}<button type="button" class="pet-b" data-a="rename">Nombre</button><button type="button" class="pet-b" data-a="similar">Parecidos</button></div>
+      <div class="ppl-sim" hidden></div></div>`;
+  }
+  async function load(){
+    const grid = document.getElementById('ppl-grid');
+    document.getElementById('ppl-help').textContent = HELP[cat] || '';
+    if (cat === 'asistencia'){ return loadAttendance(); }
+    const q = encodeURIComponent(document.getElementById('ppl-q').value.trim());
+    const named = document.getElementById('ppl-named').checked ? 1 : 0;
+    try {
+      const d = await (await fetch(`/api/people?category=${cat}&limit=120&only_named=${named}&q=${q}`)).json();
+      grid.className = 'ppl-grid';
+      grid.innerHTML = d.people.length ? d.people.map(card).join('') : '<p class="pet-help">No hay personas en esta categoría.</p>';
+    } catch (e) { grid.textContent = 'Error al cargar personas'; }
+    counts();
+  }
+  async function loadAttendance(){
+    const grid = document.getElementById('ppl-grid');
+    const date = new Date().toLocaleDateString('en-CA');
+    try {
+      const d = await (await fetch('/api/attendance?date=' + date)).json();
+      const hm = ts => ts ? new Date(ts * 1000).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
+      grid.className = '';
+      grid.innerHTML = `<div class="pet-help">Asistencia de ${_escapeHtml(d.date)}${d.partial_day ? ' (día en curso)' : ''} con las cámaras interiores: ${_escapeHtml(d.internal_cams.join(', '))}.
+        <a href="/api/attendance.csv?date=${d.date}" class="ppl-link">Descargar CSV</a></div>
+        <table class="conn-table"><thead><tr><th>Empleado</th><th>Presente</th><th>Primera vez</th><th>Última vez</th><th>Minutos en oficina</th><th>Cámaras</th></tr></thead><tbody>
+        ${d.employees.length ? d.employees.map(e => `<tr><td>${_escapeHtml(e.name)}</td><td>${e.present ? '<span class="conn-ok">sí</span>' : '<span class="conn-bad">no</span>'}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${_escapeHtml(e.cams.join(', '))}</td></tr>`).join('') : '<tr><td colspan="6" style="padding:12px;color:var(--text-secondary)">Aún no hay empleados clasificados.</td></tr>'}
+        </tbody></table>
+        <div class="pet-help" style="margin-top:12px"><b>Invitados hoy: ${d.guests.count}</b> (solo cantidades y capturas) · Personas por revisar vistas hoy: <b>${d.pending_review}</b></div>
+        <div class="ppl-grid">${d.guests.people.map(g => `<div class="pet-card"><img src="${g.snapshot}" loading="lazy" alt=""><div class="ppl-name">${_escapeHtml(g.name)}</div><div class="pet-meta">${hm(g.first_ts)}–${hm(g.last_ts)} · ${g.visits} visitas<br>${_escapeHtml(g.cams.slice(0, 3).join(', '))}</div></div>`).join('')}</div>`;
+    } catch (e) { grid.textContent = 'Error al cargar la asistencia'; }
+  }
+  async function showDuplicates(){
+    const grid = document.getElementById('ppl-grid');
+    const d = await (await fetch('/api/people/duplicates?min_sim=0.36&limit=40')).json();
+    grid.className = '';
+    grid.innerHTML = `<div class="pet-help">Pares de personas que se parecen. A partir de 45% el sistema ya los habría unido solo; los de 36 a 45% son dudosos. Revisa y fusiona los que sean la misma persona.</div>
+      <table class="conn-table"><thead><tr><th></th><th>Persona A</th><th></th><th>Persona B</th><th>Parecido</th><th></th></tr></thead><tbody>
+      ${d.pairs.length ? d.pairs.map(p => `<tr data-a="${p.a}" data-b="${p.b}"><td><img class="veh-img" style="width:48px;height:48px" src="/api/subjects/${p.a}/face" alt=""></td><td>${_escapeHtml(p.a_name)}<br><small>${CAT[p.a_cat] || p.a_cat}</small></td>
+        <td><img class="veh-img" style="width:48px;height:48px" src="/api/subjects/${p.b}/face" alt=""></td><td>${_escapeHtml(p.b_name)}<br><small>${CAT[p.b_cat] || p.b_cat}</small></td>
+        <td><b>${Math.round(p.similarity * 100)}%</b></td><td><button type="button" class="pet-b" data-a="merge-pair">Fusionar B en A</button></td></tr>`).join('') : '<tr><td colspan="6" style="padding:12px;color:var(--text-secondary)">Sin pares parecidos.</td></tr>'}
+      </tbody></table>`;
+  }
+  btn.addEventListener('click', () => { modal.hidden = false; load(); });
+  const close = () => { modal.hidden = true; };
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.getElementById('ppl-close')?.addEventListener('click', close);
+  document.getElementById('ppl-tabs')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]'); if (!b) return;
+    cat = b.dataset.c; document.querySelectorAll('#ppl-tabs .hist-range').forEach(x => x.classList.toggle('on', x === b)); load();
+  });
+  document.getElementById('ppl-q')?.addEventListener('change', load);
+  document.getElementById('ppl-named')?.addEventListener('change', load);
+  document.getElementById('ppl-dups')?.addEventListener('click', showDuplicates);
+  document.getElementById('ppl-grid')?.addEventListener('click', async e => {
+    const mp = e.target.closest('[data-a="merge-pair"]');
+    if (mp){
+      const tr = mp.closest('tr'); const a = +tr.dataset.a, b = +tr.dataset.b;
+      if (confirm(`¿Fusionar la persona #${b} dentro de la #${a}? No se puede deshacer.`)){
+        await fetch(`/api/subjects/${b}/merge`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ into: a }) });
+        tr.remove();
+      }
+      return;
+    }
+    const bt = e.target.closest('[data-a]'); const card = e.target.closest('.ppl-card');
+    if (!bt || !card) return;
+    const id = +card.dataset.id, a = bt.dataset.a;
+    if (a === 'cat'){
+      const r = await fetch(`/api/people/${id}/category`, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ category: bt.dataset.c }) });
+      if (r.ok){ card.classList.add('done'); setTimeout(() => card.remove(), 180); counts(); }
+    } else if (a === 'rename'){
+      const n = prompt('Nombre de esta persona (se aplica a todo su historial):');
+      if (n && n.trim()){ await fetch(`/api/subjects/${id}`, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name: n.trim() }) }); load(); }
+    } else if (a === 'similar'){
+      const box = card.querySelector('.ppl-sim');
+      if (!box.hidden){ box.hidden = true; return; }
+      const d = await (await fetch(`/api/people/${id}/similar?min_sim=0.3&limit=8`)).json();
+      box.innerHTML = d.similar.length ? d.similar.map(s => `<div class="ppl-simrow" data-into="${s.id}"><img src="/api/subjects/${s.id}/face" alt=""><span>${_escapeHtml(s.name)}<br><small>${CAT[s.category] || s.category} · ${Math.round(s.similarity * 100)}%</small></span><button type="button" class="pet-b" data-a="merge-into" data-into="${s.id}">Es la misma</button></div>`).join('')
+        : '<small>Nadie se parece lo suficiente.</small>';
+      box.hidden = false;
+    } else if (a === 'merge-into'){
+      const into = +bt.dataset.into;
+      if (confirm(`¿Fusionar #${id} dentro de #${into}?`)){
+        await fetch(`/api/subjects/${id}/merge`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ into }) });
+        load();
+      }
+    }
+  });
+}
+_onDomReady(initPeopleAdmin);
 
 function initConnections(){
   const btn = document.getElementById('btn-conn'), modal = document.getElementById('conn-modal');
@@ -3449,6 +3592,27 @@ setTimeout(_loadChatHistory, 300);
     </div>
   </div>
 
+  <div class="modal-backdrop" id="ppl-modal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-head"><span>Personas: empleados, invitados y por revisar</span><button class="modal-x" id="ppl-close" title="Cerrar">✕</button></div>
+      <div class="modal-body">
+        <div class="hist-controls">
+          <div class="hist-ranges" id="ppl-tabs">
+            <button class="hist-range on" data-c="revisar">Por revisar <b id="ppl-n-revisar">0</b></button>
+            <button class="hist-range" data-c="empleado">Empleados OXM <b id="ppl-n-empleado">0</b></button>
+            <button class="hist-range" data-c="invitado">Invitados <b id="ppl-n-invitado">0</b></button>
+            <button class="hist-range" data-c="asistencia">Asistencia</button>
+          </div>
+          <input class="hist-select" id="ppl-q" placeholder="Buscar nombre…" style="min-width:150px">
+          <label class="hist-check"><input type="checkbox" id="ppl-named"> solo con nombre</label>
+          <button class="hist-range" id="ppl-dups" title="Pares de personas que se parecen entre sí">Parecidos</button>
+        </div>
+        <p class="pet-help" id="ppl-help"></p>
+        <div class="ppl-grid" id="ppl-grid"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="veh-modal" hidden>
     <div class="modal modal-wide">
       <div class="modal-head"><span>Vehículos estacionados</span><button class="modal-x" id="veh-close" title="Cerrar">✕</button></div>
@@ -3467,9 +3631,9 @@ setTimeout(_loadChatHistory, 300);
       <div class="modal-head"><span>Etiquetar mascotas</span><button class="modal-x" id="pets-close" title="Cerrar">✕</button></div>
       <div class="modal-body">
         <div class="pet-stats" id="pet-stats"></div>
-        <p class="pet-help">Elige quién es cada perro. <b>Descartar</b> si el recorte no sirve (no es un perro, está cortado o borroso). Con unas 15 etiquetas de cada mascota se entrena el reconocimiento.</p>
+        <p class="pet-help">Elige quién es cada perro: Akamaru (shiba), Mojo-jojo (negro) o Gigi (shar pei). <b>Descartar</b> si no es un perro (sombras, personas) o el recorte no sirve. Después de etiquetar unos cuantos pulsa <b>Entrenar y sugerir</b>: el sistema propone la etiqueta del resto y solo confirmas.</p>
         <div class="pet-grid" id="pet-grid"></div>
-        <div class="hist-controls"><button class="hist-range" id="pet-more">Cargar más</button><span class="face-enroll-msg" id="pet-msg"></span></div>
+        <div class="hist-controls"><button class="hist-range" id="pet-more">Cargar más</button><button class="hist-range" id="pet-train" title="Entrena con tus etiquetas y sugiere el resto">Entrenar y sugerir</button><span class="face-enroll-msg" id="pet-msg"></span></div>
       </div>
     </div>
   </div>

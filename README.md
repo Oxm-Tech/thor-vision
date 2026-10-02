@@ -219,3 +219,11 @@ data/
 | [Brayan Iván López Carlos](https://github.com/brayanlopez-oxm) | Desarrollo, integración de hardware |
 
 **OXM Tech** — [oxmtech.com](https://oxmtech.com)
+
+## Documentación
+
+- [`CHANGELOG.md`](CHANGELOG.md): qué trae cada versión (el dashboard muestra la misma fuente en la barra inferior).
+- [`INTEGRATION.md`](INTEGRATION.md): contrato de API, tablas y variables de entorno.
+- [`docs/HANDOFF.md`](docs/HANDOFF.md): guía de traspaso (arquitectura, operación y convenciones).
+- [`docs/ROADMAP.md`](docs/ROADMAP.md): qué sigue y cuándo se considera terminado.
+

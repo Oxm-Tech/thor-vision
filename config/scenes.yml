@@ -14,9 +14,9 @@ night_hours: [22, 6]   # horario nocturno local (inicio, fin)
 
 # Mascotas de la casa: el VLM las reconoce y no genera alerta "animal" por ellas.
 known_pets:
-  - perro negro pequeno
-  - shiba inu color cafe (el papa)
-  - pug de Gigi
+  - Mojo-jojo (perro negro pequeno)
+  - Akamaru (shiba inu cafe, el papa)
+  - Gigi (shar pei, mas grande que Akamaru)
 
 alert_catalog:
   persona_en_suelo:        "persona caida, tirada o inmovil en el piso"

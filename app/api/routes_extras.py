@@ -99,13 +99,14 @@ def pets_stats(request: Request):
         rows = db._conn.execute("SELECT COALESCE(label,'sin_etiqueta'), COUNT(*) FROM pet_crops GROUP BY 1").fetchall()
     d = dict(rows)
     return {"counts": d, "total": sum(d.values()), "labels": list(pets_mod.LABELS),
-            "ready_to_train": all(d.get(k, 0) >= 15 for k in ("negro", "shiba", "pug"))}
+            "names": pets_mod.NAMES, "ready_to_train": all(d.get(k, 0) >= 15 for k in ("akamaru", "mojo", "gigi"))}
 
 
 @router.get("/api/pets/crops")
-def pets_crops(request: Request, unlabeled: int = 1, label: Optional[str] = None, limit: int = 24):
+def pets_crops(request: Request, unlabeled: int = 1, label: Optional[str] = None, limit: int = 24,
+               order: str = "random", pred: Optional[str] = None):
     db = _db(request)
-    sql, args = "SELECT id, cam_id, ts, cls, conf, label FROM pet_crops WHERE ", []
+    sql, args = "SELECT id, cam_id, ts, cls, conf, label, pred_label, pred_conf FROM pet_crops WHERE ", []
     if label:
         sql += "label=?"
         args.append(label)
@@ -113,13 +114,31 @@ def pets_crops(request: Request, unlabeled: int = 1, label: Optional[str] = None
         sql += "label IS NULL"
     else:
         sql += "1=1"
-    sql += " ORDER BY RANDOM() LIMIT ?"
+    if pred:
+        sql += " AND pred_label=?"
+        args.append(pred)
+    sql += " ORDER BY pred_conf DESC" if order == "confident" else " ORDER BY RANDOM()"
+    sql += " LIMIT ?"
     args.append(min(limit, 60))
     names = {c.id: c.name for c in request.app.state.config.cameras}
     with db._lock:
         rows = db._conn.execute(sql, args).fetchall()
-    return {"crops": [{"id": i, "cam": names.get(c, c), "ts": t, "cls": k, "conf": round(cf or 0, 2), "label": lb}
-                      for i, c, t, k, cf, lb in rows]}
+    return {"crops": [{"id": i, "cam": names.get(c, c), "ts": t, "cls": k, "conf": round(cf or 0, 2), "label": lb,
+                       "pred": pl, "pred_conf": round(pc, 3) if pc is not None else None}
+                      for i, c, t, k, cf, lb, pl, pc in rows]}
+
+
+@router.post("/api/pets/suggest")
+def pets_suggest(request: Request):
+    from app.vision import pet_model
+    return pet_model.train_and_suggest(_db(request))
+
+
+@router.get("/api/pets/model")
+def pets_model():
+    from app.vision import pet_model
+    m = pet_model.load_model()
+    return {"trained": bool(m), "n": m["n"] if m else 0, "ts": m["ts"] if m else None, "report": m["report"] if m else None}
 
 
 @router.get("/api/pets/crops/{cid}/image")

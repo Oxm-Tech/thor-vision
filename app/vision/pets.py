@@ -15,7 +15,8 @@ MIN_CONF = float(os.environ.get("PET_MIN_CONF", "0.45"))
 MIN_SIDE = int(os.environ.get("PET_MIN_SIDE", "36"))
 COOLDOWN_S = float(os.environ.get("PET_COOLDOWN_S", "40"))
 MAX_TOTAL = int(os.environ.get("PET_MAX_TOTAL", "4000"))
-LABELS = ("negro", "shiba", "pug", "otro", "descartar")
+LABELS = ("akamaru", "mojo", "gigi", "otro", "descartar")
+NAMES = {"akamaru": "Akamaru", "mojo": "Mojo-jojo", "gigi": "Gigi"}
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS pet_crops (
@@ -43,6 +44,12 @@ class PetCollector:
         os.makedirs(ROOT, exist_ok=True)
         with db._lock:
             db._conn.executescript(_SCHEMA)
+            for col, typ in (("pred_label", "TEXT"), ("pred_conf", "REAL")):
+                try:
+                    db._conn.execute(f"ALTER TABLE pet_crops ADD COLUMN {col} {typ}")
+                except Exception:
+                    pass
+            db._conn.commit()
             n = db._conn.execute("SELECT COUNT(*) FROM pet_crops").fetchone()[0]
         if n == 0:
             self._import_seed()

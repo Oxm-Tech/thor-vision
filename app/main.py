@@ -314,6 +314,8 @@ from app.api.routes_searxng import router as searxng_router  # noqa: E402
 app.include_router(searxng_router)
 from app.api.routes_extras import router as extras_router  # noqa: E402
 app.include_router(extras_router)
+from app.api.routes_people_admin import router as people_admin_router  # noqa: E402
+app.include_router(people_admin_router)
 app.include_router(people_router)
 
 

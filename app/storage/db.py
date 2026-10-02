@@ -171,6 +171,11 @@ class EventDB:
             scols = {r[1] for r in self._conn.execute("PRAGMA table_info(face_sightings)").fetchall()}
             if "body" not in scols:
                 self._conn.execute("ALTER TABLE face_sightings ADD COLUMN body BLOB")
+            subcols = {r[1] for r in self._conn.execute("PRAGMA table_info(subjects)").fetchall()}
+            if "category" not in subcols:
+                # por revisar (default, automatico) / empleado / invitado
+                self._conn.execute("ALTER TABLE subjects ADD COLUMN category TEXT NOT NULL DEFAULT 'revisar'")
+                self._conn.execute("CREATE INDEX IF NOT EXISTS idx_subjects_cat ON subjects(category)")
 
     # ── Inserts ───────────────────────────────────────────────────────────
 
@@ -801,18 +806,23 @@ class EventDB:
                     (n - max_person_visits,))
                 result["person_visits_deleted"] = n - max_person_visits
                 self._conn.execute(
-                    "DELETE FROM subjects WHERE named=0 AND id NOT IN "
+                    "DELETE FROM subjects WHERE named=0 AND category='revisar' AND id NOT IN "
                     "(SELECT DISTINCT subject_id FROM person_visits WHERE subject_id IS NOT NULL)")
 
-            # 6) TTL por tiempo para datos biometricos de personas sin nombre
+            # 6) TTL por tiempo de datos biometricos: por revisar sin nombre 30 d, invitados 90 d, empleados nunca
             ttl_days = float(os.environ.get("UNNAMED_TTL_DAYS", "30"))
+            guest_days = float(os.environ.get("GUEST_TTL_DAYS", "90"))
             if ttl_days > 0:
                 cut = time.time() - ttl_days * 86400
                 c1 = self._conn.execute(
                     "DELETE FROM person_visits WHERE start_ts < ? AND (subject_id IS NULL OR "
-                    "subject_id IN (SELECT id FROM subjects WHERE named=0))", (cut,)).rowcount
+                    "subject_id IN (SELECT id FROM subjects WHERE named=0 AND category='revisar'))", (cut,)).rowcount
+                if guest_days > 0:
+                    c1 += self._conn.execute(
+                        "DELETE FROM person_visits WHERE start_ts < ? AND subject_id IN "
+                        "(SELECT id FROM subjects WHERE category='invitado')", (time.time() - guest_days * 86400,)).rowcount
                 self._conn.execute(
-                    "DELETE FROM subjects WHERE named=0 AND id NOT IN "
+                    "DELETE FROM subjects WHERE ((named=0 AND category='revisar') OR category='invitado') AND id NOT IN "
                     "(SELECT DISTINCT subject_id FROM person_visits WHERE subject_id IS NOT NULL)")
                 c2 = self._conn.execute(
                     "DELETE FROM face_sightings WHERE ts < ? AND (name IS NULL OR name IN (Desconocido,Sin rostro))",

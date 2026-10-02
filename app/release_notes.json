@@ -1,24 +1,101 @@
 [
   {
+    "version": "2.3.0",
+    "date": "2026-10-02",
+    "name": "Personas: empleados e invitados",
+    "summary": "Las personas detectadas se reparten en tres bases (por revisar, empleados de OXM e invitados), con búsqueda de parecidos y la base del reporte de asistencia. Las mascotas ya tienen nombre y el sistema aprende a reconocerlas.",
+    "highlights": [
+      {
+        "area": "Personas",
+        "title": "Tres bases: por revisar, empleados e invitados",
+        "text": "Toda persona nueva queda automáticamente 'por revisar'. Desde el modal de clasificación se deriva a Empleado u Invitado con un clic, o se regresa a revisión. Las personas que ya tienen nombre aparecen con la sugerencia 'Empleado'. Las categorías aplican a todas las cámaras."
+      },
+      {
+        "area": "Personas",
+        "title": "Parecidos y fusión",
+        "text": "Cada persona muestra quiénes se le parecen, con porcentaje y botón 'Es la misma', y hay una vista de pares dudosos. Se encontraron 2 pares de 70 % o más y 31 entre 55 y 70 %: sujetos existentes que el sistema nunca volvió a comparar entre sí."
+      },
+      {
+        "area": "Asistencia",
+        "title": "Base del reporte de asistencia",
+        "text": "/api/attendance y /api/attendance.csv calculan por día, solo para empleados y con las cámaras interiores, la primera y última vez que se vio a cada uno, los minutos en la oficina (huecos menores a 10 minutos cuentan como presencia) y las cámaras. A los invitados solo se les reportan cantidades y capturas."
+      },
+      {
+        "area": "Datos",
+        "title": "Retención por categoría",
+        "text": "Los empleados no caducan. Los invitados se conservan 90 días (GUEST_TTL_DAYS) y las personas por revisar sin nombre 30 días. El recorte automático por tope de visitas ya no borra empleados ni invitados."
+      },
+      {
+        "area": "Mascotas",
+        "title": "Akamaru, Mojo-jojo y Gigi",
+        "text": "Las tres mascotas tienen nombre propio en el etiquetado y en las reglas de escena (Akamaru es el shiba café, Mojo-jojo el perro negro pequeño y Gigi el shar pei, más grande que Akamaru)."
+      },
+      {
+        "area": "Mascotas",
+        "title": "Entrenar y sugerir",
+        "text": "Con las etiquetas puestas, el botón 'Entrenar y sugerir' entrena un clasificador sobre las características de una red ImageNet, mide su acierto con validación cruzada y propone etiqueta para el resto de los recortes, para que solo se confirme. El ajuste fino completo llega con unas 60 etiquetas."
+      }
+    ],
+    "fixes": [],
+    "notes": [
+      "Videoportero: identificado como Dahua VTO (el panel exterior y dos monitores VTH interiores). La captura del timbre queda pendiente de credenciales de un usuario dedicado en el equipo.",
+      "Pendiente: consolidación automática de sujetos duplicados y el reporte de asistencia con interfaz propia."
+    ]
+  },
+  {
     "version": "2.2.0",
     "date": "2026-10-02",
     "name": "Vision Agent, vehículos y mascotas",
     "summary": "El asistente pasa a ser Vision Agent completo (Morphic en español sobre tus cámaras), YOLO reconoce objetos y se estrenan el registro de vehículos estacionados y el etiquetado de mascotas.",
     "highlights": [
-      {"area": "Vision Agent", "title": "Asistente completo sobre tus datos", "text": "El botón del chat abre Morphic auto-hospedado, en español, con fuentes citadas, capturas, preguntas relacionadas e historial. No busca en la web: consulta alertas, personas, capturas y vehículos de THOR. Los botones de ejemplo (Alertas, Personas, Cámaras, Capturas, Reportes) son preguntas que el sistema sabe responder."},
-      {"area": "Visión", "title": "YOLO reconoce objetos, no solo personas", "text": "En la misma pasada detecta autos, motos, camiones, autobuses, bicicletas, perros, gatos, mochilas, bolsos y maletas, sin costo extra medible. Las cajas quedan guardadas y se le dan al VLM como pista para describir mejor la escena. Se apaga con YOLO_OBJECTS_ENABLED=false."},
-      {"area": "Alertas", "title": "Menos falsas 'persona en el suelo'", "text": "Una captura reveló que el VLM inventaba personas caídas en una oficina vacía. Ahora la alerta solo pasa si YOLO ve una persona con forma horizontal; si no, se descarta y queda la descripción."},
-      {"area": "Vehículos", "title": "Registro de vehículos estacionados", "text": "En Exterior 1 y 2, todo vehículo quieto más de 3 minutos queda registrado con miniatura, hora de llegada, permanencia y estado (estacionado o se fue). La placa se puede capturar a mano; la lectura automática no está incluida porque solo es viable en los 1 o 2 lugares más cercanos de la cámara de 5 MP."},
-      {"area": "Mascotas", "title": "Etiquetado de las tres mascotas", "text": "El sistema recolecta recortes de perros y gatos y ofrece una página para etiquetarlos (negro, shiba, pug, otro). Con unas 15 etiquetas por mascota se podrá entrenar el reconocimiento, para que la alerta de animal solo salte con perros desconocidos."},
-      {"area": "Línea de tiempo", "title": "Curvas dinámicas", "text": "El carril General dibuja áreas apiladas suaves por tipo de alerta, con el tramo en curso punteado, burbuja con el valor al pasar el mouse y animación al cargar."},
-      {"area": "Reportes", "title": "Reportes completos", "text": "El tope de 900 tokens cortaba los reportes de periodos con muchas alertas y se perdían las secciones 3 y 4. Subió a 1,600 tokens con 120 s de espera."},
-      {"area": "Plataforma", "title": "Versión y notas de release", "text": "La versión actual aparece en la barra inferior; al pulsarla se abre este historial con lo que trae cada release."}
+      {
+        "area": "Vision Agent",
+        "title": "Asistente completo sobre tus datos",
+        "text": "El botón del chat abre Morphic auto-hospedado, en español, con fuentes citadas, capturas, preguntas relacionadas e historial. No busca en la web: consulta alertas, personas, capturas y vehículos de THOR. Los botones de ejemplo (Alertas, Personas, Cámaras, Capturas, Reportes) son preguntas que el sistema sabe responder."
+      },
+      {
+        "area": "Visión",
+        "title": "YOLO reconoce objetos, no solo personas",
+        "text": "En la misma pasada detecta autos, motos, camiones, autobuses, bicicletas, perros, gatos, mochilas, bolsos y maletas, sin costo extra medible. Las cajas quedan guardadas y se le dan al VLM como pista para describir mejor la escena. Se apaga con YOLO_OBJECTS_ENABLED=false."
+      },
+      {
+        "area": "Alertas",
+        "title": "Menos falsas 'persona en el suelo'",
+        "text": "Una captura reveló que el VLM inventaba personas caídas en una oficina vacía. Ahora la alerta solo pasa si YOLO ve una persona con forma horizontal; si no, se descarta y queda la descripción."
+      },
+      {
+        "area": "Vehículos",
+        "title": "Registro de vehículos estacionados",
+        "text": "En Exterior 1 y 2, todo vehículo quieto más de 3 minutos queda registrado con miniatura, hora de llegada, permanencia y estado (estacionado o se fue). La placa se puede capturar a mano; la lectura automática no está incluida porque solo es viable en los 1 o 2 lugares más cercanos de la cámara de 5 MP."
+      },
+      {
+        "area": "Mascotas",
+        "title": "Etiquetado de las tres mascotas",
+        "text": "El sistema recolecta recortes de perros y gatos y ofrece una página para etiquetarlos (negro, shiba, pug, otro). Con unas 15 etiquetas por mascota se podrá entrenar el reconocimiento, para que la alerta de animal solo salte con perros desconocidos."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Curvas dinámicas",
+        "text": "El carril General dibuja áreas apiladas suaves por tipo de alerta, con el tramo en curso punteado, burbuja con el valor al pasar el mouse y animación al cargar."
+      },
+      {
+        "area": "Reportes",
+        "title": "Reportes completos",
+        "text": "El tope de 900 tokens cortaba los reportes de periodos con muchas alertas y se perdían las secciones 3 y 4. Subió a 1,600 tokens con 120 s de espera."
+      },
+      {
+        "area": "Plataforma",
+        "title": "Versión y notas de release",
+        "text": "La versión actual aparece en la barra inferior; al pulsarla se abre este historial con lo que trae cada release."
+      }
     ],
     "fixes": [
       "El entrenamiento de prompts ya no puntúa como cero una falla del gateway: reintenta con espera y se detiene.",
       "La cola de entrenamiento comprueba que el gateway y el cupo de Claude respondan antes de empezar."
     ],
-    "notes": ["Pendiente: lectura automática de placas, reconocimiento de mascotas por nombre, y dibujar cajas sobre las detecciones solo cuando existan."]
+    "notes": [
+      "Pendiente: lectura automática de placas, reconocimiento de mascotas por nombre, y dibujar cajas sobre las detecciones solo cuando existan."
+    ]
   },
   {
     "version": "2.1.0",
@@ -26,18 +103,66 @@
     "name": "Reglas por cámara y asistente con memoria",
     "summary": "Cada cámara tiene su propio horario y criterio de alerta, los reportes y el chat usan cifras exactas de la base y aparece la línea de tiempo de alertas.",
     "highlights": [
-      {"area": "Cámaras", "title": "Vista de conexiones", "text": "El botón de conexiones muestra por cámara la IP, el puerto y la ruta RTSP (sin credenciales), el decodificador usado, la resolución nativa, el estado, los fps y el estado de SUNAPI (movimiento y snapshots)."},
-      {"area": "Cámaras", "title": "Rótulo, fecha y hora en la imagen", "text": "Las 10 cámaras muestran su nombre real, fecha y hora grabados en el video. La hora sincroniza por NTP."},
-      {"area": "Reglas", "title": "Horarios y criterios por cámara", "text": "Sala de Juntas alerta solo de 00:00 a 06:00 entre semana y no los fines de semana; Cocina de 00:00 a 07:00; Escaleras de entrada vigila merodeo y actividad en fin de semana; Acceso Site alerta con cualquier persona. En exteriores un auto solo alerta si lo fuerzan, no por recargarse en él."},
-      {"area": "Reglas", "title": "Personas y mascotas conocidas", "text": "En cocina y garages las personas con nombre reconocido por rostro no generan alerta nocturna ni de acceso, y las tres mascotas de la casa no generan alerta de animal."},
-      {"area": "Alertas", "title": "Uso de teléfono en exteriores", "text": "Nueva alerta cuando alguien mira o usa su teléfono afuera, aunque a lo lejos solo se vea una luz en la mano."},
-      {"area": "Reportes y chat", "title": "Hechos exactos del periodo", "text": "Los conteos por cámara, tipo de alerta, personas y visitas se calculan en la base, con comparación contra el periodo anterior, y el modelo solo redacta. Ya no se cortan en 200 alertas ni se inventan cifras."},
-      {"area": "Chat", "title": "Memoria por sesión y capturas", "text": "El chat recuerda la conversación, entiende 'esas alertas', adjunta las capturas de las alertas con las personas conocidas presentes y acepta rangos escritos como 'entre 21:00 y 22:00'."},
-      {"area": "Modelos", "title": "DeepSeek para chat y reportes", "text": "El chat y los reportes usan DeepSeek con su propia llave del gateway; el análisis de cámaras sigue con Qwen."},
-      {"area": "Vision Agent", "title": "Chat en streaming con evidencia", "text": "Respuesta que aparece mientras se genera, con proceso consultado, evidencia citada [E#], capturas, preguntas relacionadas y calificación 👍/👎."},
-      {"area": "Línea de tiempo", "title": "Alertas por cámara", "text": "Carril general y un carril por cámara con zoom +/−, desplazamiento con las flechas y selección de un rango para preguntarle al asistente."},
-      {"area": "Interfaz", "title": "Chat flotante, íconos y accesibilidad", "text": "El chat es un botón flotante desplegable; los íconos son SVG, hay foco visible, se respeta 'reducir movimiento' y Esc cierra los modales. Se agrega una animación que explica el pipeline."},
-      {"area": "Plataforma", "title": "Repositorio y CI", "text": "El código se sincroniza con GitHub con revisión por PR, escaneo de secretos y chequeo estático, y las variables NEMOTRON_* pasan a VLM_* conservando las anteriores."}
+      {
+        "area": "Cámaras",
+        "title": "Vista de conexiones",
+        "text": "El botón de conexiones muestra por cámara la IP, el puerto y la ruta RTSP (sin credenciales), el decodificador usado, la resolución nativa, el estado, los fps y el estado de SUNAPI (movimiento y snapshots)."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Rótulo, fecha y hora en la imagen",
+        "text": "Las 10 cámaras muestran su nombre real, fecha y hora grabados en el video. La hora sincroniza por NTP."
+      },
+      {
+        "area": "Reglas",
+        "title": "Horarios y criterios por cámara",
+        "text": "Sala de Juntas alerta solo de 00:00 a 06:00 entre semana y no los fines de semana; Cocina de 00:00 a 07:00; Escaleras de entrada vigila merodeo y actividad en fin de semana; Acceso Site alerta con cualquier persona. En exteriores un auto solo alerta si lo fuerzan, no por recargarse en él."
+      },
+      {
+        "area": "Reglas",
+        "title": "Personas y mascotas conocidas",
+        "text": "En cocina y garages las personas con nombre reconocido por rostro no generan alerta nocturna ni de acceso, y las tres mascotas de la casa no generan alerta de animal."
+      },
+      {
+        "area": "Alertas",
+        "title": "Uso de teléfono en exteriores",
+        "text": "Nueva alerta cuando alguien mira o usa su teléfono afuera, aunque a lo lejos solo se vea una luz en la mano."
+      },
+      {
+        "area": "Reportes y chat",
+        "title": "Hechos exactos del periodo",
+        "text": "Los conteos por cámara, tipo de alerta, personas y visitas se calculan en la base, con comparación contra el periodo anterior, y el modelo solo redacta. Ya no se cortan en 200 alertas ni se inventan cifras."
+      },
+      {
+        "area": "Chat",
+        "title": "Memoria por sesión y capturas",
+        "text": "El chat recuerda la conversación, entiende 'esas alertas', adjunta las capturas de las alertas con las personas conocidas presentes y acepta rangos escritos como 'entre 21:00 y 22:00'."
+      },
+      {
+        "area": "Modelos",
+        "title": "DeepSeek para chat y reportes",
+        "text": "El chat y los reportes usan DeepSeek con su propia llave del gateway; el análisis de cámaras sigue con Qwen."
+      },
+      {
+        "area": "Vision Agent",
+        "title": "Chat en streaming con evidencia",
+        "text": "Respuesta que aparece mientras se genera, con proceso consultado, evidencia citada [E#], capturas, preguntas relacionadas y calificación 👍/👎."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Alertas por cámara",
+        "text": "Carril general y un carril por cámara con zoom +/−, desplazamiento con las flechas y selección de un rango para preguntarle al asistente."
+      },
+      {
+        "area": "Interfaz",
+        "title": "Chat flotante, íconos y accesibilidad",
+        "text": "El chat es un botón flotante desplegable; los íconos son SVG, hay foco visible, se respeta 'reducir movimiento' y Esc cierra los modales. Se agrega una animación que explica el pipeline."
+      },
+      {
+        "area": "Plataforma",
+        "title": "Repositorio y CI",
+        "text": "El código se sincroniza con GitHub con revisión por PR, escaneo de secretos y chequeo estático, y las variables NEMOTRON_* pasan a VLM_* conservando las anteriores."
+      }
     ],
     "fixes": [
       "cam-191 volvía a FFmpeg por software tras una caída y no regresaba a NVDEC: ahora reintenta.",
@@ -52,17 +177,53 @@
     "name": "Personas, escenas y movimiento nativo",
     "summary": "El sistema deja de analizar a ciegas: usa el movimiento de la propia cámara, entiende cada escena y sigue a las personas con identidad entre visitas.",
     "highlights": [
-      {"area": "Cámaras", "title": "Movimiento nativo por SUNAPI", "text": "El detector de movimiento de las cámaras Hanwha disparó el análisis en las 10 cámaras. El 67 % de las llamadas al modelo eran latidos sin actividad; ahora el latido es cada 15 minutos."},
-      {"area": "VLM", "title": "Prompt y alertas por cámara", "text": "config/scenes.yml define dónde está cada cámara, qué importa, qué ignorar y qué alertas permite. El resultado se valida y se sanea, y no se llama al modelo si YOLO no vio una persona."},
-      {"area": "Personas", "title": "Visitas e identidades", "text": "Cada persona seguida en una cámara es una visita con su mejor rostro y cuerpo. Los rostros se agrupan en sujetos 'Persona #N' que se pueden renombrar, fusionar o borrar, con modal de Personas e identidades."},
-      {"area": "Captura", "title": "Pre-roll y análisis retroactivo", "text": "Se guardan 6 segundos de cuadros a resolución nativa por cámara; al detectar a alguien se reanalizan los cuadros anteriores para recuperar el momento real de llegada."},
-      {"area": "Rostros", "title": "Caza de rostros", "text": "Mientras una persona no tiene buen rostro, YOLO sube a 4 fps y se piden snapshots completos a la cámara, filtrando por nitidez y pose."},
-      {"area": "Descripciones", "title": "Descripciones siempre descriptivas", "text": "Se acabó el 'Sin actividad relevante': cada evento describe la escena aunque no haya alerta, y el VLM recibe un recorte ampliado de las personas."},
-      {"area": "Datos", "title": "Retención de datos biométricos", "text": "Los datos de personas sin nombre caducan a los 30 días; los nombrados se conservan."},
-      {"area": "Dashboard", "title": "Indicadores y medidores", "text": "Cada tarjeta muestra movimiento, YOLO y última consulta al VLM. El medidor de GPU usa nvidia-smi y el de CPU el uso real."}
+      {
+        "area": "Cámaras",
+        "title": "Movimiento nativo por SUNAPI",
+        "text": "El detector de movimiento de las cámaras Hanwha disparó el análisis en las 10 cámaras. El 67 % de las llamadas al modelo eran latidos sin actividad; ahora el latido es cada 15 minutos."
+      },
+      {
+        "area": "VLM",
+        "title": "Prompt y alertas por cámara",
+        "text": "config/scenes.yml define dónde está cada cámara, qué importa, qué ignorar y qué alertas permite. El resultado se valida y se sanea, y no se llama al modelo si YOLO no vio una persona."
+      },
+      {
+        "area": "Personas",
+        "title": "Visitas e identidades",
+        "text": "Cada persona seguida en una cámara es una visita con su mejor rostro y cuerpo. Los rostros se agrupan en sujetos 'Persona #N' que se pueden renombrar, fusionar o borrar, con modal de Personas e identidades."
+      },
+      {
+        "area": "Captura",
+        "title": "Pre-roll y análisis retroactivo",
+        "text": "Se guardan 6 segundos de cuadros a resolución nativa por cámara; al detectar a alguien se reanalizan los cuadros anteriores para recuperar el momento real de llegada."
+      },
+      {
+        "area": "Rostros",
+        "title": "Caza de rostros",
+        "text": "Mientras una persona no tiene buen rostro, YOLO sube a 4 fps y se piden snapshots completos a la cámara, filtrando por nitidez y pose."
+      },
+      {
+        "area": "Descripciones",
+        "title": "Descripciones siempre descriptivas",
+        "text": "Se acabó el 'Sin actividad relevante': cada evento describe la escena aunque no haya alerta, y el VLM recibe un recorte ampliado de las personas."
+      },
+      {
+        "area": "Datos",
+        "title": "Retención de datos biométricos",
+        "text": "Los datos de personas sin nombre caducan a los 30 días; los nombrados se conservan."
+      },
+      {
+        "area": "Dashboard",
+        "title": "Indicadores y medidores",
+        "text": "Cada tarjeta muestra movimiento, YOLO y última consulta al VLM. El medidor de GPU usa nvidia-smi y el de CPU el uso real."
+      }
     ],
-    "fixes": ["El VLM fallaba 9 % de las veces por exceder el contexto: el video se reescala a 640x360."],
-    "notes": ["Nemotron se renombra a VLM en el código; los tipos guardados en la base se conservan."]
+    "fixes": [
+      "El VLM fallaba 9 % de las veces por exceder el contexto: el video se reescala a 640x360."
+    ],
+    "notes": [
+      "Nemotron se renombra a VLM en el código; los tipos guardados en la base se conservan."
+    ]
   },
   {
     "version": "1.2.0",
@@ -70,11 +231,31 @@
     "name": "Captura por hardware y rostros",
     "summary": "La decodificación pasa al hardware del Jetson y el sistema empieza a recordar rostros y a clasificar alertas.",
     "highlights": [
-      {"area": "Captura", "title": "GStreamer con NVDEC", "text": "La decodificación de video pasó de FFmpeg por software a hardware: el CPU del contenedor bajó de 434 % a 47 %."},
-      {"area": "Captura", "title": "Resolución nativa", "text": "Las 10 cámaras se procesan a su resolución real; cam-113 recibe su formato vertical."},
-      {"area": "Rostros", "title": "Miniaturas e historial", "text": "Los rostros detectados se guardan como miniatura y hay un historial consultable."},
-      {"area": "Alertas", "title": "Triage 👍/👎 y reportes", "text": "Cada alerta se puede marcar importante o ruido, y un reporte generado por IA resume el periodo usando ese criterio."},
-      {"area": "Observabilidad", "title": "Consumo de IA en Grafana", "text": "El dashboard separa errores del gateway por código y muestra latencias."}
+      {
+        "area": "Captura",
+        "title": "GStreamer con NVDEC",
+        "text": "La decodificación de video pasó de FFmpeg por software a hardware: el CPU del contenedor bajó de 434 % a 47 %."
+      },
+      {
+        "area": "Captura",
+        "title": "Resolución nativa",
+        "text": "Las 10 cámaras se procesan a su resolución real; cam-113 recibe su formato vertical."
+      },
+      {
+        "area": "Rostros",
+        "title": "Miniaturas e historial",
+        "text": "Los rostros detectados se guardan como miniatura y hay un historial consultable."
+      },
+      {
+        "area": "Alertas",
+        "title": "Triage 👍/👎 y reportes",
+        "text": "Cada alerta se puede marcar importante o ruido, y un reporte generado por IA resume el periodo usando ese criterio."
+      },
+      {
+        "area": "Observabilidad",
+        "title": "Consumo de IA en Grafana",
+        "text": "El dashboard separa errores del gateway por código y muestra latencias."
+      }
     ],
     "fixes": [
       "Los fps reportados eran ráfagas y no la tasa real; ahora se calculan en una ventana.",
@@ -89,11 +270,31 @@
     "name": "Dashboard operativo",
     "summary": "El dashboard gana configuración, histórico y chat con memoria del pasado.",
     "highlights": [
-      {"area": "Dashboard", "title": "Rediseño y panel de configuración", "text": "Nuevo diseño verde NVIDIA, histórico con filtros por rango y cámara, grid movible y línea de eventos al fondo."},
-      {"area": "Chat", "title": "Chat con histórico real", "text": "La ventana de tiempo se infiere de la pregunta; hasta 12 horas se lista evento por evento y más allá se resume."},
-      {"area": "Cámaras", "title": "Nombres y zonas reales", "text": "Las cámaras tienen nombre y zona, y Cowork suma un pipeline de detalle de pantallas."},
-      {"area": "Auditoría", "title": "Quién consulta el sitio", "text": "Cada acceso al dashboard queda registrado con IP y navegador, además de la analítica con Umami."},
-      {"area": "Modelos", "title": "Gateway LLM", "text": "El análisis pasa por un gateway con reintentos ante fallas transitorias."}
+      {
+        "area": "Dashboard",
+        "title": "Rediseño y panel de configuración",
+        "text": "Nuevo diseño verde NVIDIA, histórico con filtros por rango y cámara, grid movible y línea de eventos al fondo."
+      },
+      {
+        "area": "Chat",
+        "title": "Chat con histórico real",
+        "text": "La ventana de tiempo se infiere de la pregunta; hasta 12 horas se lista evento por evento y más allá se resume."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Nombres y zonas reales",
+        "text": "Las cámaras tienen nombre y zona, y Cowork suma un pipeline de detalle de pantallas."
+      },
+      {
+        "area": "Auditoría",
+        "title": "Quién consulta el sitio",
+        "text": "Cada acceso al dashboard queda registrado con IP y navegador, además de la analítica con Umami."
+      },
+      {
+        "area": "Modelos",
+        "title": "Gateway LLM",
+        "text": "El análisis pasa por un gateway con reintentos ante fallas transitorias."
+      }
     ],
     "fixes": [],
     "notes": []
@@ -104,12 +305,30 @@
     "name": "Lanzamiento inicial",
     "summary": "Primera versión publicada de THOR Vision.",
     "highlights": [
-      {"area": "Captura", "title": "RTSP multicámara", "text": "Un hilo por cámara, con buffer circular en memoria."},
-      {"area": "Análisis", "title": "Escena con modelo multimodal", "text": "El modelo solo se consulta cuando hay movimiento."},
-      {"area": "Dashboard", "title": "Cuadrícula en vivo y chat", "text": "Estado de las cámaras, snapshots y preguntas en lenguaje natural."},
-      {"area": "Datos", "title": "Persistencia y retención", "text": "Eventos y snapshots en SQLite y disco, con borrado automático."}
+      {
+        "area": "Captura",
+        "title": "RTSP multicámara",
+        "text": "Un hilo por cámara, con buffer circular en memoria."
+      },
+      {
+        "area": "Análisis",
+        "title": "Escena con modelo multimodal",
+        "text": "El modelo solo se consulta cuando hay movimiento."
+      },
+      {
+        "area": "Dashboard",
+        "title": "Cuadrícula en vivo y chat",
+        "text": "Estado de las cámaras, snapshots y preguntas en lenguaje natural."
+      },
+      {
+        "area": "Datos",
+        "title": "Persistencia y retención",
+        "text": "Eventos y snapshots en SQLite y disco, con borrado automático."
+      }
     ],
     "fixes": [],
-    "notes": ["Autor del lanzamiento inicial: Diego Reyes."]
+    "notes": [
+      "Autor del lanzamiento inicial: Diego Reyes."
+    ]
   }
 ]

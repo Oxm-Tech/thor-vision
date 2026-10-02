@@ -2,6 +2,21 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.3.0 — Personas: empleados e invitados (2026-10-02)
+
+Las personas detectadas se reparten en tres bases (por revisar, empleados de OXM e invitados), con búsqueda de parecidos y la base del reporte de asistencia. Las mascotas ya tienen nombre y el sistema aprende a reconocerlas.
+
+- **Personas · Tres bases: por revisar, empleados e invitados**: Toda persona nueva queda automáticamente 'por revisar'. Desde el modal de clasificación se deriva a Empleado u Invitado con un clic, o se regresa a revisión. Las personas que ya tienen nombre aparecen con la sugerencia 'Empleado'. Las categorías aplican a todas las cámaras.
+- **Personas · Parecidos y fusión**: Cada persona muestra quiénes se le parecen, con porcentaje y botón 'Es la misma', y hay una vista de pares dudosos. Se encontraron 2 pares de 70 % o más y 31 entre 55 y 70 %: sujetos existentes que el sistema nunca volvió a comparar entre sí.
+- **Asistencia · Base del reporte de asistencia**: /api/attendance y /api/attendance.csv calculan por día, solo para empleados y con las cámaras interiores, la primera y última vez que se vio a cada uno, los minutos en la oficina (huecos menores a 10 minutos cuentan como presencia) y las cámaras. A los invitados solo se les reportan cantidades y capturas.
+- **Datos · Retención por categoría**: Los empleados no caducan. Los invitados se conservan 90 días (GUEST_TTL_DAYS) y las personas por revisar sin nombre 30 días. El recorte automático por tope de visitas ya no borra empleados ni invitados.
+- **Mascotas · Akamaru, Mojo-jojo y Gigi**: Las tres mascotas tienen nombre propio en el etiquetado y en las reglas de escena (Akamaru es el shiba café, Mojo-jojo el perro negro pequeño y Gigi el shar pei, más grande que Akamaru).
+- **Mascotas · Entrenar y sugerir**: Con las etiquetas puestas, el botón 'Entrenar y sugerir' entrena un clasificador sobre las características de una red ImageNet, mide su acierto con validación cruzada y propone etiqueta para el resto de los recortes, para que solo se confirme. El ajuste fino completo llega con unas 60 etiquetas.
+
+Notas:
+- Videoportero: identificado como Dahua VTO (el panel exterior y dos monitores VTH interiores). La captura del timbre queda pendiente de credenciales de un usuario dedicado en el equipo.
+- Pendiente: consolidación automática de sujetos duplicados y el reporte de asistencia con interfaz propia.
+
 ## v2.2.0 — Vision Agent, vehículos y mascotas (2026-10-02)
 
 El asistente pasa a ser Vision Agent completo (Morphic en español sobre tus cámaras), YOLO reconoce objetos y se estrenan el registro de vehículos estacionados y el etiquetado de mascotas.

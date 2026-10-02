@@ -195,7 +195,7 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
             alerts = []
     if "animal" in types and scene.known_pets:
         blob = (act + " " + " ".join(alerts)).lower()
-        if re.search(r"mascota|pug|shiba|perro negro peque|perros? (de la casa|conocid)", blob):
+        if re.search(r"mascota|akamaru|mojo|gigi|shar|shiba|perro negro peque|perros? (de la casa|conocid)", blob):
             types.remove("animal")
             if not types:
                 alerts = []

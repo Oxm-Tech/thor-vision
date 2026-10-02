@@ -41,3 +41,22 @@ Documento vivo para quien desarrolla sobre THOR Vision (Thor en producción, for
 ## Pendiente de diseño
 
 - Correlación de identidades sin rostro (ReID de cuerpo + mapa de cámaras): ver el issue correspondiente.
+
+## Ampliación del contrato (v2.3.0)
+
+**Endpoints nuevos**
+
+| Área | Endpoints |
+|---|---|
+| Versión | `GET /api/version`, `GET /api/releases` |
+| Personas | `GET /api/people?category=`, `PATCH /api/people/{id}/category`, `POST /api/people/bulk-category`, `GET /api/people/{id}/similar`, `GET /api/people/duplicates`, `GET /api/people/overview` |
+| Asistencia | `GET /api/attendance?date=`, `GET /api/attendance.csv?date=` |
+| Vehículos | `GET /api/vehicles`, `GET /api/vehicles/{id}/image`, `PATCH /api/vehicles/{id}` (placa y nota) |
+| Mascotas | `GET /api/pets/stats`, `GET /api/pets/crops`, `POST /api/pets/crops/{id}/label`, `POST /api/pets/suggest`, `GET /api/pets/model` |
+| Chat | `POST /api/chat/stream` (SSE), `POST /api/chat/feedback` |
+| Línea de tiempo | `GET /api/timeline` |
+| Búsqueda del Vision Agent | `GET /searxng/search` (formato compatible con SearXNG, usado por Morphic) |
+
+**Tablas nuevas o ampliadas:** `subjects.category`, `parked_vehicles`, `pet_crops` (con `pred_label` y `pred_conf`), `chat_feedback`.
+
+**Variables nuevas:** `YOLO_OBJECTS_ENABLED`, `YOLO_OBJECT_CONF`, `PARKED_CAMS`, `PARKED_MIN_S`, `PARKED_GONE_S`, `PET_COLLECT`, `PET_MAX_TOTAL`, `GUEST_TTL_DAYS`, `CHAT_MODEL`, `CHAT_API_KEY`, `REPORT_MODEL`, `REPORT_API_KEY`.
