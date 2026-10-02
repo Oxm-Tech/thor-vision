@@ -34,6 +34,7 @@ AGENT_RULES = """## Formato de respuesta (obligatorio)
 - Cita la evidencia: al final de cada oración que use un evento agrega su etiqueta después del punto, por ejemplo: "Hubo 14 alertas nocturnas en Sala de Juntas. [E1]". Varias juntas: [E1][E3]. Usa solo etiquetas que existan.
 - Horas: usa la hora local HH:MM de la evidencia o de los hechos. Los turnos anteriores pueden traer tiempos relativos viejos: nunca los copies, recalcula con los datos actuales.
 - "Visitas" no son personas distintas; personas distintas = sujetos identificados por rostro.
+- El usuario puede elegir un rango exacto en la línea de tiempo del panel; si los hechos dicen "PERIODO: X a Y", responde solo sobre ese periodo y menciónalo.
 
 ## Preguntas relacionadas
 Después de tu conclusión genera exactamente 3 preguntas de seguimiento en un bloque:
@@ -49,6 +50,37 @@ Después de tu conclusión genera exactamente 3 preguntas de seguimiento en un b
 class StreamRequest(BaseModel):
     message: str
     history: list = []
+    since: Optional[float] = None    # rango exacto elegido en la linea de tiempo
+    until: Optional[float] = None
+    cam_id: Optional[str] = None
+
+
+_CLOCK_RANGE_RE = re.compile(r"\b(?:entre(?: las?)?|de(?: las?)?|desde(?: las?)?)\s*(\d{1,2})(?::(\d{2}))?\s*(?:h|hrs)?\s*"
+                             r"(?:y(?: las?)?|a(?: las?)?|hasta(?: las?)?|-)\s*(\d{1,2})(?::(\d{2}))?", re.I)
+
+
+def _clock_range(msg: str, now: float) -> Optional[tuple]:
+    """'entre 21:30 y 22:15' -> (since, until) de hoy; si el rango aun no ocurre hoy, es de ayer."""
+    m = _CLOCK_RANGE_RE.search(msg or "")
+    if not m:
+        return None
+    h1, m1, h2, m2 = int(m.group(1)), int(m.group(2) or 0), int(m.group(3)), int(m.group(4) or 0)
+    if h1 > 23 or h2 > 24 or m1 > 59 or m2 > 59:
+        return None
+    lt = time.localtime(now)
+    day0 = time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 0, 0, 0, 0, 0, -1))
+    a, b = day0 + h1 * 3600 + m1 * 60, day0 + h2 * 3600 + m2 * 60
+    if b <= a:
+        b += 86400
+    if a > now:
+        a, b = a - 86400, b - 86400
+    return a, min(b, now)
+
+
+def _range_label(since: float, until: float) -> str:
+    fmt = "%d-%b %H:%M"
+    same_day = time.strftime("%Y%m%d", time.localtime(since)) == time.strftime("%Y%m%d", time.localtime(until))
+    return f"{time.strftime(fmt, time.localtime(since))} a {time.strftime('%H:%M' if same_day else fmt, time.localtime(until))}"
 
 
 class FeedbackRequest(BaseModel):
@@ -249,26 +281,37 @@ def _prepare(req: StreamRequest, request: Request, session_id: str) -> dict:
             hours = rc._explicit_hours(q)
             if hours is not None:
                 break
-    needs = rc._question_needs_history(msg) or bool(rc._IMG_RE.search(msg)) or hours is not None
+    now = time.time()
+    window = None
+    if req.since and req.until and req.until > req.since:
+        window = (float(req.since), min(float(req.until), now))
+    else:
+        window = _clock_range(msg, now)
+    needs = (rc._question_needs_history(msg) or bool(rc._IMG_RE.search(msg)) or hours is not None
+             or window is not None)
     hours = (hours or rc._infer_history_hours(msg)) if needs else 0.0
+    if window:
+        hours = max((window[1] - window[0]) / 3600.0, 1 / 60)
+    since, until = window if window else (now - hours * 3600, now)
     nq = rc._norm_txt(msg + " " + (prev_user[-1] if prev_user and hours else ""))
     cams = [cid for cid, nm in names.items() if rc._norm_txt(nm) in nq]
+    if req.cam_id and req.cam_id in names and req.cam_id not in cams:
+        cams = [req.cam_id]
     if "exterior" in nq and not cams:
         cams = [cid for cid, nm in names.items() if "exterior" in rc._norm_txt(nm)]
 
     steps = ["Estado en vivo de las cámaras"]
     facts_text, groups, label = "", [], ""
-    now = time.time()
     if needs and db is not None:
-        label = rc._human_window(hours)
+        label = _range_label(since, until) if window else rc._human_window(hours)
         try:
             from app.storage.facts import build_facts, render_facts
-            facts_text = render_facts(build_facts(db, now - hours * 3600, now))
+            facts_text = render_facts(build_facts(db, since, until))
             steps.append(f"Hechos exactos · {label}")
         except Exception as e:
             logger.warning("Vision Agent: fallo construyendo hechos: %s", e)
         try:
-            groups = _evidence(db, names, now - hours * 3600, now, cams or None)
+            groups = _evidence(db, names, since, until, cams or None)
             steps.append(f"Alertas agrupadas · {len(groups)} grupos" + (f" · {', '.join(names[c] for c in cams)}" if cams else ""))
         except Exception as e:
             logger.warning("Vision Agent: fallo construyendo evidencia: %s", e)
@@ -292,7 +335,7 @@ def _prepare(req: StreamRequest, request: Request, session_id: str) -> dict:
     sources = [{k: g[k] for k in ("ref", "cam", "tipo", "n", "desde", "hasta", "max_personas", "personas", "texto", "url")}
                for g in groups]
     return {"messages": messages, "steps": steps, "sources": sources, "images": images or [],
-            "n_ctx": n_ctx, "hours": hours}
+            "n_ctx": n_ctx, "hours": hours, "since": since if needs else None, "until": until if needs else None}
 
 
 @router.post("/api/chat/stream")
@@ -312,7 +355,7 @@ def chat_stream(req: StreamRequest, request: Request, x_session_id: Optional[str
             logger.warning("Vision Agent: fallo preparando contexto: %s", e)
             yield _sse("error", {"message": "No pude preparar el contexto; intenta de nuevo."})
             return
-        yield _sse("process", {"steps": ctx["steps"], "hours": ctx["hours"]})
+        yield _sse("process", {"steps": ctx["steps"], "hours": ctx["hours"], "since": ctx["since"], "until": ctx["until"]})
         if ctx["images"]:
             yield _sse("images", ctx["images"])
         if ctx["sources"]:

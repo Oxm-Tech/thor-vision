@@ -303,6 +303,8 @@ app.include_router(history_router)
 app.include_router(reports_router)
 from app.api.chat_agent import router as chat_agent_router  # noqa: E402
 app.include_router(chat_agent_router)
+from app.api.routes_timeline import router as timeline_router  # noqa: E402
+app.include_router(timeline_router)
 app.include_router(people_router)
 
 

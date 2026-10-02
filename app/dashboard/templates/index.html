@@ -290,7 +290,7 @@ main {
 .pp-pics { display:flex; gap:6px; justify-content:center; align-items:center; min-height:84px; }
 .pp-face { width:64px; height:64px; border-radius:50%; object-fit:cover; }
 .pp-body { height:84px; max-width:60px; border-radius:6px; object-fit:cover; }
-.pp-name { font-weight:600; text-align:center; color:var(--text); }
+.pp-name { font-weight:600; text-align:center; color:var(--text-primary); }
 .pp-name.named { color:var(--green-live); }
 .pp-meta { color:var(--text-muted); text-align:center; }
 .pp-desc { color:var(--text-secondary); font-size:.66rem; }
@@ -472,7 +472,7 @@ footer {
 .chat-msg .md-p:last-child { margin-bottom: 0; }
 .chat-msg .md-list { margin: 4px 0 8px; padding-left: 18px; }
 .chat-msg .md-list li { margin: 2px 0; }
-.chat-msg strong { color: var(--text); font-weight: 600; }
+.chat-msg strong { color: var(--text-primary); font-weight: 600; }
 .chat-msg code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: .92em; background: rgba(255,255,255,.07);
@@ -485,7 +485,7 @@ footer {
   font-size: 1rem; line-height: 1; padding: 7px 10px; margin-left: 10px;
   transition: color .2s, border-color .2s;
 }
-.hdr-btn:hover { color: var(--text); border-color: var(--text-muted); }
+.hdr-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
 
 /* ── Modal de configuracion ── */
 .modal-backdrop {
@@ -508,7 +508,7 @@ footer {
   background: none; border: none; color: var(--text-muted);
   cursor: pointer; font-size: 1rem; padding: 2px 6px;
 }
-.modal-x:hover { color: var(--text); }
+.modal-x:hover { color: var(--text-primary); }
 .modal-body { padding: 14px 16px 18px; }
 .set-group { margin-bottom: 18px; }
 .set-group:last-child { margin-bottom: 0; }
@@ -531,7 +531,7 @@ footer {
   border: 1px solid var(--border); color: var(--text-muted);
   border-radius: 7px; padding: 7px 11px; font-size: .78rem; cursor: pointer;
 }
-.set-btn:hover { color: var(--text); }
+.set-btn:hover { color: var(--text-primary); }
 
 /* ── Payload de debug en la tarjeta ── */
 .cam-payload { padding: 0 10px 9px; font-size: .72rem; }
@@ -576,7 +576,7 @@ footer {
 .hist-range.on { color: var(--oxm-blue); border-color: var(--oxm-blue); }
 .hist-select, .hist-check {
   background: rgba(255,255,255,.05); border: 1px solid var(--border);
-  color: var(--text); border-radius: 6px; padding: 5px 8px; font-size: .76rem;
+  color: var(--text-primary); border-radius: 6px; padding: 5px 8px; font-size: .76rem;
 }
 .hist-check { display: flex; align-items: center; gap: 6px; color: var(--text-muted); cursor: pointer; }
 .hist-check input { accent-color: var(--oxm-blue); }
@@ -620,7 +620,7 @@ footer {
 }
 .hist-ev.alert { background: rgba(217,83,79,.08); }
 .hist-ev-t, .hist-ev-p { color: var(--text-muted); align-self: baseline; }
-.hist-ev-c { color: var(--text); align-self: baseline; }
+.hist-ev-c { color: var(--text-primary); align-self: baseline; }
 .hist-ev-a { color: var(--text-muted); overflow-wrap: anywhere; align-self: baseline; }
 .hist-ev-al { color: #d9534f; margin-left: 6px; }
 .hist-ev-snap { display: block; line-height: 0; }
@@ -690,7 +690,7 @@ footer {
 .face-enroll { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .face-enroll-name {
   background: rgba(255,255,255,.05); border: 1px solid var(--border);
-  color: var(--text); border-radius: 6px; padding: 5px 8px;
+  color: var(--text-primary); border-radius: 6px; padding: 5px 8px;
   font-size: .78rem; flex: 1 1 140px;
 }
 .face-enroll-msg { font-size: .72rem; color: var(--text-muted); margin-top: 6px; min-height: 1em; }
@@ -771,7 +771,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
     transition-duration:.001ms !important; scroll-behavior:auto !important; }
 }
 
-.md-h { font-weight:700; margin:8px 0 4px; color:var(--text, #e8ecf2); }
+.md-h { font-weight:700; margin:8px 0 4px; color:var(--text-primary); }
 .md-h1, .md-h2 { font-size:1.02rem; } .md-h3, .md-h4 { font-size:.95rem; color:var(--oxm-blue); }
 .md-list { margin:4px 0 4px 18px; padding:0; } .md-list .md-list { margin-top:2px; }
 .md-hr { border:0; border-top:1px solid var(--border); margin:8px 0; }
@@ -794,7 +794,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .va-process summary::-webkit-details-marker { display:none; }
 .va-steps { margin:4px 0 4px 20px; padding:0; }
 .va-sec { padding:6px 0; }
-.va-h { display:flex; align-items:center; margin:0 0 6px; font-size:.78rem; font-weight:600; color:var(--text); letter-spacing:.01em; }
+.va-h { display:flex; align-items:center; margin:0 0 6px; font-size:.78rem; font-weight:600; color:var(--text-primary); letter-spacing:.01em; }
 .va-answer .va-body { line-height:1.5; }
 .va-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; }
 .va-img { position:relative; padding:0; border:0; background:none; cursor:pointer; border-radius:8px; overflow:hidden; aspect-ratio:16/9; }
@@ -806,16 +806,16 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .va-cite:hover { background:var(--oxm-blue); color:#0b0f14; }
 .va-badges { display:flex; flex-wrap:wrap; gap:6px; }
 .va-badge { display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:4px 8px; border:1px solid var(--border); border-radius:8px; background:rgba(255,255,255,.03); color:var(--text-muted); font-size:.72rem; cursor:pointer; text-align:left; }
-.va-badge:hover, .va-badge.on { border-color:var(--oxm-blue); color:var(--text); }
+.va-badge:hover, .va-badge.on { border-color:var(--oxm-blue); color:var(--text-primary); }
 .va-badge-n { display:inline-grid; place-items:center; min-width:16px; height:16px; border-radius:999px; background:rgba(255,255,255,.08); font-size:10px; }
-.va-rel { display:flex; align-items:center; width:100%; padding:6px 2px; border:0; border-top:1px solid var(--border); background:none; color:var(--text); font-size:.8rem; text-align:left; cursor:pointer; }
+.va-rel { display:flex; align-items:center; width:100%; padding:6px 2px; border:0; border-top:1px solid var(--border); background:none; color:var(--text-primary); font-size:.8rem; text-align:left; cursor:pointer; }
 .va-rel:first-child { border-top:0; }
 .va-rel:hover { color:var(--oxm-blue); }
 .va-rel:hover .va-ico { color:var(--oxm-blue); }
 .va-actions { display:flex; align-items:center; gap:2px; padding-top:4px; }
 .va-act { display:grid; place-items:center; width:26px; height:26px; border:0; border-radius:6px; background:none; color:var(--text-muted); cursor:pointer; }
 .va-act .va-ico { margin:0; }
-.va-act:hover { background:rgba(255,255,255,.06); color:var(--text); }
+.va-act:hover { background:rgba(255,255,255,.06); color:var(--text-primary); }
 .va-act.on, .va-act.done { color:var(--oxm-blue); }
 .va-meta { margin-left:auto; font-size:.68rem; color:var(--text-muted); }
 .va-typing { display:inline-flex; gap:4px; padding:4px 0; }
@@ -827,6 +827,54 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .va-lb-inner img { max-width:92vw; max-height:80vh; border-radius:10px; display:block; box-shadow:0 20px 60px rgba(0,0,0,.6); }
 .va-lb-cap { color:rgba(255,255,255,.8); font-size:.8rem; padding-top:8px; }
 .va-lb-inner .modal-x { position:absolute; top:-34px; right:0; }
+
+/* ── Línea de tiempo de alertas ── */
+.tl { margin:0 24px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; }
+.tl-head { display:flex; align-items:center; flex-wrap:wrap; gap:8px 10px; padding:8px 12px; }
+.tl-toggle { border:0; background:none; color:var(--text-secondary); cursor:pointer; font-size:.9rem; width:18px; }
+.tl-title { font-weight:600; font-size:.85rem; color:var(--text-primary); }
+.tl-chip { font-size:.74rem; color:var(--text-primary); background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; padding:2px 8px; }
+.tl-range { font-size:.72rem; color:var(--text-secondary); }
+.tl-spacer { flex:1; }
+.tl-ctrl { display:flex; align-items:center; gap:4px; }
+.tl-btn { min-width:26px; height:26px; padding:0 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-panel); color:var(--text-primary); font-size:.8rem; cursor:pointer; }
+.tl-btn:hover { border-color:var(--oxm-blue); }
+.tl-span { min-width:44px; text-align:center; font-size:.78rem; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.tl-body { padding:0 12px 10px; }
+.tl-legend { display:flex; flex-wrap:wrap; gap:6px; padding-bottom:6px; }
+.tl-leg { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-panel); color:var(--text-primary); font-size:.72rem; cursor:pointer; }
+.tl-leg i { width:10px; height:3px; border-radius:2px; display:inline-block; }
+.tl-leg b { color:var(--text-secondary); font-weight:600; font-variant-numeric:tabular-nums; }
+.tl-leg.off { opacity:.4; }
+.tl-leg.off i { background:var(--text-muted) !important; }
+.tl-sel { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px; padding:6px 10px; border:1px solid var(--oxm-blue); border-radius:8px; background:var(--oxm-blue-glow); font-size:.78rem; color:var(--text-primary); }
+.tl-sel[hidden] { display:none; }
+.tl-ask { border-color:var(--oxm-blue); color:var(--oxm-blue); }
+.tl-plot { position:relative; overflow:hidden; user-select:none; }
+#tl-svg { display:block; width:100%; height:auto; }
+#tl-svg .tl-grid { stroke:var(--border); stroke-width:1; }
+#tl-svg .tl-grid.day { stroke:#3a4356; }
+#tl-svg .tl-base { stroke:#3a4356; stroke-width:1; }
+#tl-svg .tl-ax, #tl-svg .tl-lbl2 { fill:var(--text-secondary); font-size:10px; font-variant-numeric:tabular-nums; }
+#tl-svg .tl-lbl { fill:var(--text-primary); font-size:11px; }
+#tl-svg .tl-lane { fill:transparent; } #tl-svg .tl-lane.alt { fill:rgba(255,255,255,.018); }
+#tl-svg .tl-dot { stroke:var(--bg-card); stroke-width:2; }
+#tl-svg .tl-dot.noise { opacity:.35; }
+#tl-svg .tl-nowl { stroke:var(--oxm-blue); stroke-dasharray:3 3; stroke-width:1; }
+#tl-svg .tl-selr { fill:var(--oxm-blue-glow); stroke:var(--oxm-blue); stroke-width:1; }
+#tl-svg .tl-cross { stroke:var(--text-secondary); stroke-dasharray:2 3; stroke-width:1; pointer-events:none; }
+#tl-svg .tl-hit { fill:transparent; cursor:crosshair; }
+.tl-tip { position:absolute; z-index:5; width:max-content; max-width:260px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:rgba(22,27,36,.96); box-shadow:0 8px 24px rgba(0,0,0,.4); pointer-events:none; font-size:.74rem; color:var(--text-primary); }
+.tl-tip[hidden] { display:none; }
+.tl-tip-h { display:flex; align-items:center; gap:6px; font-weight:600; text-transform:capitalize; }
+.tl-tip-h i, .tl-tip-r i { width:10px; height:3px; border-radius:2px; display:inline-block; }
+.tl-tip-m { color:var(--text-secondary); margin:2px 0; font-variant-numeric:tabular-nums; }
+.tl-tip-t { line-height:1.35; }
+.tl-tip-f { margin-top:4px; color:var(--text-secondary); font-size:.7rem; }
+.tl-tip-r { display:flex; align-items:center; gap:6px; }
+.tl-tip-r b { margin-left:auto; padding-left:12px; font-variant-numeric:tabular-nums; }
+.tl-hint { padding-top:6px; font-size:.7rem; color:var(--text-secondary); }
+@media (max-width:700px){ .tl { margin:0 8px 10px; } .tl-hint { display:none; } }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -920,6 +968,33 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
       </div>
     </div>
   </aside>
+
+<section class="tl" id="tl" aria-label="Línea de tiempo de alertas">
+  <div class="tl-head">
+    <button type="button" class="tl-toggle" id="tl-toggle" aria-expanded="true" title="Mostrar u ocultar">▾</button>
+    <span class="tl-title">Línea de tiempo de alertas</span>
+    <span class="tl-chip" id="tl-sum">—</span>
+    <span class="tl-range" id="tl-range"></span>
+    <span class="tl-spacer"></span>
+    <div class="tl-ctrl">
+      <button type="button" class="tl-btn" data-tl="left" title="Atrás (←)">‹</button>
+      <button type="button" class="tl-btn" data-tl="out" title="Alejar (−)">−</button>
+      <span class="tl-span" id="tl-span">24 h</span>
+      <button type="button" class="tl-btn" data-tl="in" title="Acercar (+)">+</button>
+      <button type="button" class="tl-btn" data-tl="right" title="Adelante (→)">›</button>
+      <button type="button" class="tl-btn tl-now" data-tl="now" title="Volver a ahora (0)">Ahora</button>
+    </div>
+  </div>
+  <div class="tl-body" id="tl-body">
+    <div class="tl-legend" id="tl-legend"></div>
+    <div class="tl-sel" id="tl-sel" hidden></div>
+    <div class="tl-plot" id="tl-plot">
+      <svg id="tl-svg" role="img" aria-label="Alertas por intervalo y por cámara"></svg>
+      <div class="tl-tip" id="tl-tip" hidden></div>
+    </div>
+    <div class="tl-hint">Teclas: <b>+</b>/<b>−</b> zoom · <b>←</b>/<b>→</b> mover · <b>0</b> ahora · arrastra para elegir un rango y preguntarle al Vision Agent · clic en un punto para ver la captura</div>
+  </div>
+</section>
 
 <details class="timeline-panel" id="timeline-panel">
   <summary>🕓 Timeline de eventos <span class="timeline-panel-count" id="timeline-panel-count"></span></summary>
@@ -2299,6 +2374,298 @@ document.addEventListener('keydown', e => {
   });
 });
 
+// ── Línea de tiempo de alertas (estilo UniFi): carril general + un carril por cámara ─────────
+const TL_GROUPS = [
+  { k:'nocturna', label:'Fuera de horario',  color:'#3987e5', types:['persona_nocturna'] },
+  { k:'merodeo',  label:'Merodeo',           color:'#d95926', types:['merodeo'] },
+  { k:'telefono', label:'Teléfono exterior', color:'#199e70', types:['uso_telefono_exterior'] },
+  { k:'animal',   label:'Animal',            color:'#c98500', types:['animal'] },
+  { k:'acceso',   label:'Acceso / puerta',   color:'#d55181', types:['acceso_no_autorizado', 'puerta_abierta'] },
+  { k:'vehiculo', label:'Vehículos',         color:'#008300', types:['manipulacion_vehiculo', 'vehiculo_detenido'] },
+  { k:'otros',    label:'Otros',             color:'#9085e9', types:['grupo_inusual', 'objeto_abandonado', 'sin_tipo'] },
+  { k:'riesgo',   label:'Riesgo',            color:'#e66767', types:['persona_en_suelo', 'fuego_humo'] },
+];
+const TL_T2G = {}; TL_GROUPS.forEach((g, i) => g.types.forEach(t => { TL_T2G[t] = i; }));
+const TL_SPANS = [1, 3, 6, 12, 24, 72, 168];
+const TL_BUCKET = { 1:120, 3:300, 6:600, 12:900, 24:1800, 72:3600, 168:10800 };
+const TL_TICK = { 1:600, 3:1800, 6:3600, 12:7200, 24:10800, 72:43200, 168:86400 };
+const TL = { span:24, end:null, data:null, sel:null, hidden:new Set(), timer:null, drag:null };
+try { (JSON.parse(localStorage.getItem('thor_tl_hidden') || '[]')).forEach(k => TL.hidden.add(k)); } catch (_) {}
+try { const sp = +localStorage.getItem('thor_tl_span'); if (TL_SPANS.includes(sp)) TL.span = sp; } catch (_) {}
+
+const _tlFmt = (ts, withDay) => {
+  const d = new Date(ts * 1000);
+  const hm = d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', hour12:false });
+  return withDay ? `${d.toLocaleDateString('es-MX', { day:'2-digit', month:'short' })} ${hm}` : hm;
+};
+const _tlWin = () => { const until = TL.end || Date.now() / 1000; return [until - TL.span * 3600, until]; };
+const _tlTypeLabel = t => (t || 'sin_tipo').replace(/_/g, ' ');
+
+function _tlLegend(){
+  const el = document.getElementById('tl-legend');
+  const counts = TL_GROUPS.map(() => 0);
+  (TL.data ? TL.data.events : []).forEach(e => { counts[TL_T2G[e.type] ?? 6] += 1; });
+  el.innerHTML = TL_GROUPS.map((g, i) => `<button type="button" class="tl-leg${TL.hidden.has(g.k) ? ' off' : ''}" data-k="${g.k}" aria-pressed="${!TL.hidden.has(g.k)}">`
+    + `<i style="background:${g.color}"></i>${g.label}<b>${counts[i]}</b></button>`).join('');
+}
+
+function _tlRender(){
+  const svg = document.getElementById('tl-svg');
+  const plot = document.getElementById('tl-plot');
+  if (!svg || !TL.data) return;
+  const [since, until] = [TL.data.since, TL.data.until];
+  const cams = TL.data.cams;
+  const W = Math.max(320, plot.clientWidth);
+  const LW = 118, PR = 10, GH = 62, LH = 20, AX = 18, TOP = 6;
+  const lanes0 = TOP + GH + 10;
+  const H = lanes0 + cams.length * LH + AX;
+  const PW = W - LW - PR;
+  const x = ts => LW + (ts - since) / (until - since) * PW;
+  const evs = TL.data.events.filter(e => !TL.hidden.has(TL_GROUPS[TL_T2G[e.type] ?? 6].k));
+  TL.geom = { since, until, LW, PW, lanes0, LH, GH, TOP, cams, x, evs };
+
+  const bucket = TL_BUCKET[TL.span];
+  const nb = Math.ceil((until - since) / bucket);
+  const counts = Array.from({ length: nb }, () => TL_GROUPS.map(() => 0));
+  evs.forEach(e => { const b = Math.min(nb - 1, Math.floor((e.ts - since) / bucket)); if (b >= 0) counts[b][TL_T2G[e.type] ?? 6] += 1; });
+  const maxT = Math.max(1, ...counts.map(c => c.reduce((a, b) => a + b, 0)));
+  TL.geom.counts = counts; TL.geom.bucket = bucket;
+
+  const out = [];
+  // grilla y eje
+  const step = TL_TICK[TL.span];
+  const tz = -new Date().getTimezoneOffset() * 60;
+  let t0 = Math.ceil((since + tz) / step) * step - tz;
+  for (let t = t0; t <= until; t += step){
+    const xx = x(t).toFixed(1);
+    const newDay = new Date(t * 1000).getHours() === 0 && new Date(t * 1000).getMinutes() === 0;
+    out.push(`<line class="tl-grid${newDay ? ' day' : ''}" x1="${xx}" x2="${xx}" y1="${TOP}" y2="${H - AX}"/>`);
+    out.push(`<text class="tl-ax" x="${xx}" y="${H - 5}" text-anchor="middle">${_tlFmt(t, TL.span >= 72 || newDay)}</text>`);
+  }
+  // carril general: columnas apiladas en orden fijo de grupos
+  out.push(`<text class="tl-lbl" x="8" y="${TOP + 14}">General</text>`);
+  out.push(`<text class="tl-lbl2" x="8" y="${TOP + 28}">máx ${maxT}/${bucket >= 3600 ? (bucket / 3600) + ' h' : (bucket / 60) + ' min'}</text>`);
+  out.push(`<line class="tl-base" x1="${LW}" x2="${LW + PW}" y1="${TOP + GH}" y2="${TOP + GH}"/>`);
+  const bw = Math.max(1, PW / nb - 2);
+  counts.forEach((c, b) => {
+    let y = TOP + GH;
+    const bx = (LW + b * (PW / nb) + 1).toFixed(1);
+    c.forEach((n, gi) => {
+      if (!n) return;
+      const h = Math.max(2, n / maxT * (GH - 8));
+      y -= h;
+      out.push(`<rect x="${bx}" y="${(y + 1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, h - 1).toFixed(1)}" rx="1" fill="${TL_GROUPS[gi].color}"/>`);
+    });
+  });
+  // carriles por cámara
+  cams.forEach((c, i) => {
+    const y = lanes0 + i * LH;
+    out.push(`<rect class="tl-lane${i % 2 ? ' alt' : ''}" x="0" y="${y}" width="${W}" height="${LH}"/>`);
+    out.push(`<text class="tl-lbl" x="8" y="${y + 14}">${_escapeHtml(c.name)}</text>`);
+  });
+  const camIdx = {}; cams.forEach((c, i) => { camIdx[c.id] = i; });
+  evs.forEach(e => {
+    const i = camIdx[e.cam]; if (i === undefined) return;
+    const g = TL_GROUPS[TL_T2G[e.type] ?? 6];
+    const cls = e.review === 'noise' ? ' noise' : (e.review === 'important' ? ' imp' : '');
+    out.push(`<circle class="tl-dot${cls}" cx="${x(e.ts).toFixed(1)}" cy="${lanes0 + i * LH + LH / 2}" r="${e.review === 'important' ? 5 : 4}" fill="${g.color}"/>`);
+  });
+  // ahora
+  if (!TL.end){ const xn = x(until).toFixed(1); out.push(`<line class="tl-nowl" x1="${xn}" x2="${xn}" y1="${TOP}" y2="${H - AX}"/>`); }
+  // seleccion
+  if (TL.sel){
+    const a = x(Math.max(since, TL.sel.since)), b = x(Math.min(until, TL.sel.until));
+    if (b > a) out.push(`<rect class="tl-selr" x="${a.toFixed(1)}" y="${TOP}" width="${(b - a).toFixed(1)}" height="${H - AX - TOP}"/>`);
+  }
+  out.push(`<line class="tl-cross" id="tl-cross" x1="0" x2="0" y1="${TOP}" y2="${H - AX}" visibility="hidden"/>`);
+  out.push(`<rect class="tl-hit" id="tl-hit" x="${LW}" y="${TOP}" width="${PW}" height="${H - AX - TOP}"/>`);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = out.join('');
+
+  // resumen
+  const total = evs.length;
+  let pk = -1, pv = 0; counts.forEach((c, b) => { const v = c.reduce((p, q) => p + q, 0); if (v > pv){ pv = v; pk = b; } });
+  const camsWith = new Set(evs.map(e => e.cam)).size;
+  document.getElementById('tl-sum').textContent = `${total} alertas · ${camsWith} cámaras` + (pk >= 0 ? ` · pico ${_tlFmt(since + pk * bucket)} (${pv})` : '') + (TL.data.truncated ? ' · recortado' : '');
+  document.getElementById('tl-range').textContent = `${_tlFmt(since, true)} → ${TL.end ? _tlFmt(until, true) : 'ahora'}`;
+  document.getElementById('tl-span').textContent = TL.span >= 24 ? `${TL.span / 24} d`.replace('1 d', '24 h') : `${TL.span} h`;
+  _tlLegend();
+}
+
+async function tlLoad(){
+  const [since, until] = _tlWin();
+  try {
+    const d = await (await fetch(`/api/timeline?since=${since.toFixed(0)}&until=${until.toFixed(0)}`)).json();
+    TL.data = d;
+    _tlRender();
+  } catch (_) { document.getElementById('tl-sum').textContent = 'sin datos'; }
+}
+
+function _tlSetSpan(dir){
+  const i = TL_SPANS.indexOf(TL.span);
+  const j = Math.max(0, Math.min(TL_SPANS.length - 1, i + dir));
+  if (j === i) return;
+  if (TL.end){ const mid = TL.end - TL.span * 1800; TL.span = TL_SPANS[j]; TL.end = Math.min(Date.now() / 1000, mid + TL.span * 1800); if (TL.end >= Date.now() / 1000 - 60) TL.end = null; }
+  else TL.span = TL_SPANS[j];
+  try { localStorage.setItem('thor_tl_span', String(TL.span)); } catch (_) {}
+  tlLoad();
+}
+function _tlPan(dir){
+  const now = Date.now() / 1000;
+  const end = (TL.end || now) + dir * TL.span * 900;
+  TL.end = end >= now - 60 ? null : end;
+  tlLoad();
+}
+
+function _tlAt(ev){
+  const g = TL.geom; if (!g) return null;
+  const svg = document.getElementById('tl-svg');
+  const r = svg.getBoundingClientRect();
+  const sx = (ev.clientX - r.left) * (svg.viewBox.baseVal.width / r.width);
+  const sy = (ev.clientY - r.top) * (svg.viewBox.baseVal.height / r.height);
+  const ts = g.since + (sx - g.LW) / g.PW * (g.until - g.since);
+  const lane = sy >= g.lanes0 ? Math.floor((sy - g.lanes0) / g.LH) : -1;
+  let hit = null;
+  if (lane >= 0 && lane < g.cams.length){
+    let best = 9;
+    g.evs.forEach(e => { if (e.cam !== g.cams[lane].id) return; const d = Math.abs(g.x(e.ts) - sx); if (d < best){ best = d; hit = e; } });
+  }
+  return { sx, sy, ts, lane, hit, rect: r };
+}
+
+function _tlTip(ev, at){
+  const tip = document.getElementById('tl-tip');
+  const g = TL.geom;
+  let html;
+  if (at.hit){
+    const e = at.hit, gr = TL_GROUPS[TL_T2G[e.type] ?? 6];
+    const cam = (g.cams.find(c => c.id === e.cam) || {}).name || e.cam;
+    html = `<div class="tl-tip-h"><i style="background:${gr.color}"></i>${_escapeHtml(_tlTypeLabel(e.type))}</div>`
+         + `<div class="tl-tip-m">${_tlFmt(e.ts, TL.span >= 24)} · ${_escapeHtml(cam)} · ${e.people} pers.</div>`
+         + `<div class="tl-tip-t">${_escapeHtml(e.text)}</div>` + (e.img ? '<div class="tl-tip-f">clic: ver captura</div>' : '');
+  } else {
+    const b = Math.floor((at.ts - g.since) / g.bucket);
+    const c = g.counts[b]; if (!c) { tip.hidden = true; return; }
+    const rows = TL_GROUPS.map((gr, i) => c[i] ? `<div class="tl-tip-r"><i style="background:${gr.color}"></i>${gr.label}<b>${c[i]}</b></div>` : '').join('');
+    html = `<div class="tl-tip-m">${_tlFmt(g.since + b * g.bucket, TL.span >= 24)} – ${_tlFmt(g.since + (b + 1) * g.bucket)}</div>` + (rows || '<div class="tl-tip-t">sin alertas</div>');
+  }
+  tip.innerHTML = html;
+  tip.hidden = false;
+  const plot = document.getElementById('tl-plot').getBoundingClientRect();
+  let left = ev.clientX - plot.left + 14, top = ev.clientY - plot.top + 12;
+  if (left + 260 > plot.width) left = ev.clientX - plot.left - 270;
+  tip.style.left = Math.max(4, left) + 'px'; tip.style.top = Math.max(4, top) + 'px';
+}
+
+function _tlShowSel(){
+  const box = document.getElementById('tl-sel');
+  if (!TL.sel){ box.hidden = true; return; }
+  const g = TL.geom;
+  const n = (TL.data.events || []).filter(e => e.ts >= TL.sel.since && e.ts <= TL.sel.until && (!TL.sel.cam || e.cam === TL.sel.cam)).length;
+  const camName = TL.sel.cam ? ((g.cams.find(c => c.id === TL.sel.cam) || {}).name || TL.sel.cam) : 'todas las cámaras';
+  box.innerHTML = `<span><b>${_tlFmt(TL.sel.since, true)} – ${_tlFmt(TL.sel.until)}</b> · ${_escapeHtml(camName)} · ${n} alertas</span>`
+    + `<button type="button" class="tl-btn tl-ask" data-tl="ask">Preguntar al Vision Agent</button>`
+    + `<button type="button" class="tl-btn" data-tl="caps">Capturas</button>`
+    + `<button type="button" class="tl-btn" data-tl="clear" title="Quitar selección">✕</button>`;
+  box.hidden = false;
+}
+
+function _tlAskSel(kind){
+  if (!TL.sel) return;
+  const g = TL.geom;
+  const camName = TL.sel.cam ? ((g.cams.find(c => c.id === TL.sel.cam) || {}).name || '') : '';
+  const range = `entre ${_tlFmt(TL.sel.since)} y ${_tlFmt(TL.sel.until)}`;
+  const q = kind === 'caps'
+    ? `Muéstrame las capturas de las alertas ${camName ? 'de ' + camName + ' ' : ''}${range}`
+    : `¿Qué pasó ${camName ? 'en ' + camName + ' ' : ''}${range}? Resume las alertas y quién estaba.`;
+  const dock = document.getElementById('chat-dock');
+  if (dock && !dock.classList.contains('chat-open')) document.getElementById('chat-fab')?.click();
+  vaAsk(q, { since: TL.sel.since, until: TL.sel.until, cam_id: TL.sel.cam || null });
+}
+
+function initTimeline(){
+  const sec = document.getElementById('tl'); if (!sec) return;
+  const body = document.getElementById('tl-body');
+  const tog = document.getElementById('tl-toggle');
+  let open = true; try { open = localStorage.getItem('thor_tl_open') !== '0'; } catch (_) {}
+  const setOpen = o => { body.hidden = !o; tog.textContent = o ? '▾' : '▸'; tog.setAttribute('aria-expanded', String(o)); try { localStorage.setItem('thor_tl_open', o ? '1' : '0'); } catch (_) {} if (o) _tlRender(); };
+  setOpen(open);
+  tog.addEventListener('click', () => setOpen(body.hidden));
+  sec.addEventListener('click', e => {
+    const b = e.target.closest('[data-tl]');
+    if (b){
+      const a = b.dataset.tl;
+      if (a === 'in') _tlSetSpan(-1); else if (a === 'out') _tlSetSpan(1);
+      else if (a === 'left') _tlPan(-1); else if (a === 'right') _tlPan(1);
+      else if (a === 'now'){ TL.end = null; tlLoad(); }
+      else if (a === 'clear'){ TL.sel = null; _tlShowSel(); _tlRender(); }
+      else if (a === 'ask' || a === 'caps') _tlAskSel(a);
+      return;
+    }
+    const lg = e.target.closest('.tl-leg');
+    if (lg){
+      const k = lg.dataset.k;
+      TL.hidden.has(k) ? TL.hidden.delete(k) : TL.hidden.add(k);
+      try { localStorage.setItem('thor_tl_hidden', JSON.stringify([...TL.hidden])); } catch (_) {}
+      _tlRender();
+    }
+  });
+  const plot = document.getElementById('tl-plot');
+  plot.addEventListener('mousemove', ev => {
+    if (!TL.geom || ev.target.id !== 'tl-hit' && !TL.drag) { document.getElementById('tl-tip').hidden = true; return; }
+    const at = _tlAt(ev); if (!at) return;
+    const cross = document.getElementById('tl-cross');
+    if (cross){ cross.setAttribute('x1', at.sx); cross.setAttribute('x2', at.sx); cross.setAttribute('visibility', 'visible'); }
+    if (TL.drag){
+      TL.drag.cur = at.ts;
+      TL.sel = { since: Math.min(TL.drag.start, at.ts), until: Math.max(TL.drag.start, at.ts), cam: TL.drag.cam };
+      _tlRender();
+      return;
+    }
+    _tlTip(ev, at);
+  });
+  plot.addEventListener('mouseleave', () => {
+    document.getElementById('tl-tip').hidden = true;
+    const cross = document.getElementById('tl-cross'); if (cross) cross.setAttribute('visibility', 'hidden');
+  });
+  plot.addEventListener('mousedown', ev => {
+    if (ev.target.id !== 'tl-hit') return;
+    const at = _tlAt(ev); if (!at) return;
+    TL.drag = { start: at.ts, x0: ev.clientX, cam: (at.lane >= 0 && at.lane < TL.geom.cams.length) ? TL.geom.cams[at.lane].id : null, hit: at.hit };
+    ev.preventDefault();
+  });
+  window.addEventListener('mouseup', ev => {
+    if (!TL.drag) return;
+    const d = TL.drag; TL.drag = null;
+    if (Math.abs(ev.clientX - d.x0) < 5){
+      TL.sel = null; _tlShowSel(); _tlRender();
+      if (d.hit && d.hit.img){
+        const cam = (TL.geom.cams.find(c => c.id === d.hit.cam) || {}).name || d.hit.cam;
+        _vaLightbox({ url: d.hit.img, hora: _tlFmt(d.hit.ts, true), cam, texto: `${_tlTypeLabel(d.hit.type)} — ${d.hit.text}` });
+      }
+      return;
+    }
+    if (TL.sel && TL.sel.until - TL.sel.since < 60) TL.sel.until = TL.sel.since + 60;
+    _tlShowSel(); _tlRender();
+  });
+  document.addEventListener('keydown', ev => {
+    const t = ev.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (body.hidden || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (document.querySelector('.modal-backdrop:not([hidden])')) return;
+    if (ev.key === '+' || ev.key === '='){ _tlSetSpan(-1); ev.preventDefault(); }
+    else if (ev.key === '-' || ev.key === '_'){ _tlSetSpan(1); ev.preventDefault(); }
+    else if (ev.key === 'ArrowLeft'){ _tlPan(-1); ev.preventDefault(); }
+    else if (ev.key === 'ArrowRight'){ _tlPan(1); ev.preventDefault(); }
+    else if (ev.key === '0'){ TL.end = null; tlLoad(); }
+  });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (!body.hidden) _tlRender(); }).observe(plot);
+  tlLoad();
+  TL.timer = setInterval(() => { if (!TL.end && !body.hidden && !TL.drag) tlLoad(); }, 60000);
+}
+_onDomReady(initTimeline);
+
 function initChatDock(){
   const dock = document.getElementById('chat-dock');
   if (!dock) return;
@@ -2625,7 +2992,7 @@ function _vaLightbox(img){
 }
 
 let _vaBusy = false;
-async function vaAsk(msg){
+async function vaAsk(msg, extra){
   if (_vaBusy || !msg) return;
   _vaBusy = true;
   _appendChatMessage('user', msg);
@@ -2634,6 +3001,7 @@ async function vaAsk(msg){
   chatSendEl.disabled = true;
   chatStatusEl.textContent = 'consultando…';
   const root = _vaCreate(msg);
+  root._va.extra = extra || null;
   const body = root._va.answer.querySelector('.va-body');
   let raf = 0;
   const paint = () => {
@@ -2668,7 +3036,7 @@ async function vaAsk(msg){
     const resp = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Session-Id': chatSessionId },
-      body: JSON.stringify({ message: msg, history: chatHistory.slice(-MAX_HISTORY) }),
+      body: JSON.stringify(Object.assign({ message: msg, history: chatHistory.slice(-MAX_HISTORY) }, extra || {})),
     });
     if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
     const reader = resp.body.getReader();
@@ -2724,7 +3092,7 @@ chatMsgsEl.addEventListener('click', (e) => {
   if (act && va){
     const a = act.dataset.act;
     if (a === 'copy'){ navigator.clipboard && navigator.clipboard.writeText(va.text); act.classList.add('done'); }
-    else if (a === 'retry'){ vaAsk(va.question); }
+    else if (a === 'retry'){ vaAsk(va.question, va.extra); }
     else if (a === 'up' || a === 'down'){
       msgEl.querySelectorAll('.va-act[data-act="up"], .va-act[data-act="down"]').forEach(b => b.classList.remove('on'));
       act.classList.add('on');
