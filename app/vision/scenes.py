@@ -150,6 +150,13 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
             continue
         alerts.append(t)
     types = [t for t in (result.get("alert_types") or []) if t in scene.alert_types]
+    if "persona_nocturna" in types:
+        a, b = scene.night_hours
+        h = time.localtime().tm_hour
+        if not (h >= a or h < b):
+            types.remove("persona_nocturna")
+            if not types:
+                alerts = []
 
     relevant = result.get("relevant") is True
     if not relevant and not types:

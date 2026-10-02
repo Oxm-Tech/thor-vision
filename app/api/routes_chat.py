@@ -451,8 +451,9 @@ def chat(req: ChatRequest, request: Request,
     # El gateway hoy acepta requests sin auth, pero sin la key no puede
     # atribuir el consumo a este proyecto. Se reusa la del analyzer.
     chat_headers = {"Content-Type": "application/json"}
-    if getattr(analyzer, "api_key", None):
-        chat_headers["Authorization"] = f"Bearer {analyzer.api_key}"
+    chat_key = os.environ.get("CHAT_API_KEY") or getattr(analyzer, "api_key", None)
+    if chat_key:
+        chat_headers["Authorization"] = f"Bearer {chat_key}"
 
     http_req = urllib.request.Request(
         analyzer.endpoint,
