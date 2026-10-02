@@ -103,6 +103,8 @@ def vlm_health(request: Request):
         "model_real":  model_real or None,
         "chat_model":  os.environ.get("CHAT_MODEL") or model,
         "chat_model_real": getattr(request.app.state, "chat_model_real", None),
+        "chat":        _chat_health(request.app),
+        "fresh_window_s": 300,
         "endpoint":    endpoint,
         "cams_total":  len(cams),
         "cams_ok":     len(ok),
@@ -134,6 +136,14 @@ def cowork_detail(request: Request):
         "people":         result.get("people"),
         "age_s":          round(time.time() - (result.get("_ts") or 0), 1),
     }
+
+
+def _chat_health(app):
+    try:
+        from app.api.chat_agent import chat_health_summary
+        return chat_health_summary(app)
+    except Exception:
+        return None
 
 
 @router.get("/api/pipeline")

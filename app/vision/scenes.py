@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Optional
@@ -185,6 +186,18 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
             continue
         alerts.append(t)
     types = [t for t in (result.get("alert_types") or []) if t in scene.alert_types]
+    person_types = {"persona_nocturna", "persona_en_suelo", "merodeo", "acceso_no_autorizado", "grupo_inusual",
+                    "manipulacion_vehiculo", "uso_telefono_exterior"}
+    if people == 0 and any(t in person_types for t in types):
+        types = [t for t in types if t not in person_types]   # alerta de persona sin persona visible
+        if not types:
+            alerts = []
+    if "animal" in types and scene.known_pets:
+        blob = (act + " " + " ".join(alerts)).lower()
+        if re.search(r"mascota|pug|shiba|perro negro peque|perros? (de la casa|conocid)", blob):
+            types.remove("animal")
+            if not types:
+                alerts = []
     if "persona_nocturna" in types and not scene.night_alert():
         types.remove("persona_nocturna")
         if not types:

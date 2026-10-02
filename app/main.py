@@ -180,6 +180,8 @@ async def lifespan(app: FastAPI):
         enabled      = os.environ.get("REPORT_ENABLED", "false").lower() == "true",
     )
     app.state.report_stop = report_stop
+    from app.api.chat_agent import start_chat_probe
+    app.state.chat_probe_stop = start_chat_probe(app)
 
     native_min_s  = float(_env("VLM_NATIVE_MIN_INTERVAL_S", "NEMOTRON_NATIVE_MIN_INTERVAL_S", "30"))
     idle_beat_s   = float(_env("VLM_IDLE_HEARTBEAT_S", "NEMOTRON_IDLE_HEARTBEAT_S",     "900"))
@@ -280,6 +282,7 @@ async def lifespan(app: FastAPI):
     logger.info("THOR Vision shutting down...")
     retention_stop.set()
     report_stop.set()
+    getattr(app.state, "chat_probe_stop", None) and app.state.chat_probe_stop.set()
     for w in yolo_workers:
         w.stop()
     for nw in vlm_workers:
@@ -298,6 +301,8 @@ app.include_router(vision_router)
 app.include_router(chat_router)
 app.include_router(history_router)
 app.include_router(reports_router)
+from app.api.chat_agent import router as chat_agent_router  # noqa: E402
+app.include_router(chat_agent_router)
 app.include_router(people_router)
 
 

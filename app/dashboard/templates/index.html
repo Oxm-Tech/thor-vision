@@ -782,6 +782,51 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .chat-img { display:flex; flex-direction:column; gap:2px; text-decoration:none; color:var(--text-muted); font-size:.72rem; }
 .chat-img img { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
 .chat-img:hover img { border-color:var(--oxm-blue); }
+
+/* ── Vision Agent (patrones de Morphic) ── */
+.vlm-chat { display:flex; align-items:center; gap:5px; }
+.vlm-chat-dot { width:6px; height:6px; border-radius:50%; background:var(--text-muted); display:inline-block; }
+.vlm-chat.ok .vlm-chat-dot { background:#3fb950; } .vlm-chat.degraded .vlm-chat-dot { background:#d29922; } .vlm-chat.down .vlm-chat-dot { background:#f85149; }
+.va-msg { display:flex; flex-direction:column; gap:2px; max-width:100%; }
+.va-ico { width:14px; height:14px; margin-right:6px; color:var(--text-muted); flex:none; }
+.va-process { font-size:.74rem; color:var(--text-muted); }
+.va-process summary { display:flex; align-items:center; cursor:pointer; list-style:none; padding:2px 0; }
+.va-process summary::-webkit-details-marker { display:none; }
+.va-steps { margin:4px 0 4px 20px; padding:0; }
+.va-sec { padding:6px 0; }
+.va-h { display:flex; align-items:center; margin:0 0 6px; font-size:.78rem; font-weight:600; color:var(--text); letter-spacing:.01em; }
+.va-answer .va-body { line-height:1.5; }
+.va-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; }
+.va-img { position:relative; padding:0; border:0; background:none; cursor:pointer; border-radius:8px; overflow:hidden; aspect-ratio:16/9; }
+.va-img img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s; }
+.va-img:hover img { transform:scale(1.03); }
+.va-img-cap { position:absolute; left:6px; bottom:6px; right:6px; font-size:.68rem; color:#fff; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); padding:2px 6px; border-radius:999px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.va-more { position:absolute; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.55); color:#fff; font-weight:700; font-size:1.1rem; }
+.va-cite { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 5px; margin:0 1px; border:0; border-radius:999px; font-size:10px; line-height:1; vertical-align:2px; background:rgba(255,255,255,.08); color:var(--text-muted); cursor:pointer; transition:background .15s, color .15s; }
+.va-cite:hover { background:var(--oxm-blue); color:#0b0f14; }
+.va-badges { display:flex; flex-wrap:wrap; gap:6px; }
+.va-badge { display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:4px 8px; border:1px solid var(--border); border-radius:8px; background:rgba(255,255,255,.03); color:var(--text-muted); font-size:.72rem; cursor:pointer; text-align:left; }
+.va-badge:hover, .va-badge.on { border-color:var(--oxm-blue); color:var(--text); }
+.va-badge-n { display:inline-grid; place-items:center; min-width:16px; height:16px; border-radius:999px; background:rgba(255,255,255,.08); font-size:10px; }
+.va-rel { display:flex; align-items:center; width:100%; padding:6px 2px; border:0; border-top:1px solid var(--border); background:none; color:var(--text); font-size:.8rem; text-align:left; cursor:pointer; }
+.va-rel:first-child { border-top:0; }
+.va-rel:hover { color:var(--oxm-blue); }
+.va-rel:hover .va-ico { color:var(--oxm-blue); }
+.va-actions { display:flex; align-items:center; gap:2px; padding-top:4px; }
+.va-act { display:grid; place-items:center; width:26px; height:26px; border:0; border-radius:6px; background:none; color:var(--text-muted); cursor:pointer; }
+.va-act .va-ico { margin:0; }
+.va-act:hover { background:rgba(255,255,255,.06); color:var(--text); }
+.va-act.on, .va-act.done { color:var(--oxm-blue); }
+.va-meta { margin-left:auto; font-size:.68rem; color:var(--text-muted); }
+.va-typing { display:inline-flex; gap:4px; padding:4px 0; }
+.va-typing i { width:6px; height:6px; border-radius:50%; background:var(--text-muted); animation:va-dot 1s infinite ease-in-out; }
+.va-typing i:nth-child(2) { animation-delay:.15s; } .va-typing i:nth-child(3) { animation-delay:.3s; }
+@keyframes va-dot { 0%, 80%, 100% { opacity:.25; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
+.va-lightbox { display:grid; place-items:center; z-index:400; background:rgba(0,0,0,.7); backdrop-filter:blur(6px); }
+.va-lb-inner { position:relative; max-width:92vw; max-height:90vh; }
+.va-lb-inner img { max-width:92vw; max-height:80vh; border-radius:10px; display:block; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+.va-lb-cap { color:rgba(255,255,255,.8); font-size:.8rem; padding-top:8px; }
+.va-lb-inner .modal-x { position:absolute; top:-34px; right:0; }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -802,6 +847,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
     <span class="vlm-label">IA Visión</span>
     <span class="vlm-model"><svg class="vlm-dot" viewBox="0 0 16 16"><circle class="vlm-dot-ring" cx="8" cy="8" r="5"/><circle class="vlm-dot-core" cx="8" cy="8" r="3"/></svg><span id="vlm-model">—</span></span>
     <span class="vlm-sub" id="vlm-sub">conectando…</span>
+    <span class="vlm-sub vlm-chat" id="vlm-chat"><i class="vlm-chat-dot"></i>chat …</span>
   </div>
 
   <div class="persons-counter">
@@ -1336,11 +1382,24 @@ async function refreshVLM(){
       sEl.textContent = 'sin respuesta';
     }else if(v.latency_ms){
       const s = (v.latency_ms/1000).toFixed(1);
-      sEl.textContent = `${s}s · ${v.cams_fresh}/${v.cams_total} cám`;
+      sEl.textContent = `visión ${s}s · ${v.cams_fresh}/${v.cams_total} cám <5 min`;
     }else{
       sEl.textContent = `${v.cams_ok||0}/${v.cams_total||0} cám`;
     }
-    card.title = `modelo real: ${v.model_real || '—'}\n` +
+    const cEl = document.getElementById('vlm-chat');
+    const c = v.chat || {};
+    if (cEl){
+      const cm2 = c.model_real || (c.model || '').split('/').pop() || '—';
+      const lat = c.last_ms ? `${(c.last_ms/1000).toFixed(1)}s` : '';
+      const st = {ok:'ok', degraded:'inestable', down:'sin respuesta', unknown:'sin datos'}[c.status] || 'sin datos';
+      cEl.className = 'vlm-sub vlm-chat ' + (c.status || 'unknown');
+      cEl.innerHTML = `<i class="vlm-chat-dot"></i>chat ${_escapeHtml(st)}${lat ? ' · ' + lat : ''}`;
+      cEl.title = `Modelo del chat: ${cm2}\nÚltima hora: ${c.ok_1h||0} ok / ${c.err_1h||0} errores` +
+                  (c.last_error ? `\nÚltimo error: ${c.last_error}` : '');
+    }
+    card.title = `Visión: ${v.model_real || '—'} (${v.cams_fresh}/${v.cams_total} cámaras con análisis en los últimos 5 min; ` +
+                 `de noche sin movimiento es normal que sean pocas)\n` +
+                 `Chat: ${(c.model_real || c.model || '—')} · ${c.status || '—'}\n` +
                  `alias solicitado: ${v.model || '—'}\n` +
                  `endpoint: ${v.endpoint || '—'}\nEstado: ${v.status}` +
                  (v.latency_ms ? ` · ${v.latency_ms} ms promedio` : '');
@@ -2391,7 +2450,8 @@ function _inlineMd(s){
   return s
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[E(\d{1,2})\]/g, '<button type="button" class="va-cite" data-ref="E$1" title="Ver evidencia E$1">$1</button>');
 }
 
 // Se escapa PRIMERO y luego se formatea: el texto del LLM nunca puede inyectar HTML.
@@ -2468,62 +2528,209 @@ function _appendChatMessage(role, text, opts = {}) {
   return id;
 }
 
-chatFormEl.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const msg = chatInputEl.value.trim();
-  if (!msg) return;
+// ── Vision Agent: respuesta en streaming con secciones al estilo Morphic ─────────
+const VA_ICO = {
+  search:  '<svg class="ico va-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  image:   '<svg class="ico va-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
+  answer:  '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
+  sources: '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+  related: '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  arrow:   '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  copy:    '<svg class="ico va-ico" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  retry:   '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  up:      '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M7 10v11H4V10zM7 10l4-8a3 3 0 0 1 3 3v4h5.5a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.1 21H7"/></svg>',
+  down:    '<svg class="ico va-ico" viewBox="0 0 24 24"><path d="M17 14V3h3v11zM17 14l-4 8a3 3 0 0 1-3-3v-4H4.5a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.9 3H17"/></svg>',
+};
 
-  // UI: mensaje del usuario + bloquear input
+function _vaSection(cls, icon, title){
+  const sec = document.createElement('section');
+  sec.className = 'va-sec ' + cls;
+  sec.innerHTML = `<h4 class="va-h">${VA_ICO[icon]}${title}</h4><div class="va-body"></div>`;
+  return sec;
+}
+
+function _vaCreate(question){
+  const root = document.createElement('div');
+  root.className = 'chat-msg chat-msg-assistant va-msg';
+  root._va = { question, text: '', sources: [], images: [] };
+  root.innerHTML = `<details class="va-process"><summary>${VA_ICO.search}<span class="va-process-t">Consultando…</span></summary><ul class="va-steps"></ul></details>`;
+  root._va.answer = _vaSection('va-answer', 'answer', 'Respuesta');
+  root._va.answer.querySelector('.va-body').innerHTML = '<span class="va-typing"><i></i><i></i><i></i></span>';
+  root.appendChild(root._va.answer);
+  chatMsgsEl.appendChild(root);
+  chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  return root;
+}
+
+function _vaImages(root, imgs){
+  root._va.images = imgs;
+  const sec = _vaSection('va-images', 'image', 'Capturas');
+  const shown = imgs.slice(0, 4);
+  sec.querySelector('.va-body').innerHTML = '<div class="va-grid">' + shown.map((i, k) => {
+    if (!/^\/api\/snapshots\/file\/\d+$/.test(String(i.url || ''))) return '';
+    const more = (k === 3 && imgs.length > 4) ? `<span class="va-more">+${imgs.length - 4}</span>` : '';
+    const who = (i.personas || []).length ? `<b>${_escapeHtml(i.personas.join(', '))}</b>` : '';
+    return `<button type="button" class="va-img" data-idx="${k}"><img src="${i.url}" alt="${_escapeHtml(i.cam + ' ' + i.hora)}" loading="lazy">`
+         + `<span class="va-img-cap">${_escapeHtml(i.hora)} · ${_escapeHtml(i.cam)}${who ? ' · ' + who : ''}</span>${more}</button>`;
+  }).join('') + '</div>';
+  root.insertBefore(sec, root._va.answer);
+}
+
+function _vaSources(root, srcs){
+  root._va.sources = srcs;
+  const sec = _vaSection('va-sources', 'sources', `Evidencia · ${srcs.length}`);
+  sec.querySelector('.va-body').innerHTML = '<div class="va-badges">' + srcs.map(g => {
+    const rango = g.desde === g.hasta ? g.desde : `${g.desde}–${g.hasta}`;
+    return `<button type="button" class="va-badge" data-ref="${_escapeHtml(g.ref)}" title="${_escapeHtml(g.texto || '')}">`
+         + `<span class="va-badge-n">${_escapeHtml(g.ref.slice(1))}</span>${_escapeHtml(g.cam)} · ${_escapeHtml(g.tipo.replace(/_/g, ' '))} ×${g.n} · ${_escapeHtml(rango)}</button>`;
+  }).join('') + '</div>';
+  root.appendChild(sec);
+}
+
+function _vaRelated(root, qs){
+  if (!qs || !qs.length) return;
+  const sec = _vaSection('va-related', 'related', 'Relacionadas');
+  sec.querySelector('.va-body').innerHTML = qs.map(q =>
+    `<button type="button" class="va-rel">${VA_ICO.arrow}<span>${_escapeHtml(q)}</span></button>`).join('');
+  root.appendChild(sec);
+}
+
+function _vaActions(root){
+  const bar = document.createElement('div');
+  bar.className = 'va-actions';
+  bar.innerHTML = `<button type="button" class="va-act" data-act="copy" title="Copiar">${VA_ICO.copy}</button>`
+    + `<button type="button" class="va-act" data-act="retry" title="Reintentar">${VA_ICO.retry}</button>`
+    + `<button type="button" class="va-act" data-act="up" title="Buena respuesta">${VA_ICO.up}</button>`
+    + `<button type="button" class="va-act" data-act="down" title="Mala respuesta">${VA_ICO.down}</button>`
+    + `<span class="va-meta"></span>`;
+  root.appendChild(bar);
+  return bar;
+}
+
+function _vaLightbox(img){
+  let lb = document.getElementById('va-lightbox');
+  if (!lb){
+    lb = document.createElement('div');
+    lb.className = 'modal-backdrop va-lightbox';
+    lb.id = 'va-lightbox';
+    lb.innerHTML = '<div class="va-lb-inner"><button class="modal-x" type="button" title="Cerrar">✕</button><img alt=""><div class="va-lb-cap"></div></div>';
+    document.body.appendChild(lb);
+    const close = () => { lb.hidden = true; };
+    lb.querySelector('.modal-x').addEventListener('click', close);
+    lb.addEventListener('click', e => { if (e.target === lb) close(); });
+  }
+  lb.querySelector('img').src = img.url;
+  lb.querySelector('.va-lb-cap').textContent = `${img.hora || ''} · ${img.cam || ''}${(img.personas || []).length ? ' · ' + img.personas.join(', ') : ''} — ${img.texto || ''}`;
+  lb.hidden = false;
+}
+
+let _vaBusy = false;
+async function vaAsk(msg){
+  if (_vaBusy || !msg) return;
+  _vaBusy = true;
   _appendChatMessage('user', msg);
   chatInputEl.value = '';
   chatInputEl.disabled = true;
   chatSendEl.disabled = true;
-  chatStatusEl.textContent = 'pensando…';
-
-  const loadingId = _appendChatMessage('assistant', 'Analizando observaciones', { loading:true });
-
+  chatStatusEl.textContent = 'consultando…';
+  const root = _vaCreate(msg);
+  const body = root._va.answer.querySelector('.va-body');
+  let raf = 0;
+  const paint = () => {
+    raf = 0;
+    const visible = root._va.text.split('```related')[0];
+    body.innerHTML = _renderMarkdown(visible);
+    chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  };
+  const handle = (ev, d) => {
+    if (ev === 'process'){
+      root.querySelector('.va-process-t').textContent = 'Consultó: ' + (d.steps || []).slice(1).join(' · ') || 'estado en vivo';
+      root.querySelector('.va-steps').innerHTML = (d.steps || []).map(x => `<li>${_escapeHtml(x)}</li>`).join('');
+      if (!(d.steps || []).slice(1).length) root.querySelector('.va-process-t').textContent = 'Consultó: estado en vivo';
+    } else if (ev === 'images'){ _vaImages(root, d); }
+    else if (ev === 'sources'){ root._va.sources = d; }
+    else if (ev === 'delta'){ root._va.text += d.t; if (!raf) raf = requestAnimationFrame(paint); }
+    else if (ev === 'error'){ body.innerHTML = `<div class="chat-msg-error">${_escapeHtml(d.message || 'Error')}</div>`; root._va.failed = true; }
+    else if (ev === 'done'){
+      root._va.text = d.text || root._va.text;
+      paint();
+      if (root._va.sources.length) _vaSources(root, root._va.sources);
+      _vaRelated(root, d.related);
+      const bar = _vaActions(root);
+      bar.querySelector('.va-meta').textContent = d.ms ? `${(d.ms/1000).toFixed(1)}s` : '';
+      chatHistory.push({ role:'user', content: msg });
+      chatHistory.push({ role:'assistant', content: root._va.text });
+      while (chatHistory.length > MAX_HISTORY * 2) chatHistory.shift();
+      chatStatusEl.textContent = 'listo' + (d.ms ? ` · ${(d.ms/1000).toFixed(1)}s` : '');
+    }
+  };
   try {
-    const resp = await fetch('/api/chat', {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-Id': chatSessionId,
-      },
-      body:    JSON.stringify({
-        message: msg,
-        history: chatHistory.slice(-MAX_HISTORY),
-      }),
+    const resp = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Id': chatSessionId },
+      body: JSON.stringify({ message: msg, history: chatHistory.slice(-MAX_HISTORY) }),
     });
-    const data = await resp.json();
-
-    const node = document.getElementById(loadingId);
-    if (node) {
-      node.classList.remove('loading');
-      if (data.error) {
-        node.className   = 'chat-msg chat-msg-error';
-        node.textContent = data.response || 'Error desconocido';
-      } else {
-        node.innerHTML = _renderMarkdown(data.response || '(sin respuesta)') + _renderChatImages(data.images);
-        chatHistory.push({ role:'user',      content: msg });
-        chatHistory.push({ role:'assistant', content: data.response });
-        // Mantener historial acotado
-        while (chatHistory.length > MAX_HISTORY * 2) chatHistory.shift();
+    if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;){
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0){
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        let ev = 'message', data = '';
+        for (const line of chunk.split('\n')){
+          if (line.startsWith('event:')) ev = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (data) { try { handle(ev, JSON.parse(data)); } catch (_) {} }
       }
     }
-    const ms  = data.ms ? `${data.ms}ms` : '';
-    const ctx = data.context_cameras != null ? ` · ctx ${data.context_cameras} cám` : '';
-    chatStatusEl.textContent = `listo${ctx}${ms ? ' · ' + ms : ''}`;
+    if (root._va.failed) chatStatusEl.textContent = 'error';
   } catch (err) {
-    const node = document.getElementById(loadingId);
-    if (node) {
-      node.className   = 'chat-msg chat-msg-error';
-      node.textContent = 'Error de red: ' + err.message;
-    }
+    body.innerHTML = `<div class="chat-msg-error">Error de red: ${_escapeHtml(err.message)}</div>`;
     chatStatusEl.textContent = 'error';
   } finally {
+    _vaBusy = false;
     chatInputEl.disabled = false;
-    chatSendEl.disabled  = false;
+    chatSendEl.disabled = false;
     chatInputEl.focus();
+  }
+}
+
+chatFormEl.addEventListener('submit', (e) => {
+  e.preventDefault();
+  vaAsk(chatInputEl.value.trim());
+});
+
+chatMsgsEl.addEventListener('click', (e) => {
+  const msgEl = e.target.closest('.va-msg');
+  const va = msgEl && msgEl._va;
+  const cite = e.target.closest('.va-cite, .va-badge');
+  if (cite && va){
+    const g = va.sources.find(x => x.ref === cite.dataset.ref);
+    msgEl.querySelectorAll('.va-badge').forEach(b => b.classList.toggle('on', b.dataset.ref === cite.dataset.ref));
+    if (g && g.url) _vaLightbox({ url: g.url, hora: g.hasta, cam: g.cam, personas: g.personas, texto: g.texto });
+    return;
+  }
+  const img = e.target.closest('.va-img');
+  if (img && va){ _vaLightbox(va.images[+img.dataset.idx]); return; }
+  const rel = e.target.closest('.va-rel');
+  if (rel){ vaAsk(rel.querySelector('span').textContent); return; }
+  const act = e.target.closest('.va-act');
+  if (act && va){
+    const a = act.dataset.act;
+    if (a === 'copy'){ navigator.clipboard && navigator.clipboard.writeText(va.text); act.classList.add('done'); }
+    else if (a === 'retry'){ vaAsk(va.question); }
+    else if (a === 'up' || a === 'down'){
+      msgEl.querySelectorAll('.va-act[data-act="up"], .va-act[data-act="down"]').forEach(b => b.classList.remove('on'));
+      act.classList.add('on');
+      fetch('/api/chat/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: chatSessionId, label: a, question: va.question, answer: va.text }) }).catch(() => {});
+    }
   }
 });
 
