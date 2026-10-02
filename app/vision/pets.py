@@ -1,0 +1,127 @@
+"""Recolector de recortes de perros/gatos para etiquetar las mascotas de la casa."""
+import json
+import logging
+import os
+import threading
+import time
+
+import cv2
+
+logger = logging.getLogger(__name__)
+
+ROOT = os.environ.get("PET_DIR", "/app/data/pets")
+ENABLED = os.environ.get("PET_COLLECT", "true").lower() == "true"
+MIN_CONF = float(os.environ.get("PET_MIN_CONF", "0.45"))
+MIN_SIDE = int(os.environ.get("PET_MIN_SIDE", "36"))
+COOLDOWN_S = float(os.environ.get("PET_COOLDOWN_S", "40"))
+MAX_TOTAL = int(os.environ.get("PET_MAX_TOTAL", "4000"))
+LABELS = ("negro", "shiba", "pug", "otro", "descartar")
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS pet_crops (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  file       TEXT NOT NULL,
+  cam_id     TEXT NOT NULL,
+  ts         REAL NOT NULL,
+  cls        TEXT NOT NULL,
+  conf       REAL,
+  w          INTEGER,
+  h          INTEGER,
+  label      TEXT,
+  labeled_ts REAL
+);
+CREATE INDEX IF NOT EXISTS idx_pet_label ON pet_crops(label);
+CREATE INDEX IF NOT EXISTS idx_pet_ts ON pet_crops(ts);
+"""
+
+
+class PetCollector:
+    def __init__(self, db):
+        self.db = db
+        self._last: dict = {}
+        self._lock = threading.Lock()
+        os.makedirs(ROOT, exist_ok=True)
+        with db._lock:
+            db._conn.executescript(_SCHEMA)
+            n = db._conn.execute("SELECT COUNT(*) FROM pet_crops").fetchone()[0]
+        if n == 0:
+            self._import_seed()
+        logger.info("PetCollector: %s, %d recortes en la base", "activo" if ENABLED else "apagado", n)
+
+    def _import_seed(self) -> None:
+        meta_path = "/app/data/skillopt/dogs/meta.json"
+        if not os.path.exists(meta_path):
+            return
+        try:
+            meta = json.load(open(meta_path))
+        except Exception:
+            return
+        day = os.path.join(ROOT, "seed")
+        os.makedirs(day, exist_ok=True)
+        k = 0
+        with self.db._lock:
+            for m in meta:
+                src = m.get("f", "")
+                if not os.path.exists(src):
+                    continue
+                dst = os.path.join(day, os.path.basename(src))
+                try:
+                    os.replace(src, dst) if os.path.dirname(src) == "/app/data/skillopt/dogs" else None
+                except OSError:
+                    continue
+                w, h = (m.get("wh") or [0, 0])[:2]
+                self.db._conn.execute("INSERT INTO pet_crops (file, cam_id, ts, cls, conf, w, h) VALUES (?,?,?,?,?,?,?)",
+                                      (os.path.relpath(dst, ROOT), m["cam"], m["ts"], m["cls"], m.get("conf"), w, h))
+                k += 1
+            self.db._conn.commit()
+        logger.info("PetCollector: importados %d recortes semilla", k)
+
+    def update(self, cam_id, result, frame, ts=None) -> None:
+        if not ENABLED:
+            return
+        now = ts or time.time()
+        if now - self._last.get(cam_id, 0) < COOLDOWN_S:
+            return
+        objs = [o for o in (getattr(result, "objects", None) or []) if o["c"] in ("perro", "gato") and o["conf"] >= MIN_CONF]
+        if not objs:
+            return
+        fh, fw = frame.shape[:2]
+        rw, rh = getattr(result, "frame_w", 0) or fw, getattr(result, "frame_h", 0) or fh
+        sx, sy = fw / rw, fh / rh
+        saved = 0
+        for o in sorted(objs, key=lambda o: -o["conf"])[:3]:
+            x1, y1, x2, y2 = o["b"]
+            x1, x2, y1, y2 = int(x1 * sx), int(x2 * sx), int(y1 * sy), int(y2 * sy)
+            if min(x2 - x1, y2 - y1) < MIN_SIDE:
+                continue
+            pad = 6
+            crop = frame[max(0, y1 - pad):min(fh, y2 + pad), max(0, x1 - pad):min(fw, x2 + pad)]
+            k = 384 / max(crop.shape[:2])
+            if k < 1.0:
+                crop = cv2.resize(crop, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
+            day = time.strftime("%Y%m%d", time.localtime(now))
+            os.makedirs(os.path.join(ROOT, day), exist_ok=True)
+            rel = f"{day}/{cam_id}_{int(now * 1000)}_{saved}.jpg"
+            cv2.imwrite(os.path.join(ROOT, rel), crop, [cv2.IMWRITE_JPEG_QUALITY, 88])
+            with self.db._lock:
+                self.db._conn.execute("INSERT INTO pet_crops (file, cam_id, ts, cls, conf, w, h) VALUES (?,?,?,?,?,?,?)",
+                                      (rel, cam_id, now, o["c"], o["conf"], x2 - x1, y2 - y1))
+                self.db._conn.commit()
+            saved += 1
+        if saved:
+            self._last[cam_id] = now
+            self._trim()
+
+    def _trim(self) -> None:
+        with self.db._lock:
+            n = self.db._conn.execute("SELECT COUNT(*) FROM pet_crops").fetchone()[0]
+            if n <= MAX_TOTAL:
+                return
+            rows = self.db._conn.execute("SELECT id, file FROM pet_crops WHERE label IS NULL ORDER BY ts ASC LIMIT ?", (n - MAX_TOTAL,)).fetchall()
+            for rid, f in rows:
+                try:
+                    os.remove(os.path.join(ROOT, f))
+                except OSError:
+                    pass
+                self.db._conn.execute("DELETE FROM pet_crops WHERE id=?", (rid,))
+            self.db._conn.commit()

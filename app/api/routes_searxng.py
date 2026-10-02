@@ -141,6 +141,17 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
             "content": f"{g['n']} alertas de tipo {g['tipo']} en {g['cam']} entre {g['desde']} y {g['hasta']}; "
                        f"hasta {g['max_personas']} personas. Descripción: {g['texto']}.{quien}"})
 
+    if re.search(r"veh[ií]culo|auto|carro|coche|moto|camion|camioneta|estacion|placa|aparcad", nq):
+        from app.vision.parked import list_vehicles
+        for v in list_vehicles(db, limit=12):
+            dur = v["duration_s"]
+            tiempo = f"{dur // 3600} h {dur % 3600 // 60} min" if dur >= 3600 else f"{dur // 60} min"
+            llegada = time.strftime("%d-%b %H:%M", time.localtime(v["first_ts"]))
+            estado = "sigue estacionado" if v["state"] == "parked" else "ya se fue"
+            placa = f" Placa: {v['plate']}." if v.get("plate") else " Placa sin registrar."
+            results.append({"title": f"Vehículo {v['cls']} en {names.get(v['cam_id'], v['cam_id'])} · {estado}",
+                            "url": f"{base}/api/vehicles/{v['id']}/image" if v["has_thumb"] else f"{base}/",
+                            "content": f"{v['cls']} estacionado en {names.get(v['cam_id'], v['cam_id'])} desde {llegada} ({tiempo}); {estado}.{placa}"})
     for g in groups:
         if g["url"]:
             results.append({"title": f"{g['cam']} {g['hasta']} · {g['tipo'].replace('_', ' ')}",

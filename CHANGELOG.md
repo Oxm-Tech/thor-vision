@@ -1,0 +1,101 @@
+# Changelog
+
+Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
+
+## v2.2.0 — Vision Agent, vehículos y mascotas (2026-10-02)
+
+El asistente pasa a ser Vision Agent completo (Morphic en español sobre tus cámaras), YOLO reconoce objetos y se estrenan el registro de vehículos estacionados y el etiquetado de mascotas.
+
+- **Vision Agent · Asistente completo sobre tus datos**: El botón del chat abre Morphic auto-hospedado, en español, con fuentes citadas, capturas, preguntas relacionadas e historial. No busca en la web: consulta alertas, personas, capturas y vehículos de THOR. Los botones de ejemplo (Alertas, Personas, Cámaras, Capturas, Reportes) son preguntas que el sistema sabe responder.
+- **Visión · YOLO reconoce objetos, no solo personas**: En la misma pasada detecta autos, motos, camiones, autobuses, bicicletas, perros, gatos, mochilas, bolsos y maletas, sin costo extra medible. Las cajas quedan guardadas y se le dan al VLM como pista para describir mejor la escena. Se apaga con YOLO_OBJECTS_ENABLED=false.
+- **Alertas · Menos falsas 'persona en el suelo'**: Una captura reveló que el VLM inventaba personas caídas en una oficina vacía. Ahora la alerta solo pasa si YOLO ve una persona con forma horizontal; si no, se descarta y queda la descripción.
+- **Vehículos · Registro de vehículos estacionados**: En Exterior 1 y 2, todo vehículo quieto más de 3 minutos queda registrado con miniatura, hora de llegada, permanencia y estado (estacionado o se fue). La placa se puede capturar a mano; la lectura automática no está incluida porque solo es viable en los 1 o 2 lugares más cercanos de la cámara de 5 MP.
+- **Mascotas · Etiquetado de las tres mascotas**: El sistema recolecta recortes de perros y gatos y ofrece una página para etiquetarlos (negro, shiba, pug, otro). Con unas 15 etiquetas por mascota se podrá entrenar el reconocimiento, para que la alerta de animal solo salte con perros desconocidos.
+- **Línea de tiempo · Curvas dinámicas**: El carril General dibuja áreas apiladas suaves por tipo de alerta, con el tramo en curso punteado, burbuja con el valor al pasar el mouse y animación al cargar.
+- **Reportes · Reportes completos**: El tope de 900 tokens cortaba los reportes de periodos con muchas alertas y se perdían las secciones 3 y 4. Subió a 1,600 tokens con 120 s de espera.
+- **Plataforma · Versión y notas de release**: La versión actual aparece en la barra inferior; al pulsarla se abre este historial con lo que trae cada release.
+
+Correcciones:
+- El entrenamiento de prompts ya no puntúa como cero una falla del gateway: reintenta con espera y se detiene.
+- La cola de entrenamiento comprueba que el gateway y el cupo de Claude respondan antes de empezar.
+
+Notas:
+- Pendiente: lectura automática de placas, reconocimiento de mascotas por nombre, y dibujar cajas sobre las detecciones solo cuando existan.
+
+## v2.1.0 — Reglas por cámara y asistente con memoria (2026-10-01)
+
+Cada cámara tiene su propio horario y criterio de alerta, los reportes y el chat usan cifras exactas de la base y aparece la línea de tiempo de alertas.
+
+- **Cámaras · Vista de conexiones**: El botón de conexiones muestra por cámara la IP, el puerto y la ruta RTSP (sin credenciales), el decodificador usado, la resolución nativa, el estado, los fps y el estado de SUNAPI (movimiento y snapshots).
+- **Cámaras · Rótulo, fecha y hora en la imagen**: Las 10 cámaras muestran su nombre real, fecha y hora grabados en el video. La hora sincroniza por NTP.
+- **Reglas · Horarios y criterios por cámara**: Sala de Juntas alerta solo de 00:00 a 06:00 entre semana y no los fines de semana; Cocina de 00:00 a 07:00; Escaleras de entrada vigila merodeo y actividad en fin de semana; Acceso Site alerta con cualquier persona. En exteriores un auto solo alerta si lo fuerzan, no por recargarse en él.
+- **Reglas · Personas y mascotas conocidas**: En cocina y garages las personas con nombre reconocido por rostro no generan alerta nocturna ni de acceso, y las tres mascotas de la casa no generan alerta de animal.
+- **Alertas · Uso de teléfono en exteriores**: Nueva alerta cuando alguien mira o usa su teléfono afuera, aunque a lo lejos solo se vea una luz en la mano.
+- **Reportes y chat · Hechos exactos del periodo**: Los conteos por cámara, tipo de alerta, personas y visitas se calculan en la base, con comparación contra el periodo anterior, y el modelo solo redacta. Ya no se cortan en 200 alertas ni se inventan cifras.
+- **Chat · Memoria por sesión y capturas**: El chat recuerda la conversación, entiende 'esas alertas', adjunta las capturas de las alertas con las personas conocidas presentes y acepta rangos escritos como 'entre 21:00 y 22:00'.
+- **Modelos · DeepSeek para chat y reportes**: El chat y los reportes usan DeepSeek con su propia llave del gateway; el análisis de cámaras sigue con Qwen.
+- **Vision Agent · Chat en streaming con evidencia**: Respuesta que aparece mientras se genera, con proceso consultado, evidencia citada [E#], capturas, preguntas relacionadas y calificación 👍/👎.
+- **Línea de tiempo · Alertas por cámara**: Carril general y un carril por cámara con zoom +/−, desplazamiento con las flechas y selección de un rango para preguntarle al asistente.
+- **Interfaz · Chat flotante, íconos y accesibilidad**: El chat es un botón flotante desplegable; los íconos son SVG, hay foco visible, se respeta 'reducir movimiento' y Esc cierra los modales. Se agrega una animación que explica el pipeline.
+- **Plataforma · Repositorio y CI**: El código se sincroniza con GitHub con revisión por PR, escaneo de secretos y chequeo estático, y las variables NEMOTRON_* pasan a VLM_* conservando las anteriores.
+
+Correcciones:
+- cam-191 volvía a FFmpeg por software tras una caída y no regresaba a NVDEC: ahora reintenta.
+- La detección de caras del flujo en vivo fallaba en silencio por un nombre sin definir (face_yaw).
+- La alerta 'fuera de horario' se disparaba de día.
+
+## v2.0.0 — Personas, escenas y movimiento nativo (2026-09-30)
+
+El sistema deja de analizar a ciegas: usa el movimiento de la propia cámara, entiende cada escena y sigue a las personas con identidad entre visitas.
+
+- **Cámaras · Movimiento nativo por SUNAPI**: El detector de movimiento de las cámaras Hanwha disparó el análisis en las 10 cámaras. El 67 % de las llamadas al modelo eran latidos sin actividad; ahora el latido es cada 15 minutos.
+- **VLM · Prompt y alertas por cámara**: config/scenes.yml define dónde está cada cámara, qué importa, qué ignorar y qué alertas permite. El resultado se valida y se sanea, y no se llama al modelo si YOLO no vio una persona.
+- **Personas · Visitas e identidades**: Cada persona seguida en una cámara es una visita con su mejor rostro y cuerpo. Los rostros se agrupan en sujetos 'Persona #N' que se pueden renombrar, fusionar o borrar, con modal de Personas e identidades.
+- **Captura · Pre-roll y análisis retroactivo**: Se guardan 6 segundos de cuadros a resolución nativa por cámara; al detectar a alguien se reanalizan los cuadros anteriores para recuperar el momento real de llegada.
+- **Rostros · Caza de rostros**: Mientras una persona no tiene buen rostro, YOLO sube a 4 fps y se piden snapshots completos a la cámara, filtrando por nitidez y pose.
+- **Descripciones · Descripciones siempre descriptivas**: Se acabó el 'Sin actividad relevante': cada evento describe la escena aunque no haya alerta, y el VLM recibe un recorte ampliado de las personas.
+- **Datos · Retención de datos biométricos**: Los datos de personas sin nombre caducan a los 30 días; los nombrados se conservan.
+- **Dashboard · Indicadores y medidores**: Cada tarjeta muestra movimiento, YOLO y última consulta al VLM. El medidor de GPU usa nvidia-smi y el de CPU el uso real.
+
+Correcciones:
+- El VLM fallaba 9 % de las veces por exceder el contexto: el video se reescala a 640x360.
+
+Notas:
+- Nemotron se renombra a VLM en el código; los tipos guardados en la base se conservan.
+
+## v1.2.0 — Captura por hardware y rostros (2026-09-15)
+
+La decodificación pasa al hardware del Jetson y el sistema empieza a recordar rostros y a clasificar alertas.
+
+- **Captura · GStreamer con NVDEC**: La decodificación de video pasó de FFmpeg por software a hardware: el CPU del contenedor bajó de 434 % a 47 %.
+- **Captura · Resolución nativa**: Las 10 cámaras se procesan a su resolución real; cam-113 recibe su formato vertical.
+- **Rostros · Miniaturas e historial**: Los rostros detectados se guardan como miniatura y hay un historial consultable.
+- **Alertas · Triage 👍/👎 y reportes**: Cada alerta se puede marcar importante o ruido, y un reporte generado por IA resume el periodo usando ese criterio.
+- **Observabilidad · Consumo de IA en Grafana**: El dashboard separa errores del gateway por código y muestra latencias.
+
+Correcciones:
+- Los fps reportados eran ráfagas y no la tasa real; ahora se calculan en una ventana.
+- Rostros falsos (cuadros y reflejos): se exige confianza del detector y una persona de YOLO debajo.
+- El video enviado al VLM se limita a 10 cuadros.
+
+## v1.1.0 — Dashboard operativo (2026-09-11)
+
+El dashboard gana configuración, histórico y chat con memoria del pasado.
+
+- **Dashboard · Rediseño y panel de configuración**: Nuevo diseño verde NVIDIA, histórico con filtros por rango y cámara, grid movible y línea de eventos al fondo.
+- **Chat · Chat con histórico real**: La ventana de tiempo se infiere de la pregunta; hasta 12 horas se lista evento por evento y más allá se resume.
+- **Cámaras · Nombres y zonas reales**: Las cámaras tienen nombre y zona, y Cowork suma un pipeline de detalle de pantallas.
+- **Auditoría · Quién consulta el sitio**: Cada acceso al dashboard queda registrado con IP y navegador, además de la analítica con Umami.
+- **Modelos · Gateway LLM**: El análisis pasa por un gateway con reintentos ante fallas transitorias.
+
+## v1.0.0 — Lanzamiento inicial (2026-06-05)
+
+Primera versión publicada de THOR Vision.
+
+- **Captura · RTSP multicámara**: Un hilo por cámara, con buffer circular en memoria.
+- **Análisis · Escena con modelo multimodal**: El modelo solo se consulta cuando hay movimiento.
+- **Dashboard · Cuadrícula en vivo y chat**: Estado de las cámaras, snapshots y preguntas en lenguaje natural.
+- **Datos · Persistencia y retención**: Eventos y snapshots en SQLite y disco, con borrado automático.
+
+Notas:
+- Autor del lanzamiento inicial: Diego Reyes.

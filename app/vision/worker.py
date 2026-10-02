@@ -38,6 +38,7 @@ class VisionQueue:
     def __init__(self, store: DetectionStore, face_db: FaceDB, models,
                  db=None, visits=None):
         self.visits = visits   # VisitManager | None — tracker + visitas + sujetos
+        self.hooks: list = []  # callables(cam_id, result, frame) por cuadro en vivo (vehiculos, mascotas)
         self.store = store
         self.face_db = face_db
         self.models = models
@@ -126,6 +127,11 @@ class VisionQueue:
                     self.visits.update(cam_id, result, frame)
                 else:
                     self._log_sightings(cam_id, result, frame)
+                for hook in self.hooks:
+                    try:
+                        hook(cam_id, result, frame)
+                    except Exception as exc:
+                        logger.warning("hook %s fallo: %s", getattr(hook, '__qualname__', hook), exc)
                 logger.debug("inference cam=%s  %.0fms", cam_id, (time.monotonic()-t0)*1000)
             except queue.Empty:
                 continue

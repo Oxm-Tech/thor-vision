@@ -910,6 +910,37 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .va-fbtn { width:28px; height:28px; border:0; border-radius:8px; background:transparent; color:var(--text-secondary); cursor:pointer; font-size:.95rem; }
 .va-fbtn:hover { background:rgba(255,255,255,.08); color:var(--text-primary); }
 #va-iframe { flex:1; width:100%; border:0; background:#0e1117; }
+
+/* ── versiones, vehiculos y mascotas ── */
+.footer-ver { border:1px solid var(--border); background:rgba(255,255,255,.05); color:var(--text-primary); border-radius:999px; padding:2px 10px; font-size:.72rem; cursor:pointer; margin-right:10px; font-variant-numeric:tabular-nums; }
+.footer-ver:hover { border-color:var(--oxm-blue); color:var(--oxm-blue); }
+.rel-sec { padding:12px 14px; margin-bottom:10px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.02); }
+.rel-sec.cur { border-color:var(--oxm-blue); background:var(--oxm-blue-glow); }
+.rel-h { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; font-size:1rem; color:var(--text-primary); margin:0 0 4px; }
+.rel-h small { margin-left:auto; color:var(--text-secondary); font-weight:400; font-size:.75rem; }
+.rel-v { font-variant-numeric:tabular-nums; color:var(--oxm-blue); }
+.rel-cur { font-size:.66rem; border:1px solid var(--oxm-blue); color:var(--oxm-blue); border-radius:999px; padding:1px 7px; }
+.rel-sum { color:var(--text-secondary); font-size:.82rem; margin:0 0 8px; }
+.rel-list { margin:0 0 6px 16px; padding:0; font-size:.8rem; line-height:1.45; color:var(--text-primary); }
+.rel-list li { margin:3px 0; }
+.rel-list.fix { color:var(--text-secondary); }
+.rel-area { display:inline-block; margin-right:6px; padding:0 6px; border-radius:999px; font-size:.64rem; background:rgba(255,255,255,.08); color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+.rel-sub { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-secondary); margin:6px 0 2px; }
+.veh-img { width:84px; height:56px; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
+.veh-plate { width:110px; background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); padding:4px 6px; text-transform:uppercase; }
+.veh-plate.bad { border-color:#ff5c5c; }
+.pet-stats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.pet-ready { border-color:var(--oxm-blue); color:var(--oxm-blue); }
+.pet-help { font-size:.78rem; color:var(--text-secondary); margin:4px 0 10px; }
+.pet-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; margin-bottom:10px; }
+.pet-card { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg-panel); transition:opacity .18s, transform .18s; }
+.pet-card.done { opacity:0; transform:scale(.94); }
+.pet-card img { width:100%; height:150px; object-fit:contain; background:#0b0e13; display:block; }
+.pet-meta { font-size:.68rem; color:var(--text-secondary); padding:4px 8px; }
+.pet-btns { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:0 6px 6px; }
+.pet-b { padding:5px 4px; border:1px solid var(--border); border-radius:6px; background:rgba(255,255,255,.04); color:var(--text-primary); font-size:.72rem; cursor:pointer; }
+.pet-b:hover { border-color:var(--oxm-blue); }
+.pet-descartar { grid-column:1 / -1; color:var(--text-secondary); }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -942,6 +973,8 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <div class="header-clock" id="clock">—</div>
   <button class="hdr-btn" id="btn-history" title="Histórico de eventos" aria-label="Histórico de eventos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <button class="hdr-btn" id="btn-spot" title="Cómo funciona OXM Vision (animación)" aria-label="Cómo funciona OXM Vision (animación)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></button>
+  <button class="hdr-btn" id="btn-veh" title="Vehículos estacionados" aria-label="Vehículos estacionados"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 12h14"/></svg></button>
+  <button class="hdr-btn" id="btn-pets" title="Etiquetar mascotas" aria-label="Etiquetar mascotas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 12c-3 0-5 3-5 5 0 1.6 1.3 2.5 2.8 2.5 1.1 0 1.5-.5 2.2-.5s1.1.5 2.2.5c1.5 0 2.8-.9 2.8-2.5 0-2-2-5-5-5z"/></svg></button>
   <button class="hdr-btn" id="btn-conn" title="Conexiones a las cámaras" aria-label="Conexiones a las cámaras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg></button>
   <button class="hdr-btn" id="btn-reports" title="Reportes generados por IA" aria-label="Reportes generados por IA"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></svg></button>
   <button class="hdr-btn" id="btn-settings" title="Configuración" aria-label="Configuración"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -1070,6 +1103,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
       <div class="ws-dot" id="ws-dot"></div>
       <span id="ws-label">conectando...</span>
     </div>
+    <button type="button" class="footer-ver" id="f-ver" title="Notas de cada release">v—</button>
     <div class="footer-uptime" id="f-uptime">uptime —</div>
   </div>
 </footer>
@@ -2816,6 +2850,106 @@ function initSpot(){
 }
 _onDomReady(initSpot);
 
+// ── Versión y notas de cada release ─────────────────────────────────────────
+function initReleases(){
+  const btn = document.getElementById('f-ver'), modal = document.getElementById('rel-modal');
+  if (!btn || !modal) return;
+  fetch('/api/version').then(r => r.json()).then(v => { btn.textContent = 'v' + v.version; btn.title = `${v.name} · ${v.released} — ver notas de cada release`; }).catch(() => {});
+  const close = () => { modal.hidden = true; };
+  document.getElementById('rel-close')?.addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  btn.addEventListener('click', async () => {
+    modal.hidden = false;
+    const box = document.getElementById('rel-body');
+    try {
+      const d = await (await fetch('/api/releases')).json();
+      box.innerHTML = d.releases.map(r => `<section class="rel-sec${r.version === d.current ? ' cur' : ''}">
+        <h3 class="rel-h"><span class="rel-v">v${_escapeHtml(r.version)}</span> ${_escapeHtml(r.name)}${r.version === d.current ? '<span class="rel-cur">actual</span>' : ''}<small>${_escapeHtml(r.date)}</small></h3>
+        <p class="rel-sum">${_escapeHtml(r.summary)}</p>
+        <ul class="rel-list">${r.highlights.map(h => `<li><span class="rel-area">${_escapeHtml(h.area)}</span><b>${_escapeHtml(h.title)}</b> — ${_escapeHtml(h.text)}</li>`).join('')}</ul>
+        ${r.fixes && r.fixes.length ? `<div class="rel-sub">Correcciones</div><ul class="rel-list fix">${r.fixes.map(f => `<li>${_escapeHtml(f)}</li>`).join('')}</ul>` : ''}
+        ${r.notes && r.notes.length ? `<div class="rel-sub">Notas</div><ul class="rel-list fix">${r.notes.map(f => `<li>${_escapeHtml(f)}</li>`).join('')}</ul>` : ''}
+      </section>`).join('');
+    } catch (e) { box.textContent = 'No se pudieron cargar las notas.'; }
+  });
+}
+_onDomReady(initReleases);
+
+// ── Vehículos estacionados ──────────────────────────────────────────────────
+function initVehicles(){
+  const btn = document.getElementById('btn-veh'), modal = document.getElementById('veh-modal');
+  if (!btn || !modal) return;
+  let state = 'parked', timer = null;
+  const close = () => { modal.hidden = true; if (timer){ clearInterval(timer); timer = null; } };
+  const dur = s => s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s % 3600 / 60)} min` : `${Math.max(1, Math.floor(s / 60))} min`;
+  async function load(){
+    try {
+      const d = await (await fetch('/api/vehicles?limit=200' + (state ? '&state=' + state : ''))).json();
+      document.getElementById('veh-note').textContent = `Cámaras: ${d.tracked_cams.join(', ')} · se registra un vehículo quieto más de ${Math.round(d.min_parked_s / 60)} min · la placa se captura a mano`;
+      document.getElementById('veh-body').innerHTML = d.vehicles.length ? d.vehicles.map(v => `<tr>
+        <td>${v.has_thumb ? `<img class="veh-img" src="/api/vehicles/${v.id}/image" loading="lazy" alt="">` : ''}</td>
+        <td>${_escapeHtml(v.cam)}</td><td>${_escapeHtml(v.cls)}</td>
+        <td>${_escapeHtml(new Date(v.first_ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }))}</td>
+        <td>${dur(v.duration_s)}</td>
+        <td>${v.state === 'parked' ? '<span class="conn-ok">estacionado</span>' : '<span class="conn-warn">se fue</span>'}</td>
+        <td><input class="veh-plate" data-id="${v.id}" value="${_escapeHtml(v.plate || '')}" placeholder="sin placa" maxlength="12" aria-label="Placa"></td></tr>`).join('')
+        : '<tr><td colspan="7" style="padding:14px;color:var(--text-secondary)">Sin vehículos registrados todavía.</td></tr>';
+    } catch (e) { document.getElementById('veh-note').textContent = 'Error al leer /api/vehicles'; }
+  }
+  btn.addEventListener('click', () => { modal.hidden = false; load(); timer = setInterval(load, 20000); });
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.getElementById('veh-close')?.addEventListener('click', close);
+  document.getElementById('veh-tabs')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-st]'); if (!b) return;
+    state = b.dataset.st; document.querySelectorAll('#veh-tabs .hist-range').forEach(x => x.classList.toggle('on', x === b)); load();
+  });
+  document.getElementById('veh-body')?.addEventListener('change', async e => {
+    const inp = e.target.closest('.veh-plate'); if (!inp) return;
+    const r = await fetch(`/api/vehicles/${inp.dataset.id}`, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ plate: inp.value }) });
+    inp.classList.toggle('bad', !r.ok); if (r.ok) inp.value = inp.value.toUpperCase();
+  });
+}
+_onDomReady(initVehicles);
+
+// ── Etiquetado de mascotas ──────────────────────────────────────────────────
+function initPets(){
+  const btn = document.getElementById('btn-pets'), modal = document.getElementById('pets-modal');
+  if (!btn || !modal) return;
+  const LAB = [['negro', 'Negro pequeño'], ['shiba', 'Shiba café'], ['pug', 'Pug'], ['otro', 'Otro'], ['descartar', 'Descartar']];
+  async function stats(){
+    try {
+      const d = await (await fetch('/api/pets/stats')).json();
+      const c = d.counts || {};
+      document.getElementById('pet-stats').innerHTML = LAB.map(([k, n]) => `<span class="tl-chip">${n} <b>${c[k] || 0}</b></span>`).join('') + `<span class="tl-chip">Sin etiquetar <b>${c.sin_etiqueta || 0}</b></span>`
+        + (d.ready_to_train ? '<span class="tl-chip pet-ready">Listo para entrenar</span>' : '');
+    } catch (e) {}
+  }
+  async function more(){
+    const g = document.getElementById('pet-grid');
+    try {
+      const d = await (await fetch('/api/pets/crops?unlabeled=1&limit=12')).json();
+      if (!d.crops.length){ g.innerHTML = '<p class="pet-help">No quedan recortes por etiquetar. Se siguen recolectando conforme aparecen perros.</p>'; return; }
+      g.innerHTML = d.crops.map(c => `<div class="pet-card" data-id="${c.id}"><img src="/api/pets/crops/${c.id}/image" loading="lazy" alt="">
+        <div class="pet-meta">${_escapeHtml(c.cam)} · ${_escapeHtml(new Date(c.ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }))}</div>
+        <div class="pet-btns">${LAB.map(([k, n]) => `<button type="button" class="pet-b pet-${k}" data-l="${k}">${n}</button>`).join('')}</div></div>`).join('');
+    } catch (e) { document.getElementById('pet-msg').textContent = 'Error al cargar recortes'; }
+  }
+  btn.addEventListener('click', () => { modal.hidden = false; stats(); more(); });
+  const close = () => { modal.hidden = true; };
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.getElementById('pets-close')?.addEventListener('click', close);
+  document.getElementById('pet-more')?.addEventListener('click', () => { stats(); more(); });
+  document.getElementById('pet-grid')?.addEventListener('click', async e => {
+    const b = e.target.closest('.pet-b'); if (!b) return;
+    const card = b.closest('.pet-card');
+    const r = await fetch(`/api/pets/crops/${card.dataset.id}/label`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ label: b.dataset.l }) });
+    if (!r.ok) { document.getElementById('pet-msg').textContent = 'No se pudo guardar'; return; }
+    card.classList.add('done'); setTimeout(() => card.remove(), 180); stats();
+    if (document.querySelectorAll('#pet-grid .pet-card:not(.done)').length <= 1) setTimeout(more, 260);
+  });
+}
+_onDomReady(initPets);
+
 function initConnections(){
   const btn = document.getElementById('btn-conn'), modal = document.getElementById('conn-modal');
   if (!btn || !modal) return;
@@ -3305,6 +3439,38 @@ setTimeout(_loadChatHistory, 300);
       <div class="modal-head"><span>🎬 OXM Vision · el pipeline</span>
         <button class="modal-x" id="spot-close" title="Cerrar">✕</button></div>
       <div class="modal-body"><iframe class="spot-frame" id="spot-frame" title="Animación OXM Vision" allow="autoplay"></iframe></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="rel-modal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-head"><span>Versiones de THOR Vision</span><button class="modal-x" id="rel-close" title="Cerrar">✕</button></div>
+      <div class="modal-body" id="rel-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="veh-modal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-head"><span>Vehículos estacionados</span><button class="modal-x" id="veh-close" title="Cerrar">✕</button></div>
+      <div class="modal-body">
+        <div class="hist-controls">
+          <div class="hist-ranges" id="veh-tabs"><button class="hist-range on" data-st="parked">Estacionados ahora</button><button class="hist-range" data-st="left">Ya se fueron</button><button class="hist-range" data-st="">Todos</button></div>
+          <span class="face-enroll-msg" id="veh-note"></span>
+        </div>
+        <div style="overflow-x:auto"><table class="conn-table"><thead><tr><th></th><th>Cámara</th><th>Tipo</th><th>Llegó</th><th>Permanencia</th><th>Estado</th><th>Placa</th></tr></thead><tbody id="veh-body"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="pets-modal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-head"><span>Etiquetar mascotas</span><button class="modal-x" id="pets-close" title="Cerrar">✕</button></div>
+      <div class="modal-body">
+        <div class="pet-stats" id="pet-stats"></div>
+        <p class="pet-help">Elige quién es cada perro. <b>Descartar</b> si el recorte no sirve (no es un perro, está cortado o borroso). Con unas 15 etiquetas de cada mascota se entrena el reconocimiento.</p>
+        <div class="pet-grid" id="pet-grid"></div>
+        <div class="hist-controls"><button class="hist-range" id="pet-more">Cargar más</button><span class="face-enroll-msg" id="pet-msg"></span></div>
+      </div>
     </div>
   </div>
 

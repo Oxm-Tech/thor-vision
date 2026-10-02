@@ -94,6 +94,11 @@ async def lifespan(app: FastAPI):
         db       = db,
         visits   = visit_manager,
     )
+    from app.vision.parked import ParkedTracker
+    from app.vision.pets import PetCollector
+    app.state.parked = ParkedTracker(db)
+    app.state.pets = PetCollector(db)
+    vision_queue.hooks = [app.state.parked.update, app.state.pets.update]
     vision_queue.start()
 
     if visit_manager is not None and os.environ.get("PREROLL_ENABLED", "true").lower() == "true":
@@ -307,6 +312,8 @@ from app.api.routes_timeline import router as timeline_router  # noqa: E402
 app.include_router(timeline_router)
 from app.api.routes_searxng import router as searxng_router  # noqa: E402
 app.include_router(searxng_router)
+from app.api.routes_extras import router as extras_router  # noqa: E402
+app.include_router(extras_router)
 app.include_router(people_router)
 
 
