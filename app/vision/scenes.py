@@ -45,15 +45,29 @@ class SceneContext:
     vehicles: bool
     catalog: dict = field(default_factory=dict)
     night_hours: tuple = (22, 6)
+    weekday_night: Optional[tuple] = None   # horario nocturno propio de lunes a viernes
+    weekend_mode: Optional[str] = None      # "note" = fin de semana sin alerta nocturna
+    known_pets: list = field(default_factory=list)
+
+    def _rule(self, now: Optional[float] = None) -> tuple:
+        lt = time.localtime(now or time.time())
+        weekend = lt.tm_wday >= 5
+        a, b = (self.weekday_night if (self.weekday_night and not weekend) else self.night_hours)
+        h = lt.tm_hour
+        night = (h >= a or h < b) if a > b else (a <= h < b)
+        mode = self.weekend_mode if (weekend and self.weekend_mode) else self.night_person
+        return night, mode, weekend
 
     def is_night(self, now: Optional[float] = None) -> bool:
-        h = time.localtime(now or time.time()).tm_hour
-        a, b = self.night_hours
-        return (h >= a or h < b) if a > b else (a <= h < b)
+        return self._rule(now)[0]
+
+    def night_alert(self, now: Optional[float] = None) -> bool:
+        night, mode, _ = self._rule(now)
+        return night and mode == "alert"
 
     def render(self, now: Optional[float] = None, video: bool = False) -> str:
         now = now or time.time()
-        night = self.is_night(now)
+        night, mode, weekend = self._rule(now)
         lt = time.strftime("%H:%M", time.localtime(now))
         lines = [
             f"CAMARA: {self.name} ({self.cam_id})",
@@ -66,7 +80,12 @@ class SceneContext:
             "CODIGOS DE ALERTA PERMITIDOS (usa solo estos en alert_types):",
             *[f"- {c}: {self.catalog.get(c, c)}" for c in sorted(self.alert_types)],
         ]
-        if night and self.night_person == "alert":
+        if self.known_pets:
+            lines.append("MASCOTAS CONOCIDAS (son de la casa, NO son alerta animal; nombralas como mascota): "
+                         + "; ".join(self.known_pets))
+        if weekend and self.weekend_mode == "note":
+            lines.append("FIN DE SEMANA: el uso casual de esta area es normal; no generes persona_nocturna.")
+        if night and mode == "alert":
             lines.append("REGLA NOCTURNA: aqui no deberia haber nadie de noche; "
                          "cualquier persona visible es alerta persona_nocturna.")
         elif night:
@@ -105,6 +124,9 @@ class Scenes:
                 vehicles=bool(c.get("vehicles", False)),
                 catalog=catalog,
                 night_hours=nh,
+                weekday_night=tuple(c["weekday_night"]) if c.get("weekday_night") else None,
+                weekend_mode=c.get("weekend_mode"),
+                known_pets=list(raw.get("known_pets") or []),
             )
         logger.info("scenes: %d camaras con contexto de escena", len(self._by_cam))
 
@@ -150,13 +172,10 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
             continue
         alerts.append(t)
     types = [t for t in (result.get("alert_types") or []) if t in scene.alert_types]
-    if "persona_nocturna" in types:
-        a, b = scene.night_hours
-        h = time.localtime().tm_hour
-        if not (h >= a or h < b):
-            types.remove("persona_nocturna")
-            if not types:
-                alerts = []
+    if "persona_nocturna" in types and not scene.night_alert():
+        types.remove("persona_nocturna")
+        if not types:
+            alerts = []
 
     relevant = result.get("relevant") is True
     if not relevant and not types:

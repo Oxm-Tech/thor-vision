@@ -12,6 +12,12 @@
 
 night_hours: [22, 6]   # horario nocturno local (inicio, fin)
 
+# Mascotas de la casa: el VLM las reconoce y no genera alerta "animal" por ellas.
+known_pets:
+  - perro negro pequeno
+  - shiba inu color cafe (el papa)
+  - pug de Gigi
+
 alert_catalog:
   persona_en_suelo:        "persona caida, tirada o inmovil en el piso"
   acceso_no_autorizado:    "persona entrando o intentando entrar a una zona restringida o forzando una puerta/reja"
@@ -23,7 +29,7 @@ alert_catalog:
   objeto_abandonado:       "paquete, bolsa o bulto dejado sin dueno visible"
   fuego_humo:              "fuego, humo o chispas"
   puerta_abierta:          "puerta, porton o reja que deberia estar cerrada aparece abierta"
-  animal:                  "animal (perro, gato, etc.) dentro de un area interior"
+  animal:                  "animal (perro, gato, etc.) dentro de un area interior que NO es una de las mascotas conocidas"
   uso_telefono_exterior:   "persona en el exterior (calle, banqueta, moto o auto estacionado) mirando o usando su telefono celular"
 
 cameras:
@@ -96,6 +102,8 @@ cameras:
       - pantallas encendidas, sillas vacias, reflejos de ventanas
     alert_types: [persona_nocturna, acceso_no_autorizado, objeto_abandonado, persona_en_suelo, fuego_humo]
     night_person: alert
+    weekday_night: [0, 6]   # entre semana se trabaja tarde: alerta solo de 00:00 a 06:00
+    weekend_mode: note      # fin de semana: uso casual, sin alerta nocturna
     vehicles: false
 
   cam-118:

@@ -845,12 +845,12 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 </main>
 
   <aside class="main-right" id="chat-dock">
-    <button class="chat-fab" id="chat-fab" title="Asistente IA" aria-label="Abrir asistente IA"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+    <button class="chat-fab" id="chat-fab" title="Vision Agent" aria-label="Abrir Vision Agent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
     <div class="chat-panel">
       <div class="chat-header">
         <div class="chat-title">
           <span class="dot-ai"></span>
-          Asistente IA · <span id="chat-model">…</span>
+          Vision Agent<span id="chat-model" hidden>…</span>
         </div>
         <span class="chat-status" id="chat-status">listo</span><button class="chat-min" id="chat-min" title="Minimizar" aria-label="Minimizar chat">—</button>
       </div>
@@ -2444,8 +2444,9 @@ function _renderChatImages(images){
     const url = String(i.url || '');
     if (!/^\/api\/snapshots\/file\/\d+$/.test(url)) return '';
     const cap = _escapeHtml(`${i.hora || ''} · ${i.cam || ''}`);
+    const who = Array.isArray(i.personas) && i.personas.length ? `<b>${_escapeHtml(i.personas.join(', '))}</b>` : '';
     return `<a class="chat-img" href="${url}" target="_blank" rel="noopener" title="${_escapeHtml(i.texto || '')}">`
-         + `<img src="${url}" alt="${cap}" loading="lazy"><span>${cap}</span></a>`;
+         + `<img src="${url}" alt="${cap}" loading="lazy"><span>${cap}</span>${who}</a>`;
   }).join('') + '</div>';
 }
 

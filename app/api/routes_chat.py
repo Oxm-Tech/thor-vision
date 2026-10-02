@@ -87,13 +87,17 @@ def compose_chat_system(skill: str, total_cams: int, context_block: str,
                         history_block: str = "", hist_kind: str = "",
                         images: Optional[list] = None) -> str:
     parts = [skill, f"Cámaras en el sistema: {total_cams}.",
-             "Capacidades del sistema: la interfaz muestra automáticamente las capturas de las alertas "
-             "cuando el usuario las pide; nunca digas que no tienes acceso a imágenes.",
+             "Capacidades: TÚ entregas las capturas de las alertas. Cuando el usuario las pide, el sistema las "
+             "adjunta a TU respuesta y se ven debajo de ella. Nunca digas que no tienes acceso a imágenes ni "
+             "que el usuario debe buscarlas en otro sistema.",
              "## Estado actual por cámara:", context_block]
     if images is not None:
         if images:
-            lst = "\n".join(f"- {i['hora']} · {i['cam']} · {i['texto']}" for i in images)
-            parts += [f"## Capturas adjuntas a esta respuesta ({len(images)})", lst]
+            lst = "\n".join(f"- {i['hora']} · {i['cam']} · {i['texto']}"
+                            + (f" · personas conocidas presentes: {', '.join(i['personas'])}" if i.get("personas") else "")
+                            for i in images)
+            parts += [f"## Capturas que adjuntas en esta respuesta ({len(images)}). Di 'Aquí están las capturas' "
+                      "y resume cámara, hora y quién aparece si se sabe:", lst]
         else:
             parts += ["## Capturas adjuntas a esta respuesta", "(no hay alertas con captura en el periodo pedido)"]
     if facts_text:
@@ -228,13 +232,28 @@ def _alert_images(db, config, question: str, history: list, limit: int = 8) -> l
     with db._lock:
         rows = db._conn.execute(sql, args).fetchall()
     out = []
+    known = _known_people(db, rows)
     for sid, ts, cam, data in rows:
         try:
             act = (json.loads(data or "{}").get("activity") or "")[:140]
         except Exception:
             act = ""
         out.append({"url": f"/api/snapshots/file/{sid}", "cam": names.get(cam, cam),
-                    "hora": time.strftime("%H:%M", time.localtime(ts)), "texto": act})
+                    "hora": time.strftime("%H:%M", time.localtime(ts)), "texto": act,
+                    "personas": known.get((cam, ts), [])})
+    return out
+
+
+def _known_people(db, rows, pad_s: float = 60.0) -> dict:
+    """Personas con nombre cuya visita en esa camara cubre la hora de la alerta."""
+    out = {}
+    with db._lock:
+        for _sid, ts, cam, _data in rows:
+            names = db._conn.execute(
+                "SELECT DISTINCT s.name FROM person_visits v JOIN subjects s ON s.id = v.subject_id "
+                "WHERE v.cam_id=? AND s.named=1 AND v.fp=0 AND v.start_ts<=? AND v.end_ts>=?",
+                (cam, ts + pad_s, ts - pad_s)).fetchall()
+            out[(cam, ts)] = sorted({(n or "").strip() for (n,) in names if n})
     return out
 
 
@@ -460,6 +479,10 @@ def chat(req: ChatRequest, request: Request,
                        if m.get("role") in ("user", "assistant") and m.get("content")]
         except Exception as e:
             logger.warning("Chat: no se pudo cargar la memoria de la sesion: %s", e)
+
+    # turnos viejos donde el asistente negaba poder enviar imagenes contaminan las respuestas nuevas
+    history = [m for m in history if not (m.role == "assistant" and re.search(
+        r"no (tengo|puedo).{0,40}(acceso|enviar|recuperar).{0,40}(im[aá]gen|captur)", m.content or "", re.I))]
 
     images = None
     if db is not None and _IMG_RE.search(req.message or ""):
