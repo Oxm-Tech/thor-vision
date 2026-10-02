@@ -1317,8 +1317,9 @@ async function refreshVLM(){
     mEl.textContent = shown;
     const cm = document.getElementById('chat-model');
     const ch = document.getElementById('chat-model-hint');
-    if (cm) cm.textContent = shown;
-    if (ch) ch.textContent = v.endpoint ? `${shown} · ${v.endpoint}` : shown;
+    const chatShown = v.chat_model_real || v.chat_model || shown;
+    if (cm) cm.textContent = chatShown;
+    if (ch) ch.textContent = v.endpoint ? `${chatShown} · ${v.endpoint}` : chatShown;
     if(v.status === 'down'){
       sEl.textContent = 'sin respuesta';
     }else if(v.latency_ms){

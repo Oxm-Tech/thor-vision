@@ -7,12 +7,24 @@ recurrente aunque todavía no se haya triageado, para que sea visible sin
 tener que revisar cada alerta una por una.
 """
 import logging
+import os
 import threading
 import time
 from typing import Optional
 
 from app.storage.db import EventDB
+from app.storage.facts import build_facts, render_facts
 from app.vision.llm_text import complete_text
+
+SKILLS_DIR = os.environ.get("SKILLS_DIR", "/app/config/skills")
+
+
+def load_skill(name: str, default: str) -> str:
+    try:
+        with open(os.path.join(SKILLS_DIR, f"{name}.md"), encoding="utf-8") as f:
+            return f.read().strip() or default
+    except OSError:
+        return default
 
 logger = logging.getLogger(__name__)
 
@@ -25,59 +37,6 @@ _SYSTEM_PROMPT = (
 )
 
 
-def _build_prompt(agg: dict, alerts: list[dict], period_hours: float) -> str:
-    totals = agg.get("totals", {})
-    per_cam = agg.get("per_cam", [])
-
-    important = [a for a in alerts if a.get("review_label") == "important"]
-    noise     = [a for a in alerts if a.get("review_label") == "noise"]
-    unreviewed = [a for a in alerts if not a.get("review_label")]
-
-    lines = [
-        f"Periodo: últimas {period_hours:.0f} horas.",
-        f"Observaciones totales: {totals.get('events', 0)}.",
-        f"Alertas totales: {totals.get('alerts', 0)} "
-        f"({len(important)} marcadas importantes, {len(noise)} marcadas como "
-        f"ruido, {len(unreviewed)} sin revisar por el usuario).",
-        f"Máximo de personas detectadas simultáneas: {totals.get('max_people', 0)}.",
-        "",
-        "Por cámara (observaciones / alertas):",
-    ]
-    for c in per_cam[:10]:
-        lines.append(f"- {c.get('cam_id')}: {c.get('n')} obs, {c.get('alerts') or 0} alertas")
-
-    if important:
-        lines.append("\nAlertas marcadas IMPORTANTES por el usuario:")
-        for a in important[:20]:
-            data = a.get("data") or {}
-            lines.append(f"- [{a.get('cam_id')}] {data.get('activity', '')} "
-                         f"| alertas: {data.get('alerts')}")
-
-    if unreviewed:
-        lines.append(f"\nAlertas sin revisar aún ({len(unreviewed)} en total, muestra):")
-        for a in unreviewed[:20]:
-            data = a.get("data") or {}
-            lines.append(f"- [{a.get('cam_id')}] {data.get('activity', '')} "
-                         f"| alertas: {data.get('alerts')}")
-
-    if noise:
-        lines.append(f"\nAlertas ya marcadas como ruido por el usuario ({len(noise)}):")
-        for a in noise[:10]:
-            data = a.get("data") or {}
-            lines.append(f"- [{a.get('cam_id')}] alertas: {data.get('alerts')}")
-
-    lines.append(
-        "\nRedacta un reporte con: (1) un resumen general de la actividad del "
-        "periodo, (2) las alertas importantes con su contexto si las hay, "
-        "(3) un párrafo señalando patrones de ruido recurrente (agrupa "
-        "alertas de texto similar, ej. iluminación/lens flare/personas no "
-        "reconocidas) para que el usuario sepa qué categorías de alerta "
-        "probablemente no necesitan revisión, y (4) cuántas alertas siguen "
-        "sin revisar. No uses JSON, escribe texto natural."
-    )
-    return "\n".join(lines)
-
-
 def generate_report(db: EventDB, analyzer, period_hours: float = 24.0,
                     kind: str = "daily") -> Optional[int]:
     """Genera un reporte y lo guarda. Devuelve el id del reporte, o None si
@@ -85,17 +44,14 @@ def generate_report(db: EventDB, analyzer, period_hours: float = 24.0,
     until = time.time()
     since = until - period_hours * 3600
 
-    agg = db.aggregate_events(since=since, until=until)
-    if not agg.get("totals", {}).get("events"):
+    facts = build_facts(db, since, until)
+    if not facts["totals"]["observaciones"]:
         logger.info("report_generator: sin observaciones en el periodo, no se genera reporte")
         return None
-
-    alerts = db.query_events(type="nemotron", has_alert=True, since=since, until=until, limit=200)
-    prompt = _build_prompt(agg, alerts, period_hours)
-
+    data = render_facts(facts)
     messages = [
-        {"role": "system", "content": _SYSTEM_PROMPT},
-        {"role": "user", "content": prompt},
+        {"role": "system", "content": load_skill("report", _SYSTEM_PROMPT)},
+        {"role": "user", "content": data + "\n\nRedacta el reporte del periodo."},
     ]
     # El gateway falla de forma intermitente (401/503/504, ver CLAUDE.md) —
     # mismo criterio que el resto del pipeline: nunca dejar que una falla
@@ -113,7 +69,7 @@ def generate_report(db: EventDB, analyzer, period_hours: float = 24.0,
         text = ""
     if not text:
         logger.warning("report_generator: sin redacción del modelo, se guarda resumen de datos")
-        body = prompt.split("\nRedacta un reporte")[0]
+        body = data
         text = "[Resumen automático de datos — el modelo no redactó este periodo]\n\n" + body
 
     report_id = db.insert_report(kind=kind, period_start=since, period_end=until, content=text)
@@ -135,6 +91,14 @@ def start_report_thread(db: EventDB, analyzer, interval_s: float = 86400.0,
 
     def _run():
         stop.wait(60)
+        # sin esto, cada reinicio del contenedor generaba un reporte nuevo
+        try:
+            with db._lock:
+                last = db._conn.execute("SELECT MAX(generated_at) FROM reports WHERE kind=?", (kind,)).fetchone()[0]
+            if last and time.time() - last < interval_s:
+                stop.wait(interval_s - (time.time() - last))
+        except Exception as e:
+            logger.warning("report_generator: no se pudo leer el ultimo reporte: %s", e)
         while not stop.is_set():
             try:
                 generate_report(db, analyzer, period_hours=period_hours, kind=kind)

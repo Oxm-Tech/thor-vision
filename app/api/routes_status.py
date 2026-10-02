@@ -101,6 +101,8 @@ def vlm_health(request: Request):
         "status":      status,
         "model":       model,
         "model_real":  model_real or None,
+        "chat_model":  os.environ.get("CHAT_MODEL") or model,
+        "chat_model_real": getattr(request.app.state, "chat_model_real", None),
         "endpoint":    endpoint,
         "cams_total":  len(cams),
         "cams_ok":     len(ok),

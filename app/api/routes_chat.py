@@ -69,9 +69,36 @@ _HISTORY_RE = re.compile(
 )
 
 
+_PEOPLE_RE = re.compile(
+    r"\b(personas?|gente|qui[eé]n(es)?|visitas?|visitante|identidad|sujetos?|nombre|"
+    r"conocid[oa]s?|desconocid[oa]s?|recurrente|lleg[oó]|entr[oó]|sali[oó])\b",
+    re.IGNORECASE,
+)
+
+
 def _question_needs_history(question: str) -> bool:
-    """True si la pregunta hace referencia al pasado o pide agregación."""
-    return bool(_HISTORY_RE.search(question or ""))
+    """True si la pregunta hace referencia al pasado, pide agregación o pregunta por personas."""
+    q = question or ""
+    return bool(_HISTORY_RE.search(q) or _PEOPLE_RE.search(q))
+
+
+def compose_chat_system(skill: str, total_cams: int, context_block: str,
+                        facts_text: str = "", facts_label: str = "",
+                        history_block: str = "", hist_kind: str = "") -> str:
+    parts = [skill, f"Cámaras en el sistema: {total_cams}.", "## Estado actual por cámara:", context_block]
+    if facts_text:
+        parts += [f"## Hechos exactos del periodo ({facts_label})", facts_text]
+    if history_block:
+        parts += [f"## {hist_kind} ({facts_label})", history_block]
+    if not facts_text and not history_block:
+        parts.append("(La pregunta es sobre el presente: no se cargó histórico.)")
+    return "\n\n".join(parts)
+
+
+_DEFAULT_CHAT_SKILL = (
+    "Eres el asistente de THOR Vision, un sistema de vigilancia con cámaras IP. "
+    "Responde en español, conciso y profesional, solo con los datos provistos; no inventes."
+)
 
 
 class ChatMessage(BaseModel):
@@ -382,41 +409,22 @@ def chat(req: ChatRequest, request: Request,
         hist_kind     = ""
         n_hist        = 0
 
-    if needs_history:
-        system_prompt = (
-            f"Eres el asistente de THOR Vision, un sistema de vigilancia con "
-            f"{total_cams} cámaras IP. Tienes dos fuentes:\n"
-            f"1. Estado actual de las cámaras (en vivo)\n"
-            f"2. {hist_kind} de {hist_label}\n\n"
-            f"## Estado actual por cámara:\n"
-            f"{context_block}\n\n"
-            f"## Histórico — {hist_label}\n{history_block}\n\n"
-            f"## Instrucciones\n"
-            f"- Responde en español, conciso y profesional.\n"
-            f"- Cuando cites un evento del histórico, incluye 'hace Xmin' o 'hace Xh'.\n"
-            f"- El histórico provisto cubre {hist_label}. Si preguntan por un "
-            f"rango mayor, acláralo en vez de inventar datos.\n"
-            f"- Si hay alertas, priorízalas.\n"
-            f"- No inventes información que no esté en los datos provistos.\n"
-            f"- Usa los nombres de las cámaras tal como aparecen."
-        )
-    else:
-        # Pregunta sobre estado presente — sin histórico, prompt mucho más corto.
-        system_prompt = (
-            f"Eres el asistente de THOR Vision, un sistema de vigilancia con "
-            f"{total_cams} cámaras IP. Respondes sobre lo que las cámaras "
-            f"están viendo AHORA MISMO.\n\n"
-            f"## Estado actual por cámara:\n"
-            f"{context_block}\n\n"
-            f"## Instrucciones\n"
-            f"- Responde en español, conciso y profesional.\n"
-            f"- Solo usa el estado actual — no especules sobre el pasado.\n"
-            f"- Si la pregunta requiere datos históricos, sugiere reformularla "
-            f"con palabras como 'hoy', 'hace un rato', 'cuándo' para activar "
-            f"la búsqueda en el historial.\n"
-            f"- No inventes información que no esté en los datos provistos.\n"
-            f"- Usa los nombres de las cámaras tal como aparecen."
-        )
+    facts_text = ""
+    if needs_history and db is not None:
+        try:
+            from app.storage.facts import build_facts, render_facts
+            now_ts = time.time()
+            facts_text = render_facts(build_facts(db, now_ts - hist_hours * 3600, now_ts))
+        except Exception as e:
+            logger.warning("Chat: fallo construyendo hechos: %s", e)
+        if hist_hours > _AGGREGATE_THRESHOLD_HOURS and facts_text:
+            history_block = ""  # el rollup agregado repite lo que ya dan los hechos
+
+    from app.storage.report_generator import load_skill
+    system_prompt = compose_chat_system(
+        load_skill("chat", _DEFAULT_CHAT_SKILL), total_cams, context_block,
+        facts_text=facts_text, facts_label=hist_label,
+        history_block=history_block, hist_kind=hist_kind)
 
     # Construir mensajes — system + últimos turnos (acotados) + nuevo.
     # Se recorre del más nuevo al más viejo insertando en la posición 1, así
@@ -433,7 +441,7 @@ def chat(req: ChatRequest, request: Request,
     messages.append({"role": "user", "content": req.message})
 
     payload = json.dumps({
-        "model":                analyzer.model,
+        "model":                os.environ.get("CHAT_MODEL") or analyzer.model,
         "max_tokens":           600,
         "temperature":          0.3,
         "chat_template_kwargs": {"enable_thinking": False},
@@ -469,6 +477,7 @@ def chat(req: ChatRequest, request: Request,
             with urllib.request.urlopen(http_req, timeout=90) as resp:
                 data = json.loads(resp.read())
 
+        request.app.state.chat_model_real = data.get("model")
         choice = data["choices"][0]["message"]
         text = (choice.get("content") or "").strip()
 
