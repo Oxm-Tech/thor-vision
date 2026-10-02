@@ -13,7 +13,7 @@ VEHICLE_CLASSES = {"auto", "moto", "camion", "autobus"}
 CAMS = {c.strip() for c in os.environ.get("PARKED_CAMS", "cam-189,cam-191").split(",") if c.strip()}
 MIN_PARKED_S = float(os.environ.get("PARKED_MIN_S", "180"))     # quieto este tiempo => estacionado
 GONE_S = float(os.environ.get("PARKED_GONE_S", "900"))          # sin verse este tiempo => se fue
-MIN_IOU = float(os.environ.get("PARKED_IOU", "0.55"))
+MIN_IOU = float(os.environ.get("PARKED_IOU", "0.40"))
 MIN_AREA_FRAC = 0.0015                                           # ignora cajas diminutas (ruido lejano)
 RETENTION_DAYS = int(os.environ.get("PARKED_RETENTION_DAYS", "90"))
 
@@ -37,6 +37,17 @@ CREATE TABLE IF NOT EXISTS parked_vehicles (
 CREATE INDEX IF NOT EXISTS idx_parked_state ON parked_vehicles(state, cam_id);
 CREATE INDEX IF NOT EXISTS idx_parked_first ON parked_vehicles(first_ts);
 """
+
+
+def _match(a, b) -> float:
+    """Puntaje 0..1 de que dos cajas son el mismo vehiculo quieto (IoU, o centros cercanos y tamano parecido)."""
+    v = _iou(a, b)
+    wa, ha, wb, hb = a[2] - a[0], a[3] - a[1], b[2] - b[0], b[3] - b[1]
+    cd = (((a[0] + a[2]) - (b[0] + b[2])) ** 2 + ((a[1] + a[3]) - (b[1] + b[3])) ** 2) ** 0.5 / 2
+    ratio = (wa * ha) / float(max(1, wb * hb))
+    if cd < 0.30 * max(wa, wb) and 0.55 < ratio < 1.8:
+        v = max(v, 0.6)
+    return v
 
 
 def _iou(a, b) -> float:
@@ -103,13 +114,14 @@ class ParkedTracker:
                 for i, c in enumerate(cands):
                     if i in used:
                         continue
-                    v = _iou(c["anchor"], b)
+                    v = _match(c["anchor"], b)
                     if v > best:
                         best, bi = v, i
                 if bi is not None and best >= MIN_IOU:
                     c = cands[bi]
                     used.add(bi)
                     c["last"] = now
+                    c["anchor"] = tuple(int(0.85 * p + 0.15 * q) for p, q in zip(c["anchor"], b))
                     c["hits"] += 1
                     c["cls"][cls] += 1
                     self._maybe_register(cam_id, c, frame, fw, fh, now)
@@ -123,6 +135,12 @@ class ParkedTracker:
             if now - c["first"] >= MIN_PARKED_S and c["hits"] >= 3:
                 cls = c["cls"].most_common(1)[0][0]
                 b = c["anchor"]
+                for other in self._cand.get(cam_id, []):
+                    if other is not c and other["rec"] is not None and _match(other["anchor"], b) >= 0.3:
+                        other["last"] = max(other["last"], c["last"])
+                        other["first"] = min(other["first"], c["first"])
+                        c["dup"] = True      # es el mismo vehiculo: no se registra otra vez
+                        return
                 with self.db._lock:
                     cur = self.db._conn.execute(
                         "INSERT INTO parked_vehicles (cam_id, cls, first_ts, last_ts, state, box, frame_w, frame_h, thumb) "
@@ -142,6 +160,8 @@ class ParkedTracker:
         cands = self._cand.get(cam_id, [])
         keep = []
         for c in cands:
+            if c.get("dup"):
+                continue
             idle = now - c["last"]
             if c["rec"] is not None and idle > GONE_S:
                 with self.db._lock:
