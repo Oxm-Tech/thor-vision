@@ -29,6 +29,13 @@ def event_text(payload: dict) -> str:
     return f"{payload.get('activity', '')}. {pers}. {' '.join(payload.get('alerts') or [])}".strip()
 
 
+def _load(data):
+    try:
+        return json.loads(data)
+    except (ValueError, TypeError):
+        return None
+
+
 def ensure(conn) -> None:
     conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS ev_fts USING fts5(t, tokenize='unicode61')")
 
@@ -56,11 +63,10 @@ def backfill(db, days: int = 30, batch: int = 2000) -> int:
                 break
             for eid, cam, data in rows:
                 cur_id = eid
-                try:
-                    index_event(db._conn, eid, json.loads(data), last, cam)
+                payload = _load(data)
+                if payload is not None:
+                    index_event(db._conn, eid, payload, last, cam)
                     n += 1
-                except Exception:
-                    continue
             db._conn.commit()
         time.sleep(0.05)
     return n
@@ -81,8 +87,7 @@ def search(db, query: str, since: float, until: float, cams=None, limit: int = 1
     out = []
     with db._lock:
         for eid, cam, ts, data in db._conn.execute(sql, args).fetchall():
-            try:
-                out.append({"id": eid, "cam": cam, "ts": ts, "text": event_text(json.loads(data))})
-            except Exception:
-                continue
+            payload = _load(data)
+            if payload is not None:
+                out.append({"id": eid, "cam": cam, "ts": ts, "text": event_text(payload)})
     return out

@@ -13,6 +13,7 @@ from app.api import routes_chat as rc
 from app.api.chat_agent import _clock_range, _evidence, _range_label
 
 import logging
+import sqlite3
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -132,8 +133,8 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
             for i in range(0, len(lines), 3):
                 results.append({"title": f"Coincidencias en descripciones ({i // 3 + 1})", "url": f"{base}/",
                                 "content": _clip(lines[i:i + 3])})
-    except Exception as exc:
-        logger.debug("fts search: %s", exc)
+    except (sqlite3.Error, ImportError) as exc:
+        logger.warning("fts search: %s", exc)
 
     for p in people:
         visits = _person_visits(db, names, p, since, until)
