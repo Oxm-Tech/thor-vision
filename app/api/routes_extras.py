@@ -78,6 +78,8 @@ def vehicle_patch(vid: int, body: VehiclePatch, request: Request):
         args.append(p or None)
         sets.append("plate_conf=?")
         args.append(1.0 if p else None)
+        sets.append("plate_src=?")
+        args.append("manual" if p else None)
     if body.note is not None:
         sets.append("note=?")
         args.append(body.note.strip()[:200] or None)
@@ -89,6 +91,16 @@ def vehicle_patch(vid: int, body: VehiclePatch, request: Request):
     if not cur.rowcount:
         raise HTTPException(404)
     return {"ok": True}
+
+
+@router.get("/api/vehicles/{vid}/plate")
+def vehicle_plate_image(vid: int, request: Request):
+    db = _db(request)
+    with db._lock:
+        row = db._conn.execute("SELECT plate_img FROM parked_vehicles WHERE id=?", (vid,)).fetchone()
+    if not row or not row[0]:
+        raise HTTPException(404)
+    return Response(content=row[0], media_type="image/jpeg", headers={"Cache-Control": "max-age=3600"})
 
 
 # ---------------- mascotas

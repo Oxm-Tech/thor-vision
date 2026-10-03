@@ -8,7 +8,7 @@ from collections import Counter
 
 import cv2
 
-from app.vision import zones
+from app.vision import plates, zones
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,12 @@ class ParkedTracker:
         self.cam_names: dict = {}       # cam_id -> nombre (lo fija main.py)
         with db._lock:
             db._conn.executescript(_SCHEMA)
+            for col, typ in (("plate_src", "TEXT"), ("plate_img", "BLOB")):
+                try:
+                    db._conn.execute(f"ALTER TABLE parked_vehicles ADD COLUMN {col} {typ}")
+                except sqlite3.OperationalError:
+                    pass               # ya existia
+            db._conn.commit()
             rows = db._conn.execute("SELECT id, cam_id, cls, first_ts, last_ts, box FROM parked_vehicles WHERE state='parked'").fetchall()
         for rid, cam, cls, first, last, box in rows:
             try:
@@ -133,6 +139,7 @@ class ParkedTracker:
                     c["hits"] += 1
                     c["cls"][cls] += 1
                     self._maybe_register(cam_id, c, frame, fw, fh, now)
+                    self._maybe_read_plate(c, frame, fw, fh, now)
                 else:
                     cands.append({"cls": Counter({cls: 1}), "anchor": b, "first": now, "last": now,
                                   "hits": 1, "rec": None, "saved": 0.0})
@@ -166,6 +173,34 @@ class ParkedTracker:
             self._save_seen(c, now)
         elif now - c["saved"] >= 60:
             self._save_seen(c, now)
+
+    def _maybe_read_plate(self, c, frame, fw, fh, now) -> None:
+        """Lee la placa del recorte nativo del vehiculo (solo vehiculos ya registrados, o sea dentro de la zona)."""
+        if c["rec"] is None or not plates.enabled() or now < c.get("plate_next", 0) or c.get("plate_n", 0) >= plates.MAX_READS:
+            return
+        c["plate_next"] = now + plates.EVERY_S
+        c["plate_n"] = c.get("plate_n", 0) + 1
+        with self.db._lock:
+            row = self.db._conn.execute("SELECT plate_src FROM parked_vehicles WHERE id=?", (c["rec"],)).fetchone()
+        if row and row[0] == "manual":
+            c["plate_n"] = plates.MAX_READS          # lo escrito a mano manda
+            return
+        x1, y1, x2, y2 = c["anchor"]
+        mx, my = int((x2 - x1) * .1), int((y2 - y1) * .1)
+        crop = frame[max(0, y1 - my):min(fh, y2 + my), max(0, x1 - mx):min(fw, x2 + mx)]
+        r = plates.read(crop)
+        if r is None:
+            return
+        c.setdefault("reads", []).append((r["text"], r["conf"] * r["det"]))
+        if r["jpeg"] and (c.get("best_conf", 0) < r["conf"]):
+            c["best_conf"], c["best_img"] = r["conf"], r["jpeg"]
+        win = plates.vote(c["reads"])
+        if win:
+            with self.db._lock:
+                self.db._conn.execute("UPDATE parked_vehicles SET plate=?, plate_conf=?, plate_src='auto', plate_img=? "
+                                      "WHERE id=? AND COALESCE(plate_src,'')<>'manual'", (win[0], win[1], c.get("best_img"), c["rec"]))
+                self.db._conn.commit()
+            logger.info("plates: vehiculo %d placa %s (conf %.2f, %d lecturas)", c["rec"], win[0], win[1], win[2])
 
     def _save_seen(self, c, now) -> None:
         with self.db._lock:
@@ -224,7 +259,7 @@ class ParkedTracker:
 
 
 def list_vehicles(db, state=None, cam=None, since=None, limit=100) -> list:
-    sql = ("SELECT id, cam_id, cls, first_ts, last_ts, left_ts, state, plate, plate_conf, note, (thumb IS NOT NULL) "
+    sql = ("SELECT id, cam_id, cls, first_ts, last_ts, left_ts, state, plate, plate_conf, note, (thumb IS NOT NULL), plate_src, (plate_img IS NOT NULL) "
            "FROM parked_vehicles WHERE 1=1")
     args: list = []
     if state in ("parked", "left"):
@@ -242,9 +277,9 @@ def list_vehicles(db, state=None, cam=None, since=None, limit=100) -> list:
     with db._lock:
         rows = db._conn.execute(sql, args).fetchall()
     out = []
-    for rid, cam_id, cls, first, last, left, st, plate, pc, note, has in rows:
+    for rid, cam_id, cls, first, last, left, st, plate, pc, note, has, psrc, has_pimg in rows:
         end = (left or last) if st == "left" else now
         out.append({"id": rid, "cam_id": cam_id, "cls": cls, "first_ts": first, "last_ts": last, "left_ts": left,
                     "state": st, "duration_s": max(0, round(end - first)), "plate": plate, "plate_conf": pc,
-                    "note": note, "has_thumb": bool(has)})
+                    "note": note, "has_thumb": bool(has), "plate_src": psrc, "has_plate_img": bool(has_pimg)})
     return out
