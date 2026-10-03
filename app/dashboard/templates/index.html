@@ -986,7 +986,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <div class="header-clock" id="clock">—</div>
   <button class="hdr-btn" id="btn-history" title="Histórico de eventos" aria-label="Histórico de eventos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <button class="hdr-btn" id="btn-spot" title="Cómo funciona OXM Vision (animación)" aria-label="Cómo funciona OXM Vision (animación)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></button>
-  <button class="hdr-btn" id="btn-ppl" title="Clasificar personas: empleados e invitados" aria-label="Clasificar personas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14c3 0 5 1.8 5 4.5"/></svg></button>
+  <a class="hdr-btn" id="btn-ppl" href="/identidades" title="Identidades: empleados, invitados y asistencia" aria-label="Identidades" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14c3 0 5 1.8 5 4.5"/></svg></a>
   <button class="hdr-btn" id="btn-veh" title="Vehículos estacionados" aria-label="Vehículos estacionados"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 12h14"/></svg></button>
   <button class="hdr-btn" id="btn-pets" title="Etiquetar mascotas" aria-label="Etiquetar mascotas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 12c-3 0-5 3-5 5 0 1.6 1.3 2.5 2.8 2.5 1.1 0 1.5-.5 2.2-.5s1.1.5 2.2.5c1.5 0 2.8-.9 2.8-2.5 0-2-2-5-5-5z"/></svg></button>
   <button class="hdr-btn" id="btn-conn" title="Conexiones a las cámaras" aria-label="Conexiones a las cámaras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg></button>
@@ -1006,9 +1006,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
       <div class="faces-panel-header">
         <span class="faces-panel-title">Reconocimiento facial</span>
         <span style="display:flex;align-items:center;gap:10px;">
-          <button class="timeline-panel-more" id="people-link">Personas e identidades →</button>
-          <button class="timeline-panel-more" id="faces-history-link">Historial de rostros (antiguo) →</button>
-          <button class="timeline-panel-more" id="faces-manage-link">Gestionar rostros capturados →</button>
+          <a class="timeline-panel-more" href="/identidades" style="text-decoration:none">Administrar identidades →</a>
           <span style="font-size:.7rem;color:var(--text-muted)" id="faces-count">0 rostros</span>
         </span>
       </div>
@@ -3537,46 +3535,6 @@ setTimeout(_loadChatHistory, 300);
     </div>
   </div>
 
-  <div class="modal-backdrop" id="people-modal" hidden>
-    <div class="modal modal-wide">
-      <div class="modal-head">
-        <span>👥 Personas e identidades</span>
-        <button class="modal-x" id="people-close" title="Cerrar">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="hist-controls">
-          <div class="hist-ranges" id="pp-tabs">
-            <button class="hist-range on" data-tab="subjects">Sujetos</button>
-            <button class="hist-range" data-tab="visits">Visitas</button>
-          </div>
-          <div class="hist-ranges" id="pp-ranges"></div>
-          <select class="hist-select" id="pp-cam"><option value="">Todas las cámaras</option></select>
-          <button class="hist-range" id="pp-back" hidden>← Todos</button>
-        </div>
-        <div class="hist-section-title"><span id="pp-title">Sujetos</span> <small id="pp-note"></small></div>
-        <div class="fh-grid" id="pp-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="faces-history-modal" hidden>
-    <div class="modal modal-wide">
-      <div class="modal-head">
-        <span>🕓 Historial de rostros vistos</span>
-        <button class="modal-x" id="faces-history-close" title="Cerrar">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="hist-controls">
-          <div class="hist-ranges" id="fh-ranges"></div>
-          <select class="hist-select" id="fh-cam"><option value="">Todas las cámaras</option></select>
-          <select class="hist-select" id="fh-name"><option value="">Todos los nombres</option></select>
-        </div>
-        <div class="hist-section-title">Avistamientos <small id="fh-note"></small></div>
-        <div class="fh-grid" id="fh-grid"></div>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-backdrop" id="spot-modal" hidden>
     <div class="modal modal-wide">
       <div class="modal-head"><span>🎬 OXM Vision · el pipeline</span>
@@ -3589,27 +3547,6 @@ setTimeout(_loadChatHistory, 300);
     <div class="modal modal-wide">
       <div class="modal-head"><span>Versiones de THOR Vision</span><button class="modal-x" id="rel-close" title="Cerrar">✕</button></div>
       <div class="modal-body" id="rel-body"></div>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="ppl-modal" hidden>
-    <div class="modal modal-wide">
-      <div class="modal-head"><span>Personas: empleados, invitados y por revisar</span><button class="modal-x" id="ppl-close" title="Cerrar">✕</button></div>
-      <div class="modal-body">
-        <div class="hist-controls">
-          <div class="hist-ranges" id="ppl-tabs">
-            <button class="hist-range on" data-c="revisar">Por revisar <b id="ppl-n-revisar">0</b></button>
-            <button class="hist-range" data-c="empleado">Empleados OXM <b id="ppl-n-empleado">0</b></button>
-            <button class="hist-range" data-c="invitado">Invitados <b id="ppl-n-invitado">0</b></button>
-            <button class="hist-range" data-c="asistencia">Asistencia</button>
-          </div>
-          <input class="hist-select" id="ppl-q" placeholder="Buscar nombre…" style="min-width:150px">
-          <label class="hist-check"><input type="checkbox" id="ppl-named"> solo con nombre</label>
-          <button class="hist-range" id="ppl-dups" title="Pares de personas que se parecen entre sí">Parecidos</button>
-        </div>
-        <p class="pet-help" id="ppl-help"></p>
-        <div class="ppl-grid" id="ppl-grid"></div>
-      </div>
     </div>
   </div>
 
@@ -3699,19 +3636,6 @@ setTimeout(_loadChatHistory, 300);
               <small>Arrastra las tarjetas para reordenarlas. El orden se guarda en este navegador</small></span>
           </label>
           <button class="set-btn" id="btn-reset-layout">Restablecer orden original</button>
-        </div>
-        <div class="set-group">
-          <div class="set-group-title">Rostros capturados</div>
-          <div class="faces-enrolled" id="faces-enrolled">
-            <span class="faces-empty-sm">cargando…</span>
-          </div>
-          <div class="face-enroll">
-            <select class="hist-select" id="face-enroll-cam"></select>
-            <input type="text" id="face-enroll-name" class="face-enroll-name"
-                   placeholder="Nombre de la persona" maxlength="60">
-            <button class="set-btn" id="btn-face-enroll">Capturar de esta cámara</button>
-          </div>
-          <div class="face-enroll-msg" id="face-enroll-msg"></div>
         </div>
       </div>
     </div>

@@ -85,6 +85,7 @@ async def lifespan(app: FastAPI):
     if os.environ.get("TRACKER_ENABLED", "true").lower() == "true":
         from app.vision.visits import VisitManager
         visit_manager = VisitManager(db)
+        visit_manager.zones = {c.id: c.zone for c in config.cameras}
     app.state.visits = visit_manager
 
     vision_queue = VisionQueue(
@@ -317,6 +318,11 @@ app.include_router(extras_router)
 from app.api.routes_people_admin import router as people_admin_router  # noqa: E402
 app.include_router(people_admin_router)
 app.include_router(people_router)
+
+
+@app.get("/identidades", response_class=HTMLResponse)
+async def identities_page(request: Request):
+    return templates.TemplateResponse("identities.html", {"request": request})
 
 
 @app.get("/", response_class=HTMLResponse)

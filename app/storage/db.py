@@ -825,8 +825,14 @@ class EventDB:
                     "DELETE FROM subjects WHERE ((named=0 AND category='revisar') OR category='invitado') AND id NOT IN "
                     "(SELECT DISTINCT subject_id FROM person_visits WHERE subject_id IS NOT NULL)")
                 c2 = self._conn.execute(
-                    "DELETE FROM face_sightings WHERE ts < ? AND (name IS NULL OR name IN (Desconocido,Sin rostro))",
+                    "DELETE FROM face_sightings WHERE ts < ? AND (name IS NULL OR name IN ('Desconocido','Sin rostro'))",
                     (cut,)).rowcount
+                # capturas de rostro/cuerpo: 90 dias para TODAS las categorias (empleados conservan la fila, sin imagen)
+                cap = time.time() - float(os.environ.get("CAPTURE_TTL_DAYS", "90")) * 86400
+                c3 = self._conn.execute(
+                    "UPDATE person_visits SET face=NULL, body=NULL WHERE start_ts < ? AND (face IS NOT NULL OR body IS NOT NULL)", (cap,)).rowcount
+                if c3:
+                    result["captures_purged"] = c3
                 if c1 or c2:
                     result["ttl_deleted"] = {"person_visits": c1, "face_sightings": c2}
 

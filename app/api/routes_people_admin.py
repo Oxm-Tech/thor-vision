@@ -1,6 +1,7 @@
 """Clasificacion de personas en tres bases (por revisar / empleados / invitados), parecidos y asistencia."""
 import csv
 import io
+import os
 import time
 from typing import Optional
 
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 
 router = APIRouter()
 CATEGORIES = ("revisar", "empleado", "invitado")
+ATTENDANCE_EXTRA = {c.strip() for c in os.environ.get("ATTENDANCE_EXTRA_CAMS", "cam-228").split(",") if c.strip()}   # acceso peatonal: Garage frontal
 GAP_S = 600   # huecos menores a 10 min dentro de una cámara interna cuentan como presencia continua
 
 
@@ -68,7 +70,8 @@ def overview(request: Request):
 
 
 @router.get("/api/people")
-def people(request: Request, category: str = "revisar", q: Optional[str] = None, only_named: int = 0, limit: int = 200):
+def people(request: Request, category: str = "revisar", q: Optional[str] = None, only_named: int = 0, limit: int = 200,
+           scope: str = "interior"):
     if category not in CATEGORIES:
         raise HTTPException(400, f"categoria invalida; usa {list(CATEGORIES)}")
     db = _db(request)
@@ -76,6 +79,12 @@ def people(request: Request, category: str = "revisar", q: Optional[str] = None,
     where, args = " AND s.category=?", [category]
     if only_named:
         where += " AND s.named=1"
+    if scope == "interior":
+        ext = [c.id for c in request.app.state.config.cameras if getattr(c, "zone", "") == "exterior"]
+        if ext:
+            where += (" AND (s.named=1 OR EXISTS (SELECT 1 FROM person_visits v WHERE v.subject_id=s.id AND v.fp=0 AND v.static=0 AND v.cam_id NOT IN ("
+                      + ",".join("?" * len(ext)) + ")))")
+            args.extend(ext)
     if q:
         where += " AND lower(COALESCE(s.name,'')) LIKE ?"
         args.append(f"%{q.lower()}%")
@@ -185,7 +194,7 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
         raise HTTPException(400, "fecha invalida; usa YYYY-MM-DD")
     cams = request.app.state.config.cameras
     names = {c.id: c.name for c in cams}
-    internal = [c.id for c in cams if getattr(c, "zone", "interior") == "interior"]
+    internal = [c.id for c in cams if getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA]
     now = time.time()
     with db._lock:
         emp = db._conn.execute("SELECT id, COALESCE(name,'Persona #'||id) FROM subjects WHERE category='empleado' ORDER BY name").fetchall()
@@ -236,3 +245,24 @@ def attendance_csv(request: Request, date: Optional[str] = None):
         w.writerow([d["date"], e["name"], "si" if e["present"] else "no", hm(e["first_ts"]), hm(e["last_ts"]), e["minutes"], "; ".join(e["cams"])])
     return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="asistencia_{d["date"]}.csv"'})
+
+
+@router.get("/api/people/{sid}/visits")
+def person_visits(sid: int, request: Request, limit: int = 24):
+    db = _db(request)
+    names = {c.id: c.name for c in request.app.state.config.cameras}
+    with db._lock:
+        rows = db._conn.execute(
+            "SELECT id, cam_id, start_ts, COALESCE(end_ts,start_ts), (face IS NOT NULL), (body IS NOT NULL) FROM person_visits "
+            "WHERE subject_id=? AND fp=0 AND static=0 ORDER BY start_ts DESC LIMIT ?", (sid, min(limit, 100))).fetchall()
+    return {"visits": [{"id": i, "cam": names.get(c, c), "start": a, "end": b, "has_face": bool(f), "has_body": bool(bd)}
+                       for i, c, a, b, f, bd in rows]}
+
+
+@router.get("/api/people/today")
+def people_today(request: Request):
+    """Resumen del dia: cuantos empleados presentes, invitados vistos y personas por revisar."""
+    d = build_attendance(request, None)
+    emp = d["employees"]
+    return {"date": d["date"], "employees_present": sum(1 for e in emp if e["present"]), "employees_total": len(emp),
+            "guests": d["guests"]["count"], "pending_review": d["pending_review"]}

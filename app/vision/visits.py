@@ -103,6 +103,7 @@ class Track:
         self.first_ts = self.last_ts = now
         self.hits = 0
         self.visit_id: Optional[int] = None
+        self.cam_id = None
         self.subject_id: Optional[int] = None
         self.face: Optional[bytes] = None
         self.face_q = 0.0
@@ -145,6 +146,7 @@ class VisitManager:
         self._tracks: dict = {}
         self._next_tid: dict = {}
         self._subjects: dict = {}     # id -> {emb, n, name, named}
+        self.zones: dict = {}         # cam_id -> zone (interior/exterior/garage)
         self._analyzer = None
         self._vlm_q: queue.Queue = queue.Queue(maxsize=30)
         self._vlm_last: dict = {}
@@ -390,6 +392,7 @@ class VisitManager:
         tracks[:] = keep
 
     def _open_visit(self, cam_id, tr: Track) -> None:
+        tr.cam_id = cam_id
         tr.visit_id = self.db.insert_person_visit(cam_id, tr.id, tr.first_ts)
         tr.dirty = True
         self.stats["visits_opened"] += 1
@@ -477,6 +480,8 @@ class VisitManager:
                 s["n"] += tr.n_emb
                 self.db.update_subject_emb(sid, s["emb"].astype(np.float32).tobytes(), s["n"])
             self.stats["subject_matches"] += 1
+        elif self.zones.get(tr.cam_id) == "exterior":
+            return      # calle: se reconoce a quien ya existe, pero no se crean identidades nuevas (ruido)
         else:
             sid = self.db.create_subject(emb.astype(np.float32).tobytes(), tr.n_emb, tr.first_ts,
                                          name=known, named=1 if known else 0)

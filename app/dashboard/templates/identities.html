@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Identidades · THOR Vision</title>
+<style>
+:root{--bg:#0d1017;--panel:#161b26;--panel2:#1d2433;--line:#2a3347;--text:#e8ecf4;--muted:#8b95ab;--accent:#76B900;--accent-d:#5a8f00;--warn:#f0b429;--bad:#ef5350}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6fa;--panel:#fff;--panel2:#eef1f7;--line:#d6dbe6;--text:#1a2030;--muted:#5d677d;--accent-d:#4c7a00}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;padding:12px 20px;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header a.back{color:var(--muted);text-decoration:none;font-size:13px}header a.back:hover{color:var(--accent)}
+h1{font-size:18px;margin:0}.sum{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--muted)}.chip b{color:var(--text)}
+main{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+nav.tabs button,.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer}
+nav.tabs button:hover,.btn:hover{border-color:var(--accent)}
+nav.tabs button.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+nav.tabs button .n{opacity:.7;margin-left:4px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#0d1400;font-weight:600}.btn.sm{padding:4px 10px;font-size:12px}
+.help{color:var(--muted);font-size:13px;margin:0 0 12px}
+.tools{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+input[type=text],input[type=date],select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .ph{aspect-ratio:1/1;background:var(--panel2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;cursor:pointer}
+.card .ph img{width:100%;height:100%;object-fit:cover}
+.card .chk{position:absolute;top:8px;left:8px;width:18px;height:18px;accent-color:var(--accent)}
+.card .tag{position:absolute;top:8px;right:8px;background:var(--accent);color:#0d1400;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700}
+.card .bd{padding:10px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card .nm{font-weight:600;display:flex;gap:6px;align-items:center}.card .nm button{background:none;border:0;color:var(--muted);cursor:pointer;padding:0}
+.card .nm button:hover{color:var(--accent)}
+.card .meta{font-size:12px;color:var(--muted)}
+.card .acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto}
+.card .acts .wide{grid-column:1/-1}
+.drawer{grid-column:1/-1;background:var(--panel);border:1px dashed var(--accent);border-radius:12px;padding:12px}
+.drawer h3{margin:0 0 8px;font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.mini{width:120px;background:var(--panel2);border-radius:8px;overflow:hidden;font-size:11px;color:var(--muted)}
+.mini img{width:120px;height:120px;object-fit:cover;display:block;background:#000}.mini div{padding:4px 6px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500;font-size:12px}
+.ok{color:var(--accent)}.no{color:var(--muted)}
+.pair{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;flex-wrap:wrap}
+.pair img{width:84px;height:84px;object-fit:cover;border-radius:8px;background:#000}
+.bulk{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:10px 14px;display:flex;gap:8px;align-items:center;box-shadow:0 8px 30px #0008;z-index:9}
+.bulk[hidden]{display:none}.empty{color:var(--muted);padding:30px;text-align:center}
+.rules{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:22px;color:var(--muted);font-size:13px}
+.rules b{color:var(--text)}.rules ul{margin:6px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="/">← Dashboard</a>
+  <h1>Identidades</h1>
+  <div class="sum" id="sum"></div>
+</header>
+<main>
+  <nav class="tabs" id="tabs">
+    <button data-t="revisar" class="on">Por revisar<span class="n" id="n-revisar"></span></button>
+    <button data-t="empleado">Empleados<span class="n" id="n-empleado"></span></button>
+    <button data-t="invitado">Invitados<span class="n" id="n-invitado"></span></button>
+    <button data-t="asistencia">Asistencia</button>
+    <button data-t="duplicados">Duplicados</button>
+  </nav>
+  <p class="help" id="help"></p>
+  <div class="tools" id="tools"></div>
+  <div id="view"></div>
+  <div class="rules">
+    <b>Cómo funciona</b>
+    <ul>
+      <li>Toda persona nueva queda en <b>Por revisar</b>; tú la mandas a <b>Empleado</b> o <b>Invitado</b>. Nada se clasifica solo.</li>
+      <li><b>Exterior 1 y 2</b>: reconocen a quien ya está registrado, pero no crean identidades nuevas ni cuentan en asistencia; la actividad de calle se queda como alertas.</li>
+      <li><b>Asistencia</b> (solo empleados): llegada y salida con las cámaras interiores y el Garage frontal (acceso peatonal).</li>
+      <li><b>Invitados</b>: solo cantidades y capturas, sin reporte de asistencia.</li>
+      <li><b>Retención</b>: las capturas de rostro y cuerpo se borran a los 90 días; el registro y la asistencia de empleados se conservan.</li>
+    </ul>
+  </div>
+</main>
+<div class="bulk" id="bulk" hidden>
+  <span id="bulk-n"></span>
+  <button class="btn pri sm" data-bulk="empleado">→ Empleado</button>
+  <button class="btn sm" data-bulk="invitado">→ Invitado</button>
+  <button class="btn sm" data-bulk="clear">Cancelar</button>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const J = async (u, o) => { const r = await fetch(u, o); if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); };
+const send = (u, m, b) => J(u, {method: m, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(b)});
+const ago = ts => { const s = Date.now() / 1000 - ts; if (s < 90) return 'ahora'; if (s < 3600) return Math.round(s / 60) + ' min'; if (s < 86400) return Math.round(s / 3600) + ' h'; return Math.round(s / 86400) + ' d'; };
+const hm = ts => ts ? new Date(ts * 1000).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', hour12: false}) : '–';
+const HELP = {
+  revisar: 'Personas detectadas que aún no clasificas. Pulsa la foto para ver sus parecidos; marca varias y clasifícalas juntas. Las que solo aparecen en cámaras exteriores no se listan.',
+  empleado: 'Personal de OXM. Entran al reporte de asistencia. Sus capturas se conservan 90 días; su registro no caduca.',
+  invitado: 'Externos: solo se cuentan y se guardan capturas (90 días).',
+  asistencia: 'Reporte automático solo de empleados: primera y última vez vistos y minutos en oficina.',
+  duplicados: 'Pares de identidades que se parecen mucho: probablemente son la misma persona. Fusiónalas para limpiar la base.',
+};
+let tab = 'revisar', q = '', onlyNamed = false, sel = new Set(), cache = [];
+
+async function counts(){
+  try {
+    const o = (await J('/api/people/overview')).categories;
+    for (const k of ['revisar', 'empleado', 'invitado']) $('#n-' + k).textContent = (o[k] || {}).total ?? 0;
+    const t = await J('/api/people/today');
+    $('#sum').innerHTML = `<span class="chip">Empleados presentes <b>${t.employees_present}/${t.employees_total}</b></span><span class="chip">Invitados hoy <b>${t.guests}</b></span><span class="chip">Por revisar hoy <b>${t.pending_review}</b></span>`;
+  } catch (e) {}
+}
+function photo(p){ return `<img loading="lazy" src="/api/subjects/${p.id}/face" onerror="this.onerror=null;this.src='/api/subjects/${p.id}/body';this.onerror=()=>{this.replaceWith(document.createTextNode('sin foto'))}" alt="">`; }
+function card(p){
+  const other = tab === 'revisar'
+    ? `<button class="btn pri sm" data-a="cat" data-c="empleado">Empleado</button><button class="btn sm" data-a="cat" data-c="invitado">Invitado</button>`
+    : `<button class="btn sm wide" data-a="cat" data-c="${tab === 'empleado' ? 'invitado' : 'empleado'}">Mover a ${tab === 'empleado' ? 'Invitado' : 'Empleado'}</button><button class="btn sm wide" data-a="cat" data-c="revisar">Devolver a revisar</button>`;
+  return `<div class="card${sel.has(p.id) ? ' sel' : ''}" data-id="${p.id}">
+    <input class="chk" type="checkbox" data-a="chk" ${sel.has(p.id) ? 'checked' : ''}>
+    ${p.suggested ? '<span class="tag">Sugerido: Empleado</span>' : ''}
+    <div class="ph" data-a="sim" title="Ver parecidos">${photo(p)}</div>
+    <div class="bd">
+      <div class="nm">${esc(p.name)} <button data-a="name" title="Poner nombre">✎</button></div>
+      <div class="meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${esc(p.cams.join(', ') || '–')}</div>
+      <div class="acts">${other}<button class="btn sm wide" data-a="sim">Parecidos</button></div>
+    </div></div>`;
+}
+async function render(){
+  $('#help').textContent = HELP[tab];
+  sel.clear(); bulk();
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const v = $('#view'), tools = $('#tools');
+  if (tab === 'asistencia') return attendance();
+  if (tab === 'duplicados'){ tools.innerHTML = ''; return dups(); }
+  tools.innerHTML = `<input type="text" id="q" placeholder="Buscar nombre…" value="${esc(q)}"><label class="chip"><input type="checkbox" id="on" ${onlyNamed ? 'checked' : ''}> solo con nombre</label>`
+    + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button>' : '');
+  $('#q').oninput = e => { q = e.target.value; clearTimeout(render.t); render.t = setTimeout(load, 250); };
+  $('#on').onchange = e => { onlyNamed = e.target.checked; load(); };
+  if ($('#all')) $('#all').onclick = () => { cache.forEach(p => sel.add(p.id)); load(true); bulk(); };
+  load();
+}
+async function load(keep){
+  const v = $('#view');
+  try {
+    if (!keep){
+      const d = await J(`/api/people?category=${tab}&limit=300&only_named=${onlyNamed ? 1 : 0}&q=${encodeURIComponent(q)}`);
+      cache = d.people;
+    }
+    v.innerHTML = cache.length ? `<div class="grid">${cache.map(card).join('')}</div>` : '<div class="empty">No hay nadie en esta lista.</div>';
+  } catch (e) { v.innerHTML = '<div class="empty">Error cargando identidades.</div>'; }
+}
+function bulk(){ $('#bulk').hidden = !sel.size; $('#bulk-n').textContent = sel.size + ' seleccionadas'; }
+document.addEventListener('click', async e => {
+  const bb = e.target.closest('[data-bulk]');
+  if (bb){
+    if (bb.dataset.bulk === 'clear'){ sel.clear(); bulk(); return load(true); }
+    await send('/api/people/bulk-category', 'POST', {ids: [...sel], category: bb.dataset.bulk});
+    sel.clear(); bulk(); counts(); return load();
+  }
+  const t = e.target.closest('#tabs button');
+  if (t){ tab = t.dataset.t; return render(); }
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const c = el.closest('.card'), id = c && +c.dataset.id, a = el.dataset.a;
+  if (a === 'chk'){ el.checked ? sel.add(id) : sel.delete(id); c.classList.toggle('sel', el.checked); return bulk(); }
+  if (a === 'cat'){ await send(`/api/people/${id}/category`, 'PATCH', {category: el.dataset.c}); counts(); return load(); }
+  if (a === 'name'){
+    const cur = cache.find(p => p.id === id); const n = prompt('Nombre de la persona (vacío = quitar nombre):', cur && cur.named ? cur.name : '');
+    if (n === null) return; await send(`/api/subjects/${id}`, 'PATCH', {name: n.trim()}); return load();
+  }
+  if (a === 'sim') return similar(id, c);
+  if (a === 'merge'){
+    if (!confirm('¿Fusionar? Esto une todo el historial de ambas identidades y no se deshace.')) return;
+    await send(`/api/subjects/${el.dataset.from}/merge`, 'POST', {into: +el.dataset.into});
+    counts(); return tab === 'duplicados' ? dups() : load();
+  }
+});
+async function similar(id, c){
+  document.querySelectorAll('.drawer').forEach(d => d.remove());
+  const d = await J(`/api/people/${id}/similar?min_sim=0.3&limit=10`);
+  const vs = await J(`/api/people/${id}/visits?limit=8`);
+  const dr = document.createElement('div'); dr.className = 'drawer';
+  dr.innerHTML = `<h3>Parecidos a ${esc(cache.find(p => p.id === id)?.name || '#' + id)}</h3>`
+    + (d.similar.length ? `<div class="row">${d.similar.map(s => `<div class="mini"><img src="/api/subjects/${s.id}/face" onerror="this.src='/api/subjects/${s.id}/body'"><div><b>${esc(s.name)}</b><br>${Math.round(s.similarity * 100)}% · ${s.visits} visitas<br>${s.category}<br><button class="btn sm" data-a="merge" data-from="${s.id}" data-into="${id}">Es la misma</button></div></div>`).join('')}</div>` : `<div class="meta">${esc(d.note || 'Nadie se le parece.')}</div>`)
+    + `<h3 style="margin-top:12px">Últimas visitas</h3><div class="row">${vs.visits.map(v => `<div class="mini"><img src="/api/person-visits/${v.id}/${v.has_face ? 'face' : 'body'}" onerror="this.style.visibility='hidden'"><div>${esc(v.cam)}<br>${hm(v.start)}–${hm(v.end)}</div></div>`).join('') || '<div class="meta">Sin visitas.</div>'}</div>`;
+  const grid = $('#view .grid'); let n = c; while (n.nextElementSibling && !n.nextElementSibling.classList.contains('drawer') && n.offsetTop === n.nextElementSibling.offsetTop) n = n.nextElementSibling;
+  n.after(dr); dr.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+async function dups(){
+  const v = $('#view');
+  try {
+    const d = await J('/api/people/duplicates?min_sim=0.4&limit=40');
+    v.innerHTML = d.pairs.length ? d.pairs.map(p => {
+      const into = (p.b_cat !== 'revisar' && p.a_cat === 'revisar') ? p.b : (p.a_cat !== 'revisar' ? p.a : Math.min(p.a, p.b));
+      const from = into === p.a ? p.b : p.a;
+      return `<div class="pair"><img src="/api/subjects/${p.a}/face" onerror="this.src='/api/subjects/${p.a}/body'"><div><b>${esc(p.a_name)}</b><br><span class="meta">${p.a_cat}</span></div>
+      <div style="font-size:20px;color:var(--accent)">${Math.round(p.similarity * 100)}%</div>
+      <img src="/api/subjects/${p.b}/face" onerror="this.src='/api/subjects/${p.b}/body'"><div><b>${esc(p.b_name)}</b><br><span class="meta">${p.b_cat}</span></div>
+      <button class="btn pri sm" style="margin-left:auto" data-a="merge" data-from="${from}" data-into="${into}">Son la misma</button></div>`;
+    }).join('') : '<div class="empty">No hay pares sospechosos.</div>';
+  } catch (e) { v.innerHTML = '<div class="empty">Error cargando duplicados.</div>'; }
+}
+async function attendance(date){
+  const tools = $('#tools'), v = $('#view');
+  const today = new Date().toLocaleDateString('en-CA');
+  date = date || $('#dt')?.value || today;
+  tools.innerHTML = `<input type="date" id="dt" value="${date}"><a class="btn sm" href="/api/attendance.csv?date=${date}">Descargar CSV</a>`;
+  $('#dt').onchange = e => attendance(e.target.value);
+  try {
+    const d = await J('/api/attendance?date=' + date);
+    v.innerHTML = `<p class="help">Cámaras usadas: ${esc(d.internal_cams.join(', '))}${d.partial_day ? ' · día en curso' : ''}</p>`
+      + (d.employees.length ? `<table><tr><th>Empleado</th><th>Presente</th><th>Llegada</th><th>Última vez</th><th>Minutos en oficina</th><th>Cámaras</th></tr>${d.employees.map(e => `<tr><td>${esc(e.name)}</td><td class="${e.present ? 'ok' : 'no'}">${e.present ? 'Sí' : 'No'}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${esc(e.cams.join(', '))}</td></tr>`).join('')}</table>` : '<div class="empty">Aún no hay empleados clasificados. Clasifícalos en “Por revisar”.</div>')
+      + `<h3 style="margin-top:20px">Invitados: ${d.guests.count} · por revisar hoy: ${d.pending_review}</h3><div class="row">${d.guests.people.map(g => `<div class="mini"><img src="${g.snapshot}" onerror="this.style.visibility='hidden'"><div>${esc(g.name)}<br>${hm(g.first_ts)}–${hm(g.last_ts)}</div></div>`).join('')}</div>`;
+  } catch (e) { v.innerHTML = '<div class="empty">Error cargando asistencia.</div>'; }
+}
+counts(); render(); setInterval(counts, 60000);
+</script>
+</body>
+</html>
