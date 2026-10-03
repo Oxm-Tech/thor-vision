@@ -50,3 +50,11 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 - **Seguridad del host:** inventario de CVE antes de decidir JetPack 7.2.1 (`docs/JETPACK-7.2.1.md`).
 - **Gobierno:** épica en Jira, espacio de Confluence y registro de riesgos de biometría (`docs/COBIT-JIRA.md`).
 - Búsqueda semántica (e5) como segunda fase, solo para consultas conceptuales.
+
+## Actualización 2026-10-03 (v2.5.0)
+
+- **Hecho:** `/zonas`, alertas de vehículos estacionados (llegada, cada hora, salida), operador ONVIF `/onvif`, videoportero como cámara de solo rostros, skill de reportes v2.
+- **Placas (solo vehículos estacionados dentro de las zonas de estacionamiento):** la prueba con `fast-alpr` (detector + OCR ONNX, 0.07–0.09 s por cuadro) no detectó placas en los autos que hoy están fuera de las zonas. Falta validar con un auto dentro de la zona y a resolución nativa. Si funciona, correr el OCR una vez al registrar el vehículo y guardar texto y confianza en `parked_vehicles` (con la placa en el metadato de la alerta). Agregar la dependencia a la imagen requiere cuidar el wheel de OpenCV con GStreamer.
+- **Videoportero:** mapear con una prueba real los eventos de timbre y puerta (hoy se guardan todos en `onvif_events`), crear la tabla de llamadas con captura del momento, relación con la persona detectada y aviso. Audio: descartado por ahora.
+- **Gestión remota por ONVIF (siguiente):** lectura de red, usuarios y perfiles; con confirmación y bitácora: hora y NTP, reinicio, perfiles de video (resolución, fps, tasa de bits), control de puerta del videoportero. Modo solo lectura por defecto por equipo.
+- **Descartado:** conteo de personas de Hanwha (`/opensdk/WiseAI/search/objectcounting/check` devuelve 404 en cam-189, 191, 113 y 228). Open Platform: requiere ser socio (STEP) y la serie Q tiene 225 MB de RAM; no se desarrolla nada por ahora.

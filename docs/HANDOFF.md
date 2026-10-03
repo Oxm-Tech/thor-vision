@@ -59,3 +59,11 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 - El CI falla si el CHANGELOG está desfasado; al subir el tag, `.github/workflows/release.yml` verifica que coincida con la versión y publica el GitHub Release con esas notas.
 - **Commit desplegado:** antes de copiar `app/` a Thor, `python scripts/stamp_build.py` escribe `app/build_info.json` (ignorado por git); `/api/version` lo devuelve y el pie del dashboard lo muestra al pasar el cursor sobre la versión.
 - Gobierno con Jira y COBIT: `docs/COBIT-JIRA.md`. Evaluación de JetPack: `docs/JETPACK-7.2.1.md`.
+
+## Zonas, ONVIF y videoportero (v2.5.0)
+
+- **Zonas:** `data/zones.json` (archivo, no base de datos), editable en `/zonas`; código en `app/vision/zones.py`. Se aplican en `VisionModels.process`, `ParkedTracker` y `SceneContext.render`.
+- **Vehículos estacionados:** tabla `parked_vehicles` en `events.db`. Las alertas (llegada, cada hora `PARKED_ALERT_EVERY_S`, salida) se guardan en `events` como `type='nemotron'`, `has_alert=1`, `alert_types=['vehiculo_detenido']` con el metadato `parked`.
+- **ONVIF:** `app/onvif/` (cliente SOAP sin dependencias, registro, escucha). El acceso de cada equipo vive en `data/onvif.json` (permisos 600, fuera de git); los eventos en la tabla `onvif_events` de `events.db` (90 días).
+- **Videoportero:** `cameras.yml` usa `rtsp_url: onvif://vto/<perfil>` y `mode: faces`; la URL real se resuelve en `app/onvif/resolve.py`. Modo `faces`: solo InsightFace, sin YOLO de objetos, VLM ni movimiento nativo.
+- **Skill de reportes:** `config/skills/report.md` es la v2 de SkillOpt (la anterior queda como `report.md.v0-backup-20261003` en Thor).

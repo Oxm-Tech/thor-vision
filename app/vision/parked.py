@@ -1,6 +1,7 @@
 """Registro de vehiculos estacionados en las camaras de calle: llegada, permanencia y (cuando se pueda) placa."""
 import logging
 import os
+import sqlite3
 import threading
 import time
 from collections import Counter
@@ -18,6 +19,7 @@ GONE_S = float(os.environ.get("PARKED_GONE_S", "900"))          # sin verse este
 MIN_IOU = float(os.environ.get("PARKED_IOU", "0.40"))
 MIN_AREA_FRAC = 0.0015                                           # ignora cajas diminutas (ruido lejano)
 RETENTION_DAYS = int(os.environ.get("PARKED_RETENTION_DAYS", "90"))
+ALERT_EVERY_S = float(os.environ.get("PARKED_ALERT_EVERY_S", "3600"))   # alerta recurrente mientras siga estacionado
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS parked_vehicles (
@@ -67,6 +69,7 @@ class ParkedTracker:
         self._lock = threading.Lock()
         self._cand: dict = {}
         self._last_gc = 0.0
+        self.cam_names: dict = {}       # cam_id -> nombre (lo fija main.py)
         with db._lock:
             db._conn.executescript(_SCHEMA)
             rows = db._conn.execute("SELECT id, cam_id, cls, first_ts, last_ts, box FROM parked_vehicles WHERE state='parked'").fetchall()
@@ -76,7 +79,8 @@ class ParkedTracker:
             except Exception:
                 continue
             self._cand.setdefault(cam, []).append({"cls": Counter({cls: 5}), "anchor": b, "first": first, "last": last,
-                                                   "hits": 99, "rec": rid, "saved": last})
+                                                   "hits": 99, "rec": rid, "saved": last,
+                                                   "hours": int((last - first) // ALERT_EVERY_S)})
         logger.info("ParkedTracker: camaras=%s min=%.0fs, %d vehiculos abiertos recuperados", sorted(CAMS), MIN_PARKED_S, len(rows))
 
     @staticmethod
@@ -153,12 +157,45 @@ class ParkedTracker:
                     self.db._conn.commit()
                     c["rec"] = cur.lastrowid
                 c["saved"] = now
+                c["hours"] = 0
                 logger.info("ParkedTracker: %s estacionado en %s (id=%d)", cls, cam_id, c["rec"])
+                self._alert(cam_id, c["rec"], cls, "arrived", c["first"], now)
+        elif now - c["first"] >= (c.get("hours", 0) + 1) * ALERT_EVERY_S:
+            c["hours"] = c.get("hours", 0) + 1
+            self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "hourly", c["first"], now)
+            self._save_seen(c, now)
         elif now - c["saved"] >= 60:
-            with self.db._lock:
-                self.db._conn.execute("UPDATE parked_vehicles SET last_ts=? WHERE id=?", (now, c["rec"]))
-                self.db._conn.commit()
-            c["saved"] = now
+            self._save_seen(c, now)
+
+    def _save_seen(self, c, now) -> None:
+        with self.db._lock:
+            self.db._conn.execute("UPDATE parked_vehicles SET last_ts=? WHERE id=?", (now, c["rec"]))
+            self.db._conn.commit()
+        c["saved"] = now
+
+    def _alert(self, cam_id, rec_id, cls, state, first_ts, now) -> None:
+        """Evento con alerta (type 'nemotron', como las del VLM) para que salga en la linea de tiempo, el chat y los reportes."""
+        dur = max(0, int(now - first_ts))
+        tiempo = f"{dur // 3600} h {dur % 3600 // 60} min" if dur >= 3600 else f"{dur // 60} min"
+        cam = self.cam_names.get(cam_id, cam_id)
+        hora = time.strftime("%H:%M", time.localtime(first_ts))
+        if state == "arrived":
+            msg, sev = f"{cls.capitalize()} estacionado en {cam} (llego a las {hora})", "low"
+        elif state == "hourly":
+            msg, sev = f"{cls.capitalize()} sigue estacionado en {cam}: lleva {tiempo} (llego a las {hora})", "medium"
+        else:
+            msg, sev = f"{cls.capitalize()} se fue de {cam} tras {tiempo} estacionado (llego a las {hora})", "low"
+        with self.db._lock:
+            row = self.db._conn.execute("SELECT plate FROM parked_vehicles WHERE id=?", (rec_id,)).fetchone()
+        plate = row[0] if row and row[0] else None
+        payload = {"schema": 2, "source": "parked_tracker", "people": 0, "persons": [], "vehicles": 1, "activity": msg, "scene": "",
+                   "relevant": True, "alerts": [msg + (f". Placa {plate}" if plate else "")], "alert_types": ["vehiculo_detenido"],
+                   "severity": sev, "confidence": "high",
+                   "parked": {"vehicle_id": rec_id, "state": state, "class": cls, "duration_s": dur, "first_ts": first_ts, "plate": plate}}
+        try:
+            self.db.insert_event("nemotron", cam_id, payload, people=0, has_alert=True)
+        except sqlite3.Error as exc:          # la alerta no debe romper el seguimiento
+            logger.warning("ParkedTracker: no se pudo guardar la alerta: %s", exc)
 
     def _gc(self, cam_id, now) -> None:
         cands = self._cand.get(cam_id, [])
@@ -173,6 +210,7 @@ class ParkedTracker:
                                           (c["last"], c["last"], c["rec"]))
                     self.db._conn.commit()
                 logger.info("ParkedTracker: vehiculo %d se fue de %s tras %.0f min", c["rec"], cam_id, (c["last"] - c["first"]) / 60)
+                self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "left", c["first"], c["last"])
             elif c["rec"] is None and idle > 120:
                 pass
             else:

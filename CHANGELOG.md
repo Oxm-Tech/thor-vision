@@ -2,6 +2,27 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.5.0 — Zonas, ONVIF y videoportero (2026-10-03)
+
+Las zonas por cámara se dibujan desde el dashboard, hay un operador ONVIF para las cámaras y el videoportero, el videoportero entra al dashboard como cámara de solo rostros, los vehículos estacionados generan alertas y el reporte usa el skill optimizado.
+
+- **Zonas · Zonas por cámara (/zonas)**: Se dibujan polígonos sobre la imagen de cada cámara con cuatro tipos: ignorar objetos (falsos positivos fijos como una palmera), ignorar todo, estacionamiento (solo se registran vehículos dentro) y descripción fija para el VLM. Se guardan en data/zones.json y se aplican en segundos, sin reiniciar.
+- **Vehículos · Alertas de vehículos estacionados**: Cada vehículo estacionado dentro de una zona de estacionamiento genera una alerta al llegar, otra cada hora mientras siga ahí (con el tiempo acumulado) y otra al irse. Son eventos con alerta del tipo vehiculo_detenido y metadato del vehículo (id, clase, duración, placa si se capturó), así que salen en la línea de tiempo, el chat y los reportes.
+- **ONVIF · Operador ONVIF (/onvif)**: Lista las cámaras y equipos agregados (videoportero), sondea modelo, firmware, hora, perfiles de video con su URI de stream, servicios y usuarios, y escucha eventos de forma continua (timbre, puerta, movimiento) guardándolos por 90 días. El usuario ONVIF de cada equipo solo se guarda si el equipo lo acepta y nunca sale por la API.
+- **Videoportero · Videoportero como cámara de solo rostros**: El Dahua VTO entra al dashboard como cam-vto (1920x1080, 30 fps, decodificación por hardware) con detección de rostros únicamente: sin detección de objetos, VLM ni movimiento nativo. cameras.yml no lleva claves: apunta a onvif://vto/<perfil> y la clave se resuelve del operador ONVIF, así que la rotación aplica sola.
+- **Reportes · Skill de reportes optimizado (v2)**: El reporte usa el skill de la ronda 2 de SkillOpt: acierto 0.89 contra 0.59 del original en 22 casos no vistos, con reportes más cortos y completos.
+- **Dashboard · Resumen del pipeline en Conexiones**: El resumen de llamadas a Qwen pasó a la ventana de Conexiones a las cámaras y se quitaron los textos sobre credenciales.
+
+Correcciones:
+- El chat clásico del dock se retiró (usaba una ventana fija de 6 h y no la búsqueda por descripción).
+- Las coincidencias de la búsqueda del Vision Agent enlazan a la captura real del evento cuando existe.
+
+Notas:
+- Pendiente: mapear los eventos del timbre y la puerta del videoportero y guardar las llamadas con captura.
+- Pendiente: lectura de placas solo para vehículos estacionados dentro de las zonas dibujadas (prueba de factibilidad hecha; falta un auto en la zona para validar).
+- Pendiente: gestión remota de cámaras por ONVIF (hora, red, perfiles de video, reinicio) con confirmación y bitácora.
+- Descartado: el conteo de personas de Hanwha (WiseAI objectcounting) no existe en las cámaras probadas (404).
+
 ## v2.4.0 — Identidades, búsqueda y calidad (2026-10-03)
 
 La gestión de personas pasa a una página propia (/identidades) con bandeja por revisar, empleados, invitados, ocupación, asistencia y duplicados. El Vision Agent ahora encuentra eventos por su descripción, y el repositorio gana pruebas y reglas automáticas que evitan que vuelvan los fallos que ya tuvimos.

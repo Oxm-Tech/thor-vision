@@ -98,6 +98,7 @@ async def lifespan(app: FastAPI):
     from app.vision.parked import ParkedTracker
     from app.vision.pets import PetCollector
     app.state.parked = ParkedTracker(db)
+    app.state.parked.cam_names = {c.id: c.name for c in config.cameras}
     app.state.pets = PetCollector(db)
     vision_queue.hooks = [app.state.parked.update, app.state.pets.update]
     vision_queue.start()
