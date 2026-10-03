@@ -2,6 +2,21 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.7.0 — Videoportero con alertas y conocimiento del agente (2026-10-03)
+
+El videoportero genera alertas (visitas con rostro y, con la cuenta admin, eventos nativos del timbre) y el Vision Agent consulta un conocimiento de la casa editable en lugar de datos escritos a mano en su prompt.
+
+- **Videoportero · Alerta por cada visita con rostro**: Cuando alguien se detiene frente al videoportero y se captura su rostro, se guarda una alerta (visita_videoportero) con la captura, enlazada a la persona detectada; aparece en la línea de tiempo, el chat y los reportes.
+- **Videoportero · Eventos nativos de Dahua (timbre, llamada, puerta)**: Con la cuenta admin se escucha el canal propio del equipo (eventManager attach), porque el ONVIF del videoportero no anuncia el timbre. Todo evento se guarda por 90 días y los códigos de timbre o llamada (DOORBELL_CODES) generan una alerta con captura. Los códigos exactos se afinan con una prueba real.
+- **Vision Agent · Conocimiento de la casa (/conocimiento)**: Un markdown editable con las mascotas (Akamaru shiba, Mojo-jojo negro, Gigi shar pei), reglas de personas y de cámaras, más datos vivos (cámaras y zonas), se entrega como resultado de búsqueda con prioridad. Sustituye al dato escrito a mano en el prompt que seguía diciendo que Gigi era un pug.
+
+Correcciones:
+- El prompt del Vision Agent ya no trae razas ni nombres escritos a mano: el agente debe tomar los hechos de la casa de los resultados 'Conocimiento de la casa'.
+
+Notas:
+- Pendiente: confirmar con una pulsación real los códigos de timbre de Dahua.
+- Pendiente: puerta Tuya (192.168.10.205, puerto 6668 abierto): requiere el id y la clave local del dispositivo para escuchar su estado y vincularlo con las cámaras.
+
 ## v2.6.0 — Gestión de dispositivos y placas (2026-10-03)
 
 Cada marca de cámara se puede consultar y administrar desde el dashboard (Hanwha por SUNAPI, Dahua y cualquier equipo ONVIF por ONVIF), siempre en solo lectura por defecto, con confirmaciones y bitácora. Los vehículos estacionados dentro de las zonas ahora se leen solos (placa).

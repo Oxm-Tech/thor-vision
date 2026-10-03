@@ -194,6 +194,18 @@ async def lifespan(app: FastAPI):
         from app.onvif.service import OnvifManager
         app.state.onvif = OnvifManager(db, config)
         app.state.onvif.start()
+    from app.vision.doorbell import DoorAlerts
+    _door_cams = [c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()]
+    app.state.doorbell = None
+    for _dc in _door_cams:
+        _cfg = next((c for c in config.cameras if c.id == _dc), None)
+        if _cfg is None:
+            continue
+        app.state.doorbell = DoorAlerts(db, snapshots, manager._buffers, _dc, _cfg.name)
+        if app.state.visits is not None:
+            app.state.visits.visit_cb[_dc] = app.state.doorbell.visitor_alert
+        if getattr(app.state, "onvif", None) is not None:
+            app.state.onvif.dahua_cb = app.state.doorbell.ring_alert
     from app.devices.manager import DeviceManager
     app.state.devices = DeviceManager(db, config)
     from app.api.chat_agent import start_chat_probe
@@ -334,7 +346,14 @@ from app.api.routes_onvif import router as onvif_router
 app.include_router(onvif_router)
 from app.api.routes_devices import router as devices_router
 app.include_router(devices_router)
+from app.api.routes_knowledge import router as knowledge_router
+app.include_router(knowledge_router)
 app.include_router(people_router)
+
+
+@app.get("/conocimiento", response_class=HTMLResponse)
+async def knowledge_page(request: Request):
+    return templates.TemplateResponse("knowledge.html", {"request": request})
 
 
 @app.get("/dispositivos", response_class=HTMLResponse)

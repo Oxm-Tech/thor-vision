@@ -74,3 +74,9 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 - **Política:** solo lectura por defecto (`manage` por equipo en `data/onvif.json`); `classify()` en `sunapi.py` define leer / modificar / sensible (confirmación escrita) / prohibido. Bitácora en la tabla `device_actions` de `events.db`.
 - **Credenciales de las cámaras Hanwha:** las mismas del RTSP en `cameras.yml` (Digest); nunca salen por la API.
 - **Placas:** `app/vision/plates.py`; `scripts/install_alpr.sh` instala `fast-alpr` en `/app/data/pylibs` (sin dependencias, para no pisar el wheel de OpenCV) y los modelos se guardan en `/app/data/alpr_models`. Variables: `PLATES_ENABLED`, `PLATES_EVERY_S`, `PLATES_MAX_READS`, `PLATES_DETECTOR`, `PLATES_OCR`.
+
+## Videoportero y conocimiento (v2.7.0)
+
+- **Eventos nativos de Dahua:** `app/onvif/dahua_events.py` (HTTP `eventManager.cgi?action=attach`, con la cuenta admin guardada en el operador ONVIF) y `OnvifManager._listen_dahua`; se guardan en `onvif_events` con tema `dahua/<Code>`. `DOORBELL_CODES` define cuáles generan alerta de timbre.
+- **Alertas del videoportero:** `app/vision/doorbell.py` (`DoorAlerts`); `DOORBELL_CAMS` (default `cam-vto`). La visita se alerta al cerrarse (`VisitManager.visit_cb`).
+- **Conocimiento:** `data/knowledge.md` (editable en `/conocimiento` o `PUT /api/knowledge`) + datos vivos; `/searxng/search` lo devuelve primero. El prompt de Morphic (parche en `~/vision-agent-thor.patch`) ya no lleva datos de la casa.

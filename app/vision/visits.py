@@ -146,6 +146,7 @@ class VisitManager:
         self._tracks: dict = {}
         self._next_tid: dict = {}
         self._subjects: dict = {}     # id -> {emb, n, name, named}
+        self.visit_cb: dict = {}           # cam_id -> callable(dict) al cerrarse una visita (alertas del videoportero)
         self.zones: dict = {}         # cam_id -> zone (interior/exterior/garage)
         self._analyzer = None
         self._vlm_q: queue.Queue = queue.Queue(maxsize=30)
@@ -408,6 +409,13 @@ class VisitManager:
                         cam_id, tr.visit_id, qs, qn, qp, tr.snap_n, tr.pre_n, tr.face_src)
         self._flush(tr, time.time(), "closed")
         self.stats["visits_closed"] += 1
+        cb = self.visit_cb.get(cam_id)
+        if cb is not None and tr.visit_id is not None and not tr.static:
+            try:
+                cb({"visit_id": tr.visit_id, "subject_id": tr.subject_id, "name": self._known_name(tr)[0], "first_ts": tr.first_ts,
+                    "last_ts": tr.last_ts, "scene": tr.scene, "face": tr.face})
+            except (KeyError, TypeError, ValueError, OSError) as exc:      # un fallo de alerta no debe romper el cierre de la visita
+                logger.warning("visit_cb: %s", exc)
         if tr.body and not tr.static and self._analyzer is not None and self._vlm_worth(cam_id, tr):
             try:
                 self._vlm_q.put_nowait((cam_id, tr.visit_id, tr.body, tr.face, tr.scene))

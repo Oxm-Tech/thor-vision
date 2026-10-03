@@ -116,6 +116,17 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
     label = _range_label(since, until)
 
     results = []
+    try:
+        from app.api import routes_knowledge as kn
+        from app.storage import textindex as _ti
+        qs = set(_ti.query_stems(query))
+        asks_pets = bool(re.search(r"perr|mascot|gigi|akamaru|mojo|shiba|shar", nq))
+        for title, text in kn.sections(request):
+            ts = set(_ti.stems(title + " " + text))
+            if (asks_pets and "mascot" in title.lower()) or (qs & ts and len(qs & ts) >= 2):
+                results.append({"title": f"Conocimiento de la casa · {title}", "url": f"{base}/conocimiento", "content": re.sub(r"\s+", " ", text.replace("## ", ""))[:556]})
+    except (ImportError, OSError) as exc:
+        logger.warning("conocimiento: %s", exc)
     from app.storage.facts import build_facts
     f = build_facts(db, since, until)
     purl = f"{base}/?periodo={int(since)}-{int(until)}"

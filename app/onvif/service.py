@@ -7,6 +7,7 @@ import threading
 import time
 
 from app.onvif import client as oc
+from app.onvif import dahua_events as de
 from app.onvif import registry
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class OnvifManager:
         self._threads: dict = {}
         self._stop = threading.Event()
         self._status: dict = {}
+        self.dahua_cb = None          # callable(code, action, data): alertas de timbre (lo fija main.py)
         with db._lock:
             db._conn.executescript(_SCHEMA)
 
@@ -99,13 +101,23 @@ class OnvifManager:
         self._stop.set()
 
     def status(self, ep_id: str) -> dict:
-        return self._status.get(ep_id, {})
+        s = dict(self._status.get(ep_id, {}))
+        d = self._status.get(ep_id + ":dahua")
+        if d is not None:
+            s["dahua"] = d
+        return s
 
     def _supervise(self) -> None:
         last_purge = 0.0
         while not self._stop.is_set():
             for ep in registry.endpoints(self.config):
                 t = self._threads.get(ep["id"])
+                if ep.get("kind") == "vto" and ep.get("listen") and registry.has_auth(ep["id"]):
+                    td = self._threads.get(ep["id"] + ":dahua")
+                    if td is None or not td.is_alive():
+                        th = threading.Thread(target=self._listen_dahua, args=(ep["id"],), daemon=True, name=f"dahua-{ep['id']}")
+                        self._threads[ep["id"] + ":dahua"] = th
+                        th.start()
                 if ep.get("listen") and registry.has_auth(ep["id"]) and (t is None or not t.is_alive()):
                     th = threading.Thread(target=self._listen, args=(ep["id"],), daemon=True, name=f"onvif-{ep['id']}")
                     self._threads[ep["id"]] = th
@@ -125,6 +137,32 @@ class OnvifManager:
                 self.db._conn.commit()
         except sqlite3.Error as exc:
             logger.warning("onvif: no se pudo guardar evento: %s", exc)
+
+    def _listen_dahua(self, ep_id: str) -> None:
+        """Eventos nativos de Dahua (timbre, llamada, puerta). Si la cuenta no tiene permiso queda el error en el estado."""
+        backoff = 5
+        key = ep_id + ":dahua"
+        while not self._stop.is_set():
+            ep = registry.get(self.config, ep_id)
+            if not ep or not ep.get("listen") or not registry.has_auth(ep_id):
+                self._status[key] = {"listening": False}
+                return
+            user, pw = self._creds(ep_id)
+
+            def on_event(code, action, index, data):
+                if code in ("Heartbeat",):
+                    return
+                self._store(ep_id, f"dahua/{code}", {**data, "index": index}, action)
+                if self.dahua_cb is not None:
+                    self.dahua_cb(code, action, data)
+            try:
+                self._status[key] = {"listening": True, "since": time.time()}
+                de.stream_events(ep["host"], user, pw, self._stop.is_set, on_event)
+            except de.DahuaError as exc:
+                self._status[key] = {"listening": False, "error": str(exc)[:120]}
+                logger.warning("dahua[%s]: %s (reintento en %ds)", ep_id, exc, backoff)
+                self._stop.wait(backoff)
+                backoff = min(backoff * 2, 120)
 
     def _listen(self, ep_id: str) -> None:
         last: dict = {}

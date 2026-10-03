@@ -64,3 +64,9 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 - **Gestión de dispositivos hecha** (`/dispositivos`): Hanwha por SUNAPI genérico sobre `attributes.cgi/cgis`; Dahua/ONVIF por ONVIF. Siguiente: más modelos de acciones guiadas por marca (por ejemplo un asistente para sincronizar la hora de todos los equipos o aplicar el mismo perfil de video a un grupo), aviso automático de firmware antiguo y comparación contra el boletín de seguridad del fabricante.
 - **Firmware:** 8 de 10 cámaras Hanwha son LND-6010R con firmware 1.03 de 2020; las 2 QNO-8010R tienen 1.42.01 de 2024. Evaluar actualización (requiere archivo del fabricante; la actualización nunca se hace desde el dashboard).
 - **Placas:** ver `scripts/install_alpr.sh`. Validar con un auto estacionado dentro de la zona; si la lectura nocturna es pobre, probar un recorte a resolución nativa con mejor detector (`PLATES_DETECTOR`).
+
+## Actualización 2026-10-03 (v2.7.0)
+
+- **Puerta Tuya (192.168.10.205):** responde y tiene el puerto local 6668 abierto (protocolo local de Tuya, alcanzable desde Thor por el router). Falta el id del dispositivo y su clave local (se obtienen con el proyecto de Tuya IoT / `tinytuya wizard`). Con eso: conexión persistente para el estado de la puerta, alerta al abrirse con captura de las cámaras cercanas y, con confirmación, apertura remota desde `/dispositivos`.
+- **Timbre:** afinar `DOORBELL_CODES` con una pulsación real viendo `onvif_events` (`dahua/*`).
+- **Avatar de Gigi:** las mejores 10 capturas son de Cocina-Patio (62–165 px, resolución nativa del recorte). Para más calidad hace falta fotografiarla de cerca; el coleccionador de mascotas ya guarda crops nativos.

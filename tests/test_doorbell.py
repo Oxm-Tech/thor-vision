@@ -1,0 +1,70 @@
+"""Eventos nativos de Dahua y alertas del videoportero (visita con rostro y timbre)."""
+import cv2
+import numpy as np
+
+from app.onvif import dahua_events as de
+from app.vision import doorbell
+
+
+def test_parse_single_line_event():
+    blk = "Content-Type: text/plain\nContent-Length:60\n\nCode=BackKeyLight;action=Pulse;index=0;data={\"State\":1}\n"
+    assert de.parse_event(blk) == ("BackKeyLight", "Pulse", 0, {"State": 1})
+
+
+def test_parse_multiline_json_and_no_data():
+    blk = 'Code=Invite;action=Start;index=0;data={\n   "CallID" : "1001",\n   "LockID" : 0\n}\n'
+    assert de.parse_event(blk) == ("Invite", "Start", 0, {"CallID": "1001", "LockID": 0})
+    assert de.parse_event("Code=DoorStatus;action=Pulse;index=1")[:3] == ("DoorStatus", "Pulse", 1)
+
+
+def test_heartbeats_and_garbage_are_ignored():
+    assert de.parse_event("Heartbeat") is None
+    assert de.parse_event("") is None
+
+
+class FakeDB:
+    def __init__(self):
+        self.events = []
+
+    def insert_event(self, type, cam_id, payload, people=None, has_alert=False):
+        self.events.append((type, cam_id, payload, has_alert))
+        return len(self.events)
+
+
+class FakeSnaps:
+    def __init__(self):
+        self.saved = []
+
+    def save(self, cam_id, frame, trigger, event_id=None):
+        self.saved.append((cam_id, trigger, event_id, frame is not None))
+
+
+def jpeg():
+    ok, buf = cv2.imencode(".jpg", np.zeros((40, 40, 3), np.uint8))
+    return buf.tobytes()
+
+
+def test_visit_with_face_creates_an_alert_with_snapshot():
+    db, sn = FakeDB(), FakeSnaps()
+    d = doorbell.DoorAlerts(db, sn, {}, "cam-vto", "Videoportero")
+    d.visitor_alert({"visit_id": 7, "subject_id": 418, "name": None, "first_ts": 100.0, "last_ts": 105.0, "scene": None, "face": jpeg()})
+    typ, cam, p, has_alert = db.events[0]
+    assert typ == "nemotron" and cam == "cam-vto" and has_alert
+    assert p["alert_types"] == ["visita_videoportero"] and p["doorbell"]["visit_id"] == 7 and "5 s" in p["activity"]
+    assert sn.saved == [("cam-vto", "visita", 1, True)]
+
+
+def test_very_short_visit_without_face_is_ignored():
+    db = FakeDB()
+    doorbell.DoorAlerts(db, None, {}).visitor_alert({"visit_id": 1, "subject_id": None, "name": None, "first_ts": 0.0, "last_ts": 0.5, "scene": None, "face": None})
+    assert db.events == []
+
+
+def test_ring_codes_alert_once_per_debounce_and_ignore_the_rest():
+    db = FakeDB()
+    d = doorbell.DoorAlerts(db, None, {})
+    d.ring_alert("Invite", "Start", {"CallID": "1"})
+    d.ring_alert("Invite", "Start", {"CallID": "1"})          # rebote
+    d.ring_alert("VideoMotion", "Start", {})                  # no es timbre
+    d.ring_alert("Invite", "Stop", {})                        # fin de llamada
+    assert len(db.events) == 1 and db.events[0][2]["alert_types"] == ["timbre_videoportero"] and db.events[0][2]["severity"] == "medium"
