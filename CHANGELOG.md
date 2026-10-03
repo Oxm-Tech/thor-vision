@@ -2,6 +2,24 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.6.0 — Gestión de dispositivos y placas (2026-10-03)
+
+Cada marca de cámara se puede consultar y administrar desde el dashboard (Hanwha por SUNAPI, Dahua y cualquier equipo ONVIF por ONVIF), siempre en solo lectura por defecto, con confirmaciones y bitácora. Los vehículos estacionados dentro de las zonas ahora se leen solos (placa).
+
+- **Dispositivos · Gestión de dispositivos (/dispositivos)**: Lista todos los equipos con marca, modelo y firmware, y para cada uno ofrece Resumen, Gestión y Auditoría. Hanwha: el árbol completo de funciones que publica la propia cámara (sistema, red, seguridad, video, imagen, eventos, grabación…), con lectura de cada una y formularios de modificación generados desde los tipos declarados por el equipo (listas, rangos, sí/no). Dahua y otros ONVIF: red, DNS, NTP, nombre, perfiles de video, puertas y relés, con acciones (NTP, perfil de video, reiniciar, abrir puerta).
+- **Dispositivos · Seguridad de la gestión**: Todo equipo arranca en solo lectura; para modificar hay que activar el modo gestión del equipo. Las acciones sensibles (red, usuarios, reinicio, perfiles de video que Thor consume, abrir puerta) piden escribir el id del equipo; restaurar de fábrica, actualizar firmware, copias de configuración y certificados nunca se permiten desde aquí. Los valores se validan contra los tipos del propio equipo y toda acción queda en una bitácora con los secretos enmascarados.
+- **Dispositivos · Inventario de firmware**: El resumen muestra modelo, firmware y hora de cada equipo y avisa cuando el firmware es antiguo: hoy 8 de las 10 cámaras son LND-6010R con firmware de 2020.
+- **Vehículos · Placas de vehículos estacionados**: Dentro de las zonas de estacionamiento, cada vehículo registrado se lee una vez por minuto (hasta 20 lecturas) sobre el recorte nativo y se vota entre lecturas; lo escrito a mano siempre manda. Se guarda el texto, la confianza, el origen (auto o manual) y el recorte de la placa, y la placa aparece en las alertas del vehículo. El lector (fast-alpr) se instala en el volumen de datos con scripts/install_alpr.sh, sin tocar la imagen.
+
+Correcciones:
+- El escucha ONVIF del videoportero se caía tras 8 segundos sin eventos; ahora espera más que la consulta del equipo.
+- El videoportero ya no aparece duplicado como cámara Hanwha en la gestión de dispositivos.
+
+Notas:
+- Probado en vivo solo en lectura; las modificaciones están cubiertas por pruebas y por la política, pero no se aplicó ninguna a un equipo real.
+- Pendiente: probar placas con un auto estacionado dentro de la zona (a 43 px de ancho la lectura de un auto lejano de noche sale con baja confianza).
+- Pendiente: el control de puertas del videoportero respondió con un error al listar puertas; hay que revisar el servicio en el equipo.
+
 ## v2.5.0 — Zonas, ONVIF y videoportero (2026-10-03)
 
 Las zonas por cámara se dibujan desde el dashboard, hay un operador ONVIF para las cámaras y el videoportero, el videoportero entra al dashboard como cámara de solo rostros, los vehículos estacionados generan alertas y el reporte usa el skill optimizado.

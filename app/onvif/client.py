@@ -18,6 +18,7 @@ NS = {
     "trt": "http://www.onvif.org/ver10/media/wsdl",
     "tev": "http://www.onvif.org/ver10/events/wsdl",
     "tt": "http://www.onvif.org/ver10/schema",
+    "tdc": "http://www.onvif.org/ver10/doorcontrol/wsdl",
 }
 TIMEOUT = 8
 

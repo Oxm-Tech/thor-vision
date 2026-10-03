@@ -194,6 +194,8 @@ async def lifespan(app: FastAPI):
         from app.onvif.service import OnvifManager
         app.state.onvif = OnvifManager(db, config)
         app.state.onvif.start()
+    from app.devices.manager import DeviceManager
+    app.state.devices = DeviceManager(db, config)
     from app.api.chat_agent import start_chat_probe
     app.state.chat_probe_stop = start_chat_probe(app)
 
@@ -330,7 +332,14 @@ from app.api.routes_zones import router as zones_router
 app.include_router(zones_router)
 from app.api.routes_onvif import router as onvif_router
 app.include_router(onvif_router)
+from app.api.routes_devices import router as devices_router
+app.include_router(devices_router)
 app.include_router(people_router)
+
+
+@app.get("/dispositivos", response_class=HTMLResponse)
+async def devices_page(request: Request):
+    return templates.TemplateResponse("devices.html", {"request": request})
 
 
 @app.get("/onvif", response_class=HTMLResponse)

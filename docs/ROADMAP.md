@@ -58,3 +58,9 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 - **Videoportero:** mapear con una prueba real los eventos de timbre y puerta (hoy se guardan todos en `onvif_events`), crear la tabla de llamadas con captura del momento, relación con la persona detectada y aviso. Audio: descartado por ahora.
 - **Gestión remota por ONVIF (siguiente):** lectura de red, usuarios y perfiles; con confirmación y bitácora: hora y NTP, reinicio, perfiles de video (resolución, fps, tasa de bits), control de puerta del videoportero. Modo solo lectura por defecto por equipo.
 - **Descartado:** conteo de personas de Hanwha (`/opensdk/WiseAI/search/objectcounting/check` devuelve 404 en cam-189, 191, 113 y 228). Open Platform: requiere ser socio (STEP) y la serie Q tiene 225 MB de RAM; no se desarrolla nada por ahora.
+
+## Actualización 2026-10-03 (v2.6.0)
+
+- **Gestión de dispositivos hecha** (`/dispositivos`): Hanwha por SUNAPI genérico sobre `attributes.cgi/cgis`; Dahua/ONVIF por ONVIF. Siguiente: más modelos de acciones guiadas por marca (por ejemplo un asistente para sincronizar la hora de todos los equipos o aplicar el mismo perfil de video a un grupo), aviso automático de firmware antiguo y comparación contra el boletín de seguridad del fabricante.
+- **Firmware:** 8 de 10 cámaras Hanwha son LND-6010R con firmware 1.03 de 2020; las 2 QNO-8010R tienen 1.42.01 de 2024. Evaluar actualización (requiere archivo del fabricante; la actualización nunca se hace desde el dashboard).
+- **Placas:** ver `scripts/install_alpr.sh`. Validar con un auto estacionado dentro de la zona; si la lectura nocturna es pobre, probar un recorte a resolución nativa con mejor detector (`PLATES_DETECTOR`).

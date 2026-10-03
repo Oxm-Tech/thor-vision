@@ -67,3 +67,10 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 - **ONVIF:** `app/onvif/` (cliente SOAP sin dependencias, registro, escucha). El acceso de cada equipo vive en `data/onvif.json` (permisos 600, fuera de git); los eventos en la tabla `onvif_events` de `events.db` (90 días).
 - **Videoportero:** `cameras.yml` usa `rtsp_url: onvif://vto/<perfil>` y `mode: faces`; la URL real se resuelve en `app/onvif/resolve.py`. Modo `faces`: solo InsightFace, sin YOLO de objetos, VLM ni movimiento nativo.
 - **Skill de reportes:** `config/skills/report.md` es la v2 de SkillOpt (la anterior queda como `report.md.v0-backup-20261003` en Thor).
+
+## Gestión de dispositivos y placas (v2.6.0)
+
+- **Código:** `app/devices/` (`sunapi.py` cliente y política, `onvif_ops.py` operaciones ONVIF, `manager.py` orquestación y bitácora), `app/api/routes_devices.py`, página `/dispositivos`.
+- **Política:** solo lectura por defecto (`manage` por equipo en `data/onvif.json`); `classify()` en `sunapi.py` define leer / modificar / sensible (confirmación escrita) / prohibido. Bitácora en la tabla `device_actions` de `events.db`.
+- **Credenciales de las cámaras Hanwha:** las mismas del RTSP en `cameras.yml` (Digest); nunca salen por la API.
+- **Placas:** `app/vision/plates.py`; `scripts/install_alpr.sh` instala `fast-alpr` en `/app/data/pylibs` (sin dependencias, para no pisar el wheel de OpenCV) y los modelos se guardan en `/app/data/alpr_models`. Variables: `PLATES_ENABLED`, `PLATES_EVERY_S`, `PLATES_MAX_READS`, `PLATES_DETECTOR`, `PLATES_OCR`.

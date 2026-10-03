@@ -20,6 +20,7 @@ def _read() -> dict:
         d = {}
     d.setdefault("endpoints", [])
     d.setdefault("auth", {})
+    d.setdefault("manage", {})
     return d
 
 
@@ -114,3 +115,16 @@ def set_listen(ep_id: str, listen: bool) -> bool:
                 _write(d)
                 return True
     return False
+
+
+def is_manage(dev_id: str) -> bool:
+    """Modo gestion: sin el, un equipo solo se puede consultar (default)."""
+    with _lock:
+        return bool(_read()["manage"].get(dev_id))
+
+
+def set_manage(dev_id: str, enabled: bool) -> None:
+    with _lock:
+        d = _read()
+        d["manage"][dev_id] = bool(enabled)
+        _write(d)
