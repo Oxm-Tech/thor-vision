@@ -18,6 +18,11 @@ jobs:
         run: |
           pip install ruff
           ruff check app --select F,E9 --ignore F401,F841
+      - name: "Fiabilidad: trinquete de excepciones (ruff) y reglas ast-grep"
+        run: |
+          pip install ast-grep-cli
+          python scripts/ruff_ratchet.py
+          ast-grep scan
       - name: Plantillas Jinja validas
         run: |
           pip install jinja2
@@ -27,6 +32,18 @@ jobs:
           for p in pathlib.Path("app/dashboard/templates").glob("*.html"):
               env.parse(p.read_text())
           PY
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pruebas de contrato
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest -q tests
 
   secrets:
     runs-on: ubuntu-latest

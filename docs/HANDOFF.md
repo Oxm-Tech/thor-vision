@@ -42,3 +42,12 @@ Para quien continúe el desarrollo. Complementa `README.md` (qué es), `INTEGRAT
 ## 5. Estado actual y qué sigue
 
 El estado de cada línea de trabajo y su criterio de aceptación están en [`ROADMAP.md`](ROADMAP.md). Lo inmediato es el videoportero, la consolidación de personas duplicadas y el reporte de asistencia.
+
+## Calidad y CI (fiabilidad)
+
+El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en local:
+
+- **Pruebas de contrato** (`tests/`, `pip install -r requirements-dev.txt && pytest -q tests`): cubren lo que ya fallo en produccion (saneador del VLM, ventana de historia del chat, emparejamiento de vehiculos, fusion de huecos de asistencia, geometria de visitas). Cada falla real nueva deberia dejar su prueba.
+- **Trinquete de excepciones** (`scripts/ruff_ratchet.py`, base en `.ci/ruff-baseline.json`): los `except` genericos o silenciosos esconden fallos; la deuda actual esta fijada y solo puede bajar. Tras limpiar algunos: `python scripts/ruff_ratchet.py --update`.
+- **Reglas ast-grep** (`rules/`, `ast-grep scan`): llamadas HTTP sin `timeout` y consumidores de `get_recent_frames()` sin tope propio (causa de la recaida de `context_length_exceeded`).
+- Ruff (`F,E9`), plantillas Jinja y gitleaks, como antes.
