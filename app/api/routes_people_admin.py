@@ -213,8 +213,12 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
     for sid, cam, a, b in vis:
         by.setdefault(sid, []).append((a, b, cam))
     rows = []
+    groups: dict = {}
     for sid, name in emp:
-        v = by.get(sid, [])
+        groups.setdefault(name.strip().lower() if not name.startswith("Persona #") else f"#{sid}", []).append((sid, name))
+    for _, members in groups.items():
+        sid, name = members[0]
+        v = [x for m_sid, _ in members for x in by.get(m_sid, [])]
         segs = _merge([(a, b) for a, b, _ in v])
         present = sum(b - a for a, b in segs)
         rows.append({"id": sid, "name": name, "present": bool(v), "first_ts": min((a for a, _, _ in v), default=None),
@@ -266,3 +270,80 @@ def people_today(request: Request):
     emp = d["employees"]
     return {"date": d["date"], "employees_present": sum(1 for e in emp if e["present"]), "employees_total": len(emp),
             "guests": d["guests"]["count"], "pending_review": d["pending_review"]}
+
+
+def _same_name_groups(db) -> list:
+    with db._lock:
+        rows = db._conn.execute(
+            "SELECT s.id, lower(trim(s.name)), s.category, (SELECT COUNT(*) FROM person_visits v WHERE v.subject_id=s.id) "
+            "FROM subjects s WHERE s.named=1 AND s.name IS NOT NULL AND trim(s.name)<>''").fetchall()
+    g: dict = {}
+    for sid, nm, cat, n in rows:
+        g.setdefault(nm, []).append((sid, cat, n))
+    return [v for v in g.values() if len(v) > 1]
+
+
+@router.get("/api/people/same-name")
+def same_name(request: Request):
+    return {"groups": [[{"id": i, "category": c, "visits": n} for i, c, n in g] for g in _same_name_groups(_db(request))]}
+
+
+@router.post("/api/people/consolidate")
+def consolidate(request: Request):
+    """Une los sujetos con el mismo nombre en uno solo (el que tiene mas visitas; empleado gana sobre invitado y por revisar)."""
+    db = _db(request)
+    m = getattr(request.app.state, "visits", None)
+    if m is None:
+        raise HTTPException(503, "tracker apagado")
+    rank = {"empleado": 0, "invitado": 1, "revisar": 2}
+    merged = 0
+    for g in _same_name_groups(db):
+        g.sort(key=lambda t: (rank.get(t[1], 3), -t[2], t[0]))
+        keep = g[0][0]
+        for sid, _, _ in g[1:]:
+            if m.merge_subjects(sid, keep):
+                merged += 1
+    return {"ok": True, "merged": merged}
+
+
+@router.get("/api/occupancy")
+def occupancy(request: Request, date: Optional[str] = None):
+    """Ocupacion de las camaras interiores (y Garage frontal): ahora, por hora, pico y permanencia. Sin exteriores."""
+    db = _db(request)
+    t0, t1 = _day_bounds(date)
+    cams = request.app.state.config.cameras
+    names = {c.id: c.name for c in cams}
+    ids = [c.id for c in cams if getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA]
+    ph = ",".join("?" * len(ids)) or "NULL"
+    now = time.time()
+    with db._lock:
+        vis = db._conn.execute(
+            "SELECT v.subject_id, COALESCE(s.category,'revisar'), v.cam_id, v.start_ts, COALESCE(v.end_ts, v.start_ts), v.status "
+            "FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id WHERE v.fp=0 AND v.static=0 AND v.start_ts<? "
+            f"AND COALESCE(v.end_ts, v.start_ts)>=? AND v.cam_id IN ({ph})", (t1, t0, *ids)).fetchall()
+    hours = [{"h": h, "empleado": set(), "invitado": set(), "revisar": set()} for h in range(24)]
+    now_cams: dict = {}
+    dwell = {"empleado": [], "invitado": []}
+    for sid, cat, cam, a, b, st in vis:
+        if sid is None and b - a < 8:
+            continue            # visitas sin identidad y de pocos segundos: ruido de deteccion
+        key = sid if sid is not None else f"v{a:.0f}{cam}"
+        for h in range(24):
+            hs = t0 + h * 3600
+            if a < hs + 3600 and b >= hs:
+                hours[h][cat if cat in ("empleado", "invitado") else "revisar"].add(key)
+        if b >= now - 120:      # visitas "open" huerfanas tras un reinicio no cuentan
+            now_cams.setdefault(cam, set()).add(key)
+        if cat in dwell:
+            dwell[cat].append(b - a)
+    series = [{"h": x["h"], "empleado": len(x["empleado"]), "invitado": len(x["invitado"]), "revisar": len(x["revisar"])} for x in hours]
+    tot = [x["empleado"] + x["invitado"] + x["revisar"] for x in series]
+    peak = max(range(24), key=lambda i: tot[i]) if any(tot) else None
+    att = build_attendance(request, date)
+    mins = [e["minutes"] for e in att["employees"] if e["present"]]
+    return {"date": att["date"], "now": {names.get(c, c): len(v) for c, v in sorted(now_cams.items())}, "now_total": len({k for v in now_cams.values() for k in v}),
+            "hourly": series, "peak_hour": peak, "peak_count": tot[peak] if peak is not None else 0,
+            "employees_present": sum(1 for e in att["employees"] if e["present"]), "employees_total": len(att["employees"]),
+            "guests": att["guests"]["count"], "avg_employee_minutes": round(sum(mins) / len(mins)) if mins else 0,
+            "avg_guest_visit_min": round(sum(dwell["invitado"]) / len(dwell["invitado"]) / 60, 1) if dwell["invitado"] else 0,
+            "cams": [names[c] for c in ids]}
