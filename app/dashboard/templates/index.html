@@ -987,6 +987,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <button class="hdr-btn" id="btn-history" title="Histórico de eventos" aria-label="Histórico de eventos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <button class="hdr-btn" id="btn-spot" title="Cómo funciona OXM Vision (animación)" aria-label="Cómo funciona OXM Vision (animación)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></button>
   <a class="hdr-btn" id="btn-ppl" href="/identidades" title="Identidades: empleados, invitados y asistencia" aria-label="Identidades" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14c3 0 5 1.8 5 4.5"/></svg></a>
+  <a class="hdr-btn" id="btn-onvif" href="/onvif" title="Operador ONVIF: cámaras y videoportero" aria-label="ONVIF" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></a>
   <a class="hdr-btn" id="btn-zones" href="/zonas" title="Zonas por cámara: ignorar, estacionamiento, descripción fija" aria-label="Zonas" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7l5-3 6 3 5-3v13l-5 3-6-3-5 3z"/><path d="M9 4v13M15 7v13"/></svg></a>
   <button class="hdr-btn" id="btn-veh" title="Vehículos estacionados" aria-label="Vehículos estacionados"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 12h14"/></svg></button>
   <button class="hdr-btn" id="btn-pets" title="Etiquetar mascotas" aria-label="Etiquetar mascotas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="11" r="1.8"/><circle cx="10" cy="6.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 12c-3 0-5 3-5 5 0 1.6 1.3 2.5 2.8 2.5 1.1 0 1.5-.5 2.2-.5s1.1.5 2.2.5c1.5 0 2.8-.9 2.8-2.5 0-2-2-5-5-5z"/></svg></button>
@@ -997,10 +998,6 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 
 <main>
   <div class="main-left">
-    <div class="pipe-summary" id="pipe-summary"
-         title="Flujo: (1) la camara detecta movimiento -> (2) YOLO cuenta personas/caras a 0.5fps en todas las camaras, siempre -> (3) Qwen describe la escena solo cuando hay movimiento (o en un latido largo si la camara esta quieta).">
-      Pipeline: cargando…
-    </div>
     <div class="cam-grid" id="cam-grid"></div>
 
     <div class="faces-panel">
@@ -3108,7 +3105,7 @@ function initConnections(){
         const sx = c.sunapi, sn = c.snapshot;
         return `<tr>
           <td><b>${_escapeHtml(c.name || c.id)}</b><br><small>${_escapeHtml(c.id)} · ${_escapeHtml(c.zone || '')}</small></td>
-          <td><code>${_escapeHtml(c.scheme)}://${_escapeHtml(c.host)}:${c.port}${_escapeHtml(c.path)}</code><br><small>credenciales: Digest/Basic en la URL (ocultas)</small></td>
+          <td><code>${_escapeHtml(c.scheme)}://${_escapeHtml(c.host)}:${c.port}${_escapeHtml(c.path)}</code></td>
           <td>${_escapeHtml(c.transport)}<br><small>${_escapeHtml(c.method)}</small></td>
           <td>nativa ${wh}<br><small>cfg ${cfg}${c.rotate ? ' · rot ' + c.rotate + '°' : ''}</small></td>
           <td>${mark(c.state === 'streaming', _escapeHtml(c.state || '?'))}<br><small>${up}${c.attempts > 1 ? ' · intentos ' + c.attempts : ''}</small>${c.error ? '<br><small class="conn-bad">' + _escapeHtml(c.error) + '</small>' : ''}</td>
@@ -3117,7 +3114,7 @@ function initConnections(){
           <td>${sn ? mark(sn.usable, sn.usable ? 'OK' : 'pausado ' + sn.paused_s + 's') + '<br><small>' + sn.grabs + ' capturas' + (sn.last_ms ? ' · ' + sn.last_ms + ' ms' : '') + '</small>' : '-'}</td>
           <td>${c.rtt_ms != null ? mark(true, c.rtt_ms + ' ms') : mark(false, 'sin respuesta')}</td></tr>`;
       }).join('');
-      document.getElementById('conn-note').textContent = 'Actualiza cada 5 s. Las credenciales nunca se muestran.';
+      document.getElementById('conn-note').textContent = 'Actualiza cada 5 s.';
     } catch(e){ document.getElementById('conn-note').textContent = 'Error al leer /api/connections'; }
   }
   btn.addEventListener('click', () => { modal.hidden = false; load(); timer = setInterval(load, 5000); });
@@ -3582,6 +3579,10 @@ setTimeout(_loadChatHistory, 300);
         <button class="modal-x" id="conn-close" title="Cerrar">✕</button>
       </div>
       <div class="modal-body">
+        <div class="pipe-summary" id="pipe-summary"
+         title="Flujo: (1) la camara detecta movimiento -> (2) YOLO cuenta personas/caras a 0.5fps en todas las camaras, siempre -> (3) Qwen describe la escena solo cuando hay movimiento (o en un latido largo si la camara esta quieta).">
+      Pipeline: cargando…
+    </div>
         <div class="hist-controls"><span class="face-enroll-msg" id="conn-note"></span></div>
         <div style="overflow-x:auto"><table class="conn-table"><thead><tr>
           <th>Cámara</th><th>RTSP (IP:puerto/ruta)</th><th>Transporte / decodificador</th><th>Resolución</th>

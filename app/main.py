@@ -186,6 +186,10 @@ async def lifespan(app: FastAPI):
         enabled      = os.environ.get("REPORT_ENABLED", "false").lower() == "true",
     )
     app.state.report_stop = report_stop
+    if os.environ.get("ONVIF_ENABLED", "true").lower() == "true":
+        from app.onvif.service import OnvifManager
+        app.state.onvif = OnvifManager(db, config)
+        app.state.onvif.start()
     from app.api.chat_agent import start_chat_probe
     app.state.chat_probe_stop = start_chat_probe(app)
 
@@ -289,6 +293,7 @@ async def lifespan(app: FastAPI):
     retention_stop.set()
     report_stop.set()
     getattr(app.state, "chat_probe_stop", None) and app.state.chat_probe_stop.set()
+    getattr(app.state, "onvif", None) and app.state.onvif.stop()
     for w in yolo_workers:
         w.stop()
     for nw in vlm_workers:
@@ -319,7 +324,14 @@ from app.api.routes_people_admin import router as people_admin_router  # noqa: E
 app.include_router(people_admin_router)
 from app.api.routes_zones import router as zones_router
 app.include_router(zones_router)
+from app.api.routes_onvif import router as onvif_router
+app.include_router(onvif_router)
 app.include_router(people_router)
+
+
+@app.get("/onvif", response_class=HTMLResponse)
+async def onvif_page(request: Request):
+    return templates.TemplateResponse("onvif.html", {"request": request})
 
 
 @app.get("/zonas", response_class=HTMLResponse)
