@@ -227,3 +227,5 @@ data/
 - [`docs/HANDOFF.md`](docs/HANDOFF.md): guía de traspaso (arquitectura, operación y convenciones).
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): qué sigue y cuándo se considera terminado.
 
+
+- Guía de datos y API: `docs/API.md` (referencia generada: `docs/API_REFERENCE.md`).

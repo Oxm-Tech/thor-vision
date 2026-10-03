@@ -80,3 +80,7 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 - **Eventos nativos de Dahua:** `app/onvif/dahua_events.py` (HTTP `eventManager.cgi?action=attach`, con la cuenta admin guardada en el operador ONVIF) y `OnvifManager._listen_dahua`; se guardan en `onvif_events` con tema `dahua/<Code>`. `DOORBELL_CODES` define cuáles generan alerta de timbre.
 - **Alertas del videoportero:** `app/vision/doorbell.py` (`DoorAlerts`); `DOORBELL_CAMS` (default `cam-vto`). La visita se alerta al cerrarse (`VisitManager.visit_cb`).
 - **Conocimiento:** `data/knowledge.md` (editable en `/conocimiento` o `PUT /api/knowledge`) + datos vivos; `/searxng/search` lo devuelve primero. El prompt de Morphic (parche en `~/vision-agent-thor.patch`) ya no lleva datos de la casa.
+
+## Guía de datos y API
+
+`docs/API.md` explica qué se registra, dónde vive y cómo consultarlo (con ejemplos probados) y lista lo que falta; `docs/API_REFERENCE.md` se regenera con `python scripts/gen_api_doc.py http://192.168.0.10:8080/openapi.json`.
