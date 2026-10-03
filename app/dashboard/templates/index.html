@@ -2866,7 +2866,7 @@ _onDomReady(initSpot);
 function initReleases(){
   const btn = document.getElementById('f-ver'), modal = document.getElementById('rel-modal');
   if (!btn || !modal) return;
-  fetch('/api/version').then(r => r.json()).then(v => { btn.textContent = 'v' + v.version; btn.title = `${v.name} · ${v.released} — ver notas de cada release`; }).catch(() => {});
+  fetch('/api/version').then(r => r.json()).then(v => { btn.textContent = 'v' + v.version; btn.title = `${v.name} · ${v.released}${(v.build && v.build.commit) ? ' · commit ' + v.build.commit : ''} — ver notas de cada release`; }).catch(() => {});
   const close = () => { modal.hidden = true; };
   document.getElementById('rel-close')?.addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });

@@ -51,3 +51,11 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 - **Trinquete de excepciones** (`scripts/ruff_ratchet.py`, base en `.ci/ruff-baseline.json`): los `except` genericos o silenciosos esconden fallos; la deuda actual esta fijada y solo puede bajar. Tras limpiar algunos: `python scripts/ruff_ratchet.py --update`.
 - **Reglas ast-grep** (`rules/`, `ast-grep scan`): llamadas HTTP sin `timeout` y consumidores de `get_recent_frames()` sin tope propio (causa de la recaida de `context_length_exceeded`).
 - Ruff (`F,E9`), plantillas Jinja y gitleaks, como antes.
+
+## Versionado y releases (automático)
+
+- **Fuente única:** `app/release_notes.json`. De ahí salen `app/version.py` (la versión), el CHANGELOG y las notas que muestra el dashboard.
+- **Para sacar una versión:** agregar la entrada al inicio de `release_notes.json`, correr `python scripts/release.py write` (regenera `CHANGELOG.md`), abrir el PR y, al fusionar, crear el tag `vX.Y.Z`.
+- El CI falla si el CHANGELOG está desfasado; al subir el tag, `.github/workflows/release.yml` verifica que coincida con la versión y publica el GitHub Release con esas notas.
+- **Commit desplegado:** antes de copiar `app/` a Thor, `python scripts/stamp_build.py` escribe `app/build_info.json` (ignorado por git); `/api/version` lo devuelve y el pie del dashboard lo muestra al pasar el cursor sobre la versión.
+- Gobierno con Jira y COBIT: `docs/COBIT-JIRA.md`. Evaluación de JetPack: `docs/JETPACK-7.2.1.md`.

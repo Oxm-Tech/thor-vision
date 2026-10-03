@@ -41,3 +41,12 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 ## 7. Plataforma
 - Mover Umami a Coolify (respaldo hecho, pendiente de restaurar).
 - Proteger `main`, exigir PR y CI, y publicar cada versión con su tag y su GitHub Release usando las notas de `app/release_notes.json`.
+
+## Pendientes registrados el 2026-10-03
+
+- **Zonas por cámara** (`/zonas`): ignorar (falsos positivos fijos, como la palmera de Escaleras entrada), estacionamiento con placa (solo Exterior 1 y 2) y descripción fija para el VLM; aprendizaje de los descartes de mascotas; overlay del recuadro de YOLO en las alertas para depuración automática.
+- **Videoportero Dahua y sensor de puerta** (issue aparte; falta usuario de solo lectura en el VTO).
+- **Ollama:** usar la GPU (`OLLAMA_LLM_LIBRARY=cuda_v13`), con aviso a NormaAI; retirar `gemma3:12b` y `qwen2.5:3b` si siguen sin uso.
+- **Seguridad del host:** inventario de CVE antes de decidir JetPack 7.2.1 (`docs/JETPACK-7.2.1.md`).
+- **Gobierno:** épica en Jira, espacio de Confluence y registro de riesgos de biometría (`docs/COBIT-JIRA.md`).
+- Búsqueda semántica (e5) como segunda fase, solo para consultas conceptuales.

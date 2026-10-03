@@ -44,6 +44,8 @@ jobs:
         run: |
           pip install -r requirements-dev.txt
           python -m pytest -q tests
+      - name: Versión y CHANGELOG sincronizados
+        run: python scripts/release.py check
 
   secrets:
     runs-on: ubuntu-latest

@@ -27,7 +27,7 @@ def _db(request: Request):
 # ---------------- version y releases
 @router.get("/api/version")
 def version():
-    return {"version": ver.VERSION, "released": ver.RELEASED, "name": ver.NAME}
+    return {"version": ver.VERSION, "released": ver.RELEASED, "name": ver.NAME, "build": ver.build_info()}
 
 
 @router.get("/api/releases")

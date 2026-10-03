@@ -2,6 +2,28 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.4.0 — Identidades, búsqueda y calidad (2026-10-03)
+
+La gestión de personas pasa a una página propia (/identidades) con bandeja por revisar, empleados, invitados, ocupación, asistencia y duplicados. El Vision Agent ahora encuentra eventos por su descripción, y el repositorio gana pruebas y reglas automáticas que evitan que vuelvan los fallos que ya tuvimos.
+
+- **Personas · Página propia: Identidades**: Reemplaza los modales mezclados por una página /identidades con pestañas: Por revisar, Empleados, Invitados, Ocupación, Asistencia y Duplicados. Cada persona se clasifica con un clic o en lote, se nombra con ✎ y muestra sus parecidos con el botón 'Es la misma'. El resumen del día (empleados presentes, invitados, por revisar) queda arriba.
+- **Personas · Mismos nombres se unifican**: Las identidades con el mismo nombre se fusionan en una sola (conserva la categoría más fuerte y el historial) con un botón en Duplicados. La asistencia agrupa por nombre.
+- **Personas · Cámaras exteriores sin ruido**: Exterior 1 y 2 siguen reconociendo a quien ya está registrado, pero no crean identidades nuevas ni cuentan en la asistencia; su actividad queda como alertas. El Garage frontal (acceso peatonal) sí cuenta para llegada y salida.
+- **Ocupación · Pestaña de ocupación**: Personas ahora en cámara, empleados presentes con minutos promedio, pico del día y personas distintas por hora (empleados, invitados, por revisar). Solo cámaras interiores y Garage frontal; ignora visitas de pocos segundos sin identidad.
+- **Vision Agent · Búsqueda por descripción**: Un índice de texto (FTS5, dentro de la misma events.db) permite preguntar 'persona con bolsa naranja' o 'perro con correa en Exterior 1' y obtener las capturas con cámara y hora. En una prueba de 24 preguntas la búsqueda por palabras acertó más (0.80 de precisión en los 5 primeros) que los embeddings multilingües (0.62).
+- **Datos · Retención de capturas a 90 días**: Las capturas de rostro y cuerpo se borran a los 90 días en todas las categorías (CAPTURE_TTL_DAYS); el registro y la asistencia de los empleados se conservan.
+- **Calidad · Pruebas y reglas automáticas en el CI**: 28 pruebas de contrato sobre lo que ya falló en producción, un tope que impide agregar excepciones genéricas o silenciosas (la deuda actual está fijada y solo puede bajar) y reglas ast-grep contra llamadas HTTP sin timeout y consumidores de frames sin tope.
+- **Versiones · Versión sincronizada con git**: La versión que muestra el dashboard se toma de la primera entrada de release_notes.json; un chequeo del CI exige que el CHANGELOG esté regenerado y, al publicar un tag vX.Y.Z, que coincida con la versión y crea el GitHub Release con estas notas. El dashboard muestra además el commit desplegado.
+
+Correcciones:
+- La limpieza por antigüedad de face_sightings tenía las comillas mal en 'Desconocido' y 'Sin rostro' y podía fallar la rotación.
+- La ocupación 'ahora' contaba visitas que quedaron abiertas tras reiniciar; ahora solo cuenta lo visto en los últimos 2 minutos.
+
+Notas:
+- Pendiente: zonas por cámara (ignorar, estacionamiento con placa, descripción fija) y aprendizaje de los descartes de mascotas.
+- Pendiente: videoportero Dahua y sensor de puerta (issue aparte).
+- Pendiente de decisión: Ollama usa la CPU por una variable del servicio (cuda_jetpack6 en lugar de cuda_v13); afecta a NormaAI.
+
 ## v2.3.0 — Personas: empleados e invitados (2026-10-02)
 
 Las personas detectadas se reparten en tres bases (por revisar, empleados de OXM e invitados), con búsqueda de parecidos y la base del reporte de asistencia. Las mascotas ya tienen nombre y el sistema aprende a reconocerlas.
