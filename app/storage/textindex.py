@@ -89,5 +89,6 @@ def search(db, query: str, since: float, until: float, cams=None, limit: int = 1
         for eid, cam, ts, data in db._conn.execute(sql, args).fetchall():
             payload = _load(data)
             if payload is not None:
-                out.append({"id": eid, "cam": cam, "ts": ts, "text": event_text(payload)})
+                snap = db._conn.execute("SELECT id FROM snapshots WHERE event_id=? ORDER BY id LIMIT 1", (eid,)).fetchone()
+                out.append({"id": eid, "cam": cam, "ts": ts, "text": event_text(payload), "snapshot_id": snap[0] if snap else None})
     return out

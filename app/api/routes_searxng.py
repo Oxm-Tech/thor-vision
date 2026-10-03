@@ -128,11 +128,14 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
         explicit = rc._explicit_hours(query) is not None or _clock_range(query, now) is not None
         t_since = since if explicit else now - 7 * 86400
         hits = textindex.search(db, query, t_since, until if explicit else now, cams or None, limit=10)
-        if hits:
-            lines = [f"{names.get(h['cam'], h['cam'])} {time.strftime('%d-%b %H:%M', time.localtime(h['ts']))}: {h['text'][:200]}" for h in hits]
-            for i in range(0, len(lines), 3):
-                results.append({"title": f"Coincidencias en descripciones ({i // 3 + 1})", "url": f"{base}/",
-                                "content": _clip(lines[i:i + 3])})
+        for h in hits:
+            cam_name = names.get(h["cam"], h["cam"])
+            when = time.strftime("%d-%b %H:%M", time.localtime(h["ts"]))
+            item = {"title": f"{cam_name} · {when} · coincidencia en descripción",
+                    "url": f"{base}/", "content": f"{h['text'][:380]}" + ("" if h.get("snapshot_id") else " (sin captura guardada de este momento)")}
+            if h.get("snapshot_id"):
+                item["url"] = item["img_src"] = f"{base}/api/snapshots/file/{h['snapshot_id']}"
+            results.append(item)
     except (sqlite3.Error, ImportError) as exc:
         logger.warning("fts search: %s", exc)
 
