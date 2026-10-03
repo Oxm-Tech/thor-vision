@@ -9,6 +9,7 @@ import numpy as np
 
 from app.vision.detection_store import CameraDetection, FaceDetection
 from app.vision.face_db import FaceDB
+from app.vision import zones
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ class VisionModels:
     def process(self, frame: np.ndarray, cam_id: str, face_db: FaceDB) -> CameraDetection:
         t0 = time.monotonic()
         person_bboxes, objects = self._detect(frame)
+        person_bboxes, objects = zones.filter_detections(cam_id, person_bboxes, objects, int(frame.shape[1]), int(frame.shape[0]))
         faces = self._detect_faces(frame, face_db, person_bboxes)
         return CameraDetection(
             cam_id=cam_id,

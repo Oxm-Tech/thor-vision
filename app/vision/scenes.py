@@ -106,6 +106,11 @@ class SceneContext:
         media = ("Analiza esta secuencia de video de unos segundos; en activity describe "
                  "quien entra/sale/se mueve y hacia donde.\n" if video
                  else "Analiza este frame.\n")
+        from app.vision import zones
+        fixed = zones.notes(self.cam_id)
+        if fixed:
+            head += "\nELEMENTOS FIJOS DE ESTA ESCENA (siempre estan ahi: NO los describas ni alertes por ellos):\n" + \
+                "\n".join(f"- {n + ': ' if n else ''}{t}" for n, t in fixed)
         return f"{head}\n\n{media}{SCHEMA_INSTRUCTIONS}"
 
 

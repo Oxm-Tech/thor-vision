@@ -7,6 +7,8 @@ from collections import Counter
 
 import cv2
 
+from app.vision import zones
+
 logger = logging.getLogger(__name__)
 
 VEHICLE_CLASSES = {"auto", "moto", "camion", "autobus"}
@@ -105,6 +107,8 @@ class ParkedTracker:
                 x1, y1, x2, y2 = o["b"]
                 b = (int(x1 * sx), int(y1 * sy), int(x2 * sx), int(y2 * sy))
                 if (b[2] - b[0]) * (b[3] - b[1]) >= MIN_AREA_FRAC * fw * fh:
+                    if zones.has(cam_id, "estacionamiento") and not zones.contains(cam_id, ("estacionamiento",), b, fw, fh):
+                        continue        # fuera del area dibujada para estacionamiento
                     dets.append((o["c"], b))
         with self._lock:
             cands = self._cand.setdefault(cam_id, [])

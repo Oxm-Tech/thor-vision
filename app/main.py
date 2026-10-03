@@ -317,7 +317,14 @@ from app.api.routes_extras import router as extras_router  # noqa: E402
 app.include_router(extras_router)
 from app.api.routes_people_admin import router as people_admin_router  # noqa: E402
 app.include_router(people_admin_router)
+from app.api.routes_zones import router as zones_router
+app.include_router(zones_router)
 app.include_router(people_router)
+
+
+@app.get("/zonas", response_class=HTMLResponse)
+async def zones_page(request: Request):
+    return templates.TemplateResponse("zones.html", {"request": request})
 
 
 @app.get("/identidades", response_class=HTMLResponse)
