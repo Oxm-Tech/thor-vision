@@ -155,6 +155,17 @@ class EventDB:
         )
         self._conn.row_factory = sqlite3.Row
         self._init_schema()
+        self._fts_last: dict = {}
+        try:
+            from app.storage import textindex
+            with self._lock:
+                textindex.ensure(self._conn)
+                empty = self._conn.execute("SELECT count(*) FROM ev_fts").fetchone()[0] == 0
+            if empty:
+                threading.Thread(target=lambda: logger.info("ev_fts: %d eventos indexados", textindex.backfill(self)),
+                                 daemon=True, name="fts-backfill").start()
+        except Exception as exc:
+            logger.warning("ev_fts no disponible: %s", exc)
         logger.info("EventDB ready — %s", db_path)
 
     def _init_schema(self) -> None:
@@ -191,6 +202,12 @@ class EventDB:
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 (ts, type, cam_id, people, 1 if has_alert else 0, data_json),
             )
+            if type == "nemotron":
+                try:
+                    from app.storage import textindex
+                    textindex.index_event(self._conn, cur.lastrowid, payload, self._fts_last, cam_id)
+                except Exception as exc:
+                    logger.debug("ev_fts insert: %s", exc)
             return cur.lastrowid
 
     def set_event_review(self, event_id: int, label: Optional[str]) -> bool:
@@ -835,6 +852,11 @@ class EventDB:
                     result["captures_purged"] = c3
                 if c1 or c2:
                     result["ttl_deleted"] = {"person_visits": c1, "face_sightings": c2}
+
+            try:
+                self._conn.execute("DELETE FROM ev_fts WHERE rowid < COALESCE((SELECT MIN(id) FROM events), 0)")
+            except Exception:
+                pass
 
             # VACUUM completo es caro — usar WAL checkpoint en su lugar
             self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")

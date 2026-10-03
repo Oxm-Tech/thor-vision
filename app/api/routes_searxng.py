@@ -12,6 +12,8 @@ from fastapi import APIRouter, Request
 from app.api import routes_chat as rc
 from app.api.chat_agent import _clock_range, _evidence, _range_label
 
+import logging
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _TYPE_WORDS = [
@@ -118,6 +120,20 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
     purl = f"{base}/?periodo={int(since)}-{int(until)}"
     for title, content in _fact_chunks(f, label):
         results.append({"title": title, "url": purl, "content": content})
+
+    # busqueda por descripcion (ej. "persona con bolsa naranja"): indice de texto de las descripciones del VLM
+    try:
+        from app.storage import textindex
+        explicit = rc._explicit_hours(query) is not None or _clock_range(query, now) is not None
+        t_since = since if explicit else now - 7 * 86400
+        hits = textindex.search(db, query, t_since, until if explicit else now, cams or None, limit=10)
+        if hits:
+            lines = [f"{names.get(h['cam'], h['cam'])} {time.strftime('%d-%b %H:%M', time.localtime(h['ts']))}: {h['text'][:200]}" for h in hits]
+            for i in range(0, len(lines), 3):
+                results.append({"title": f"Coincidencias en descripciones ({i // 3 + 1})", "url": f"{base}/",
+                                "content": _clip(lines[i:i + 3])})
+    except Exception as exc:
+        logger.debug("fts search: %s", exc)
 
     for p in people:
         visits = _person_visits(db, names, p, since, until)
