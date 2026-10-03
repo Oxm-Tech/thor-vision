@@ -50,11 +50,11 @@ def _esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def soap(url: str, body: str, user: str = "", password: str = "", offset: float = 0.0) -> ET.Element:
+def soap(url: str, body: str, user: str = "", password: str = "", offset: float = 0.0, timeout: float = TIMEOUT) -> ET.Element:
     req = urllib.request.Request(url, data=_envelope(body, user, password, offset),
                                  headers={"Content-Type": "application/soap+xml; charset=utf-8"})
     try:
-        raw = urllib.request.urlopen(req, timeout=TIMEOUT).read()
+        raw = urllib.request.urlopen(req, timeout=timeout).read()
     except urllib.error.HTTPError as exc:
         raw = exc.read()
         try:
@@ -182,8 +182,9 @@ def open_pullpoint(events_url: str, user: str, password: str, offset: float = 0.
 
 
 def pull(pull_url: str, user: str, password: str, seconds: int = 10, offset: float = 0.0) -> list:
+    # el equipo retiene la consulta hasta `seconds` si no hay eventos: el tiempo de espera del cliente debe ser mayor
     r = soap(pull_url, f"<tev:PullMessages><tev:Timeout>PT{int(seconds)}S</tev:Timeout><tev:MessageLimit>50</tev:MessageLimit></tev:PullMessages>",
-             user, password, offset)
+             user, password, offset, timeout=int(seconds) + TIMEOUT)
     out = []
     for msg in r.iter():
         if _strip(msg.tag) != "NotificationMessage":

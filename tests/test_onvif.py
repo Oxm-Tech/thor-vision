@@ -77,3 +77,14 @@ def test_resolve_without_user_fails_cleanly(reg):
     reg.add_endpoint({"id": "vto2", "name": "V", "kind": "vto", "host": "1.1.1.1"})
     with pytest.raises(client.OnvifError):
         resolve.resolve("onvif://vto2/x")
+
+
+def test_pull_waits_longer_than_the_device_holds_the_request(monkeypatch):
+    seen = {}
+
+    def fake_soap(url, body, user="", password="", offset=0.0, timeout=client.TIMEOUT):
+        seen["timeout"] = timeout
+        return client.ET.fromstring("<a/>")
+    monkeypatch.setattr(client, "soap", fake_soap)
+    client.pull("http://x/pp", "u", "p", seconds=10)
+    assert seen["timeout"] > 10
