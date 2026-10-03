@@ -76,11 +76,22 @@ class RTSPReader(threading.Thread):
             "priority": self.cam.priority,
         }
 
+    def _url(self) -> str:
+        """URL RTSP real; las entradas onvif://equipo/perfil se resuelven con el usuario del registro ONVIF."""
+        from app.onvif import client as _oc
+        from app.onvif import resolve as _ov
+        try:
+            return _ov.resolve(self.cam.rtsp_url)
+        except (_oc.OnvifError, KeyError, IndexError, ValueError) as exc:     # se reporta y el lector reintenta con su espera
+            self._error_msg = f"onvif: {exc}"[:160]
+            return self.cam.rtsp_url
+
     def connection(self) -> dict:
         u = urllib.parse.urlparse(self.cam.rtsp_url)
         gst = self._method.startswith("GStreamer")
+        from app.onvif import resolve as _ov
         return {
-            "host": u.hostname,
+            "host": _ov.host_of(self.cam.rtsp_url),
             "port": u.port or 554,
             "scheme": u.scheme,
             "path": u.path,
@@ -164,7 +175,7 @@ class RTSPReader(threading.Thread):
     def _try_gstreamer_h264(self) -> Optional[cv2.VideoCapture]:
         """GStreamer H.264 con NVDEC (nvv4l2decoder) — decode por hardware,
         no CPU. latency=0, resize a 1280x720 BGR, un solo frame en sink."""
-        url = self.cam.rtsp_url
+        url = self._url()
         w, h = self._capture_dims()
         pipeline = (
             f"rtspsrc location={url} "
@@ -178,7 +189,7 @@ class RTSPReader(threading.Thread):
 
     def _try_gstreamer_h265(self) -> Optional[cv2.VideoCapture]:
         """GStreamer H.265/HEVC con NVDEC — para cámaras que usan HEVC."""
-        url = self.cam.rtsp_url
+        url = self._url()
         w, h = self._capture_dims()
         pipeline = (
             f"rtspsrc location={url} "
@@ -209,7 +220,7 @@ class RTSPReader(threading.Thread):
 
     def _try_opencv_direct(self) -> Optional[cv2.VideoCapture]:
         """OpenCV/FFMPEG directo — buffersize=1 para mínima latencia."""
-        url = self.cam.rtsp_url
+        url = self._url()
         try:
             cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)

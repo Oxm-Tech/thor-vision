@@ -106,7 +106,7 @@ async def lifespan(app: FastAPI):
         from app.capture.preroll import PreRoll
         for cam in config.enabled_cameras:
             _buf = manager._buffers.get(cam.id)
-            if _buf is not None:
+            if _buf is not None and cam.mode != "faces":
                 _pr = PreRoll(cam.id, _buf)
                 _pr.start()
                 vision_queue.preroll[cam.id] = _pr
@@ -115,14 +115,17 @@ async def lifespan(app: FastAPI):
     app.state.face_db       = face_db
     if visit_manager is not None:
         visit_manager.set_models(vision_models, face_db,
-                                 {c.id: getattr(c, "rtsp_url", None) for c in config.cameras})
+                                 {c.id: getattr(c, "rtsp_url", None) for c in config.cameras if getattr(c, "mode", "full") != "faces"})
     app.state.vision_models = vision_models
+    vision_models.faces_only = {c.id for c in config.cameras if getattr(c, "mode", "full") == "faces"}
 
     # ── Movimiento nativo de las camaras (SUNAPI) como disparador de Qwen ──
     motion_monitors = {}
     if os.environ.get("NATIVE_MOTION_ENABLED", "true").lower() == "true":
         from app.capture.camera_motion import CameraMotionMonitor
         for cam in config.enabled_cameras:
+            if cam.mode == "faces":
+                continue
             m = CameraMotionMonitor(cam.id, cam.rtsp_url)
             m.start()
             motion_monitors[cam.id] = m
@@ -136,7 +139,7 @@ async def lifespan(app: FastAPI):
                 cam_id       = cam.id,
                 buffer       = buf,
                 vision_queue = vision_queue,
-                fps          = 0.5,
+                fps          = 2.0 if cam.mode == "faces" else 0.5,
                 motion_source = motion_monitors.get(cam.id),
                 boost_fps    = float(os.environ.get("YOLO_BOOST_FPS", "2")),
                 hunt_source  = visit_manager,
@@ -207,7 +210,7 @@ async def lifespan(app: FastAPI):
     vlm_workers = []
     for cam in config.enabled_cameras:
         buf = manager._buffers.get(cam.id)
-        if buf is not None:
+        if buf is not None and cam.mode != "faces":
             nw = VLMWorker(
                 motion_source         = motion_monitors.get(cam.id),
                 native_min_interval_s = native_min_s,

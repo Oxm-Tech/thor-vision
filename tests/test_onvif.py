@@ -54,3 +54,26 @@ def test_registry_endpoints_merge_cameras_without_credentials(reg):
         reg.add_endpoint({"id": "vto", "name": "x", "host": "h"})
     assert reg.set_listen("vto", False) and not reg.get(cfg, "vto")["listen"]
     assert reg.remove_endpoint("vto") and reg.get(cfg, "vto") is None
+
+
+def test_resolve_injects_credentials_and_follows_rotation(reg, monkeypatch):
+    from app.onvif import resolve
+    reg.add_endpoint({"id": "vto", "name": "V", "kind": "vto", "host": "192.168.0.3", "port": 80})
+    reg.set_auth("vto", "gigi", "p@ss:1")
+    monkeypatch.setattr(client, "get_datetime", lambda h, p=80: {"skew_s": 0})
+    monkeypatch.setattr(client, "get_services", lambda h, p, u, pw, o=0: {"media": "http://10.0.0.9/onvif/media_service"})
+    monkeypatch.setattr(client, "get_stream_uri", lambda m, t, u, pw, o=0: "rtsp://192.168.0.3:554/cam/realmonitor?channel=1&subtype=1")
+    resolve._cache.clear()
+    url = resolve.resolve("onvif://vto/MediaProfile00001")
+    assert url == "rtsp://gigi:p%40ss%3A1@192.168.0.3:554/cam/realmonitor?channel=1&subtype=1"
+    assert resolve.host_of("onvif://vto/x") == "192.168.0.3" and resolve.host_of("rtsp://u:p@1.2.3.4/x") == "1.2.3.4"
+    reg.set_auth("vto", "gigi", "nueva")                            # rotacion: la URL cacheada ya no vale
+    assert "nueva" in resolve.resolve("onvif://vto/MediaProfile00001")
+    assert resolve.resolve("rtsp://a/b") == "rtsp://a/b"
+
+
+def test_resolve_without_user_fails_cleanly(reg):
+    from app.onvif import resolve
+    reg.add_endpoint({"id": "vto2", "name": "V", "kind": "vto", "host": "1.1.1.1"})
+    with pytest.raises(client.OnvifError):
+        resolve.resolve("onvif://vto2/x")

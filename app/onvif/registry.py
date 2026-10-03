@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 PATH = os.environ.get("ONVIF_PATH", "/app/data/onvif.json")
 _lock = threading.Lock()
+VERSION = [0]      # sube cuando cambia el acceso de algun equipo (invalida las URLs resueltas)
 
 
 def _read() -> dict:
@@ -51,6 +52,12 @@ def get(config, ep_id: str):
     return next((e for e in endpoints(config) if e["id"] == ep_id), None)
 
 
+def get_custom(ep_id: str):
+    with _lock:
+        d = _read()
+    return next((dict(e) for e in d["endpoints"] if e["id"] == ep_id), None)
+
+
 def has_auth(ep_id: str) -> bool:
     with _lock:
         a = _read()["auth"].get(ep_id)
@@ -68,6 +75,7 @@ def set_auth(ep_id: str, user: str, password: str) -> None:
         d = _read()
         d["auth"][ep_id] = {"user": user, "password": password}
         _write(d)
+        VERSION[0] += 1
 
 
 def clear_auth(ep_id: str) -> None:

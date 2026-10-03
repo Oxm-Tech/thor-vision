@@ -21,6 +21,8 @@ class CameraConfig:
     # frame final. Se rellenan de negro ANTES de entrar al buffer, asi ningun consumidor
     # (YOLO, caras, VLM, snapshots, preroll, stream) ve esos pixeles.
     privacy_mask: Optional[List] = None
+    # 'full' (default) o 'faces': solo rostros (videoportero) sin YOLO de objetos, VLM ni movimiento nativo.
+    mode: str = "full"
 
 
 @dataclass
@@ -75,6 +77,7 @@ def load_config(cameras_path: str = None, settings_path: str = None) -> AppConfi
             resolution=c.get("resolution"),
             rotate=c.get("rotate", 0),
             privacy_mask=c.get("privacy_mask"),
+            mode=c.get("mode", "full"),
         )
         for c in raw.get("cameras", [])
     ]

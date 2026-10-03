@@ -46,6 +46,7 @@ class VisionModels:
         self.device = device
         self.yolo_conf = yolo_conf
         self._yolo = None
+        self.faces_only: set = set()      # camaras en modo solo-rostros (videoportero)
         self._face_app = None
 
     def setup(self) -> None:
@@ -83,6 +84,8 @@ class VisionModels:
 
     def process(self, frame: np.ndarray, cam_id: str, face_db: FaceDB) -> CameraDetection:
         t0 = time.monotonic()
+        if cam_id in self.faces_only:
+            return self._process_faces_only(frame, cam_id, face_db, t0)
         person_bboxes, objects = self._detect(frame)
         person_bboxes, objects = zones.filter_detections(cam_id, person_bboxes, objects, int(frame.shape[1]), int(frame.shape[0]))
         faces = self._detect_faces(frame, face_db, person_bboxes)
@@ -97,6 +100,18 @@ class VisionModels:
             frame_w=int(frame.shape[1]),
             frame_h=int(frame.shape[0]),
         )
+
+    def _process_faces_only(self, frame: np.ndarray, cam_id: str, face_db: FaceDB, t0: float) -> CameraDetection:
+        """Videoportero: solo rostros, sin YOLO. La cara ampliada hace de 'persona' para el seguimiento de visitas."""
+        faces = self._detect_faces(frame, face_db, None)
+        h, w = frame.shape[:2]
+        boxes = []
+        for f in faces:
+            x1, y1, x2, y2 = f.bbox
+            cx, cy, bw, bh = (x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1) * 2.2, (y2 - y1) * 3.0
+            boxes.append((max(0, int(cx - bw / 2)), max(0, int(cy - bh / 4)), min(w, int(cx + bw / 2)), min(h, int(cy + bh * 3 / 4))))
+        return CameraDetection(cam_id=cam_id, person_count=len(boxes), person_bboxes=boxes, objects=[], faces=faces,
+                               updated_at=time.time(), inference_ms=(time.monotonic() - t0) * 1000, frame_w=int(w), frame_h=int(h))
 
     def _detect(self, frame: np.ndarray) -> tuple:
         """(personas [(x1,y1,x2,y2)], objetos [{c, conf, b}]) en una sola pasada."""
