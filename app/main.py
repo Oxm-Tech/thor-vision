@@ -358,6 +358,11 @@ app.include_router(iot_router)
 app.include_router(people_router)
 
 
+@app.get("/iot", response_class=HTMLResponse)
+async def iot_page(request: Request):
+    return templates.TemplateResponse("iot.html", {"request": request})
+
+
 @app.get("/conocimiento", response_class=HTMLResponse)
 async def knowledge_page(request: Request):
     return templates.TemplateResponse("knowledge.html", {"request": request})

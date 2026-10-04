@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.8.0",
+    "date": "2026-10-04",
+    "name": "IoT Tuya: puertas, cámaras y consumo de video",
+    "summary": "thor-vision recibe los cambios de puertas, ventanas y garage de Tuya por MQTT (solo lectura) y alerta con captura; las cámaras Tuya se pueden ver bajo demanda con un medidor de consumo de la cuota de video de la nube.",
+    "highlights": [
+      {
+        "area": "IoT",
+        "title": "Puertas, ventanas y garage (Tuya por MQTT)",
+        "text": "Un puente en oapc-devops recibe los cambios de estado (servicio de mensajes de Tuya y conexión local con los dispositivos con IP: abre-puertas de garage y cámaras) y los publica en el broker MQTT; thor-vision los guarda, muestra su estado en /iot y alerta con captura de la cámara asociada cuando algo se abre, si sigue abierto más de 10 minutos y cuando la batería del sensor baja del 15 %. Todo de solo lectura."
+      },
+      {
+        "area": "IoT",
+        "title": "Video de las cámaras Tuya con medidor de consumo",
+        "text": "En /iot cada cámara Tuya tiene captura bajo demanda y video en vivo (hasta 3 minutos por sesión). Un medidor muestra el consumo estimado de la cuota mensual de la nube (5 GB), avisa al 50, 80 y 95 % (alerta en thor-vision) y bloquea nuevos flujos al 100 %. El estimado se calibra con el uso real del portal de Tuya."
+      }
+    ],
+    "fixes": [],
+    "notes": [
+      "Pendiente: probar con un evento real de movimiento y de puerta (aún no llega ninguno).",
+      "Pendiente: confirmar la cámara asociada a cada sensor (config/iot.yml)."
+    ]
+  },
+  {
     "version": "2.7.0",
     "date": "2026-10-03",
     "name": "Videoportero con alertas y conocimiento del agente",

@@ -104,3 +104,13 @@ def test_garbage_messages_are_ignored():
     m.handle("t/D1/status", b"no es json")
     m.handle("t/D1/status", msg("D1", {}))
     assert db.events == []
+
+
+def test_usage_alert_once_per_threshold_and_never_from_retained():
+    m, db, _ = make()
+    msg = lambda t, p: json.dumps({"ts": time.time(), "pct": p, "threshold": t, "quota_gb": 5}).encode()
+    m.handle("oxm/tuya/_usage", msg(50, 51.0), retained=True)          # estado viejo al arrancar: no alerta
+    assert db.events == []
+    m.handle("oxm/tuya/_usage", msg(80, 82.0))
+    m.handle("oxm/tuya/_usage", msg(80, 83.0))                         # mismo umbral: una sola vez
+    assert [e[2]["alert_types"] for e in db.events] == [["consumo_video_tuya"]] and db.events[0][2]["severity"] == "medium"

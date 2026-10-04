@@ -84,3 +84,9 @@ El CI (`.github/workflows/ci.yml`) corre cuatro cosas, todas reproducibles en lo
 ## Guía de datos y API
 
 `docs/API.md` explica qué se registra, dónde vive y cómo consultarlo (con ejemplos probados) y lista lo que falta; `docs/API_REFERENCE.md` se regenera con `python scripts/gen_api_doc.py http://192.168.0.10:8080/openapi.json`.
+
+## IoT Tuya (v2.8.0)
+
+- **Piezas:** (1) puente en oapc-devops `~/agents/tuya/bridge/tuya_bridge.py` (servicio `tuya-bridge`): nube de Tuya (Pulsar) + conexión local con los dispositivos con IP (`local.json`) -> MQTT `oxm/tuya/<id>/status|last`; (2) servicio de video `video_service.py` (servicio `tuya-video`, puerto 8765) con medidor de consumo y bloqueo; (3) en thor-vision `app/iot/listener.py` (MQTT -> `iot_events`, alertas), `/iot`, `/api/iot/*`, mapa en `config/iot.yml`.
+- **Credenciales:** nube en `~/.config/oxm/tuya-agent.env` y claves locales en `~/.config/oxm/tuya/` (oapc-devops, 600); broker en `data/mqtt.json` de Thor (600, `scripts/setup_mqtt.sh`). Nada en git.
+- **Consumo de video:** estimado (Mbps x segundos); calibrar con `POST /calibrate?used_gb=` contra el portal. Avisos 50/80/95 %, bloqueo al 100 %.

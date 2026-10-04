@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IoT · THOR Vision</title>
+<style>
+:root{--bg:#0e1117;--panel:#161b24;--panel2:#1c2130;--line:#252c3a;--text:#e8edf3;--muted:#8b949e;--accent:#76B900;--bad:#ef5350;--warn:#d29922}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6fa;--panel:#fff;--panel2:#eef1f7;--line:#d6dbe6;--text:#1a2030;--muted:#5d677d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line)}header a{color:var(--muted);text-decoration:none;font-size:13px}h1{font-size:18px;margin:0}
+main{max-width:1200px;margin:0 auto;padding:16px 20px 60px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500;font-size:12px}
+.b{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;border:1px solid var(--line)}.ok{color:var(--accent);border-color:var(--accent)}.bad{color:var(--bad);border-color:var(--bad)}.warn{color:var(--warn);border-color:var(--warn)}.muted{color:var(--muted)}
+h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}.bar{height:10px;border-radius:6px;background:var(--panel2);overflow:hidden;margin:6px 0}.bar>i{display:block;height:100%;background:var(--accent)}.bar.warn>i{background:var(--warn)}.bar.bad>i{background:var(--bad)}.camgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.cam{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}.cam img{width:100%;border-radius:8px;background:#000;min-height:120px;display:block}.cam button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;margin:8px 6px 0 0}.cam button:hover{border-color:var(--accent)}.ev{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header><a href="/">← Dashboard</a><h1>Dispositivos IoT (Tuya)</h1><span id="st" class="b"></span><span class="muted" style="margin-left:auto">Solo lectura · llegan por MQTT</span></header>
+<main>
+  <table><thead><tr><th>Dispositivo</th><th>Tipo</th><th>Cámara de captura</th><th>Estado</th><th>Batería</th><th>Último mensaje</th></tr></thead><tbody id="rows"></tbody></table>
+  <h3>Video de las cámaras Tuya <span class="muted" style="font-weight:400">(bajo demanda; consume la cuota de la nube)</span></h3>
+  <div id="usage" class="box"></div>
+  <div id="cams" class="camgrid"></div>
+  <h3>Eventos recientes</h3><div id="ev" class="muted">Sin eventos todavía.</div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KIND = {door: 'Puerta', window: 'Ventana', garage: 'Garage', camera: 'Cámara'};
+const when = ts => ts ? new Date(ts * 1000).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}) : '—';
+async function tick(){
+  try {
+    const d = await (await fetch('/api/iot/devices')).json();
+    const s = d.status || {};
+    $('#st').className = 'b ' + (s.connected ? 'ok' : 'bad'); $('#st').textContent = s.connected ? 'MQTT conectado' : ('MQTT: ' + (s.error || 'sin conexión'));
+    $('#rows').innerHTML = d.devices.map(x => `<tr><td><b>${esc(x.name)}</b></td><td>${KIND[x.kind] || esc(x.kind)}</td>
+      <td>${x.cam ? esc(x.cam_name || x.cam) + (x.confirmed ? '' : ' <span class="b warn" title="Cámara supuesta, sin confirmar">por confirmar</span>') : '<span class="muted">—</span>'}</td>
+      <td>${x.open === null || x.open === undefined ? '<span class="muted">sin datos</span>' : (x.open ? '<span class="b warn">abierta</span>' : '<span class="b ok">cerrada</span>')}</td>
+      <td>${x.battery != null ? `<span class="b ${x.battery <= 15 ? 'bad' : ''}">${x.battery}%</span>` : '<span class="muted">—</span>'}</td><td>${when(x.last_ts)}</td></tr>`).join('');
+    const e = (await (await fetch('/api/iot/events?limit=40')).json()).events;
+    $('#ev').innerHTML = e.length ? e.map(r => `<div class="ev"><span class="muted">${when(r.ts)}</span> · <b>${esc(r.name)}</b> · ${esc(r.code)} = ${esc(JSON.stringify(r.value))} <span class="muted">(${esc(r.source)})</span></div>`).join('') : 'Sin eventos todavía.';
+  } catch (er) { $('#st').className = 'b bad'; $('#st').textContent = 'sin respuesta'; }
+}
+let SVC = '';
+async function usage(){
+  if (!SVC) return;
+  try {
+    const u = await (await fetch(SVC + '/usage')).json();
+    const cls = u.pct >= u.warn_pcts[2] ? 'bad' : u.pct >= u.warn_pcts[0] ? 'warn' : '';
+    $('#usage').innerHTML = `<b>${u.used_gb} GB de ${u.quota_gb} GB</b> usados este mes (${u.month}) · <b>${u.pct}%</b> · ${u.minutes} min de video
+      <div class="bar ${cls}"><i style="width:${Math.min(100, u.pct)}%"></i></div>
+      <span class="muted">Estimado a ${u.est_mbps} Mbps. Avisa al ${u.warn_pcts.join(', ')}% y bloquea nuevos flujos al ${u.block_pct}%. ${u.level === 'blocked' ? '<b style="color:var(--bad)">Cuota agotada: no se piden más flujos.</b>' : ''} Para calibrar con el portal de Tuya: <code>curl -X POST "${SVC}/calibrate?used_gb=&lt;GB reales&gt;"</code></span>`;
+    document.querySelectorAll('.cam button').forEach(b => b.disabled = u.level === 'blocked');
+    window._maxs = u.max_session_s;
+  } catch (e) { $('#usage').innerHTML = '<span class="muted">Servicio de video de Tuya no disponible (oapc-devops).</span>'; }
+}
+async function initVideo(){
+  const cfg = await (await fetch('/api/iot/config')).json(); SVC = cfg.tuya_service;
+  const d = await (await fetch('/api/iot/devices')).json();
+  $('#cams').innerHTML = d.devices.filter(x => x.kind === 'camera').map(x => `<div class="cam" data-id="${esc(x.device_id)}"><b>${esc(x.name)}</b>
+    <img alt="" src=""><div><button data-a="snap">Captura ahora</button><button data-a="live">En vivo</button><button data-a="stop">Detener</button></div><div class="muted msg"></div></div>`).join('');
+  usage(); setInterval(usage, 15000);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.cam button'); if (!b) return;
+  const c = b.closest('.cam'), img = c.querySelector('img'), msg = c.querySelector('.msg'), id = c.dataset.id, a = b.dataset.a;
+  if (a === 'stop') { img.src = ''; msg.textContent = ''; setTimeout(usage, 800); return; }
+  msg.textContent = a === 'snap' ? 'Pidiendo captura…' : 'En vivo (máx. ' + (window._maxs || 180) + ' s)…';
+  img.onerror = () => { msg.textContent = 'No se pudo obtener video (¿cuota agotada o cámara sin conexión?)'; };
+  img.onload = () => { if (a === 'snap') { msg.textContent = 'Captura de ' + new Date().toLocaleTimeString('es-MX'); setTimeout(usage, 800); } };
+  img.src = a === 'snap' ? `${SVC}/frame/${encodeURIComponent(id)}?t=${Date.now()}` : `${SVC}/live/${encodeURIComponent(id)}.mjpg?secs=${window._maxs || 180}&t=${Date.now()}`;
+});
+tick(); setInterval(tick, 5000); initVideo();
+</script>
+</body>
+</html>

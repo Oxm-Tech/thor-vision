@@ -56,7 +56,9 @@ class IotListener:
         self.state: dict = {}            # device_id -> {"open": bool|None, "since": ts, "battery": int|None, "last_ts": ts}
         self._alerted_open: dict = {}    # device_id -> ts de la ultima alerta de "sigue abierto"
         self._low_batt: dict = {}
+        self._alerted_usage: set = set()
         self._stop = threading.Event()
+        self._retry = threading.Event()      # se activa si el broker rechaza la conexion: se vuelve a leer data/mqtt.json y se reintenta
         self.status = {"connected": False, "error": "", "messages": 0}
         with db._lock:
             db._conn.executescript(_SCHEMA)
@@ -66,6 +68,9 @@ class IotListener:
         try:
             msg = json.loads(payload)
         except ValueError:
+            return
+        if topic.endswith("/_usage"):
+            self._usage_alert(msg, retained)
             return
         dev_id = msg.get("device_id") or topic.split("/")[-2]
         changes = msg.get("changes") or {}
@@ -137,6 +142,20 @@ class IotListener:
         self._snapshot(eid, cam, "puerta")
         logger.info("iot: %s abierta -> alerta %d (cam %s)", dev["name"], eid, cam)
 
+    def _usage_alert(self, msg: dict, retained: bool) -> None:
+        """Aviso del servicio de video Tuya: se llego a un porcentaje de la cuota mensual de la nube."""
+        key = (msg.get("threshold"), time.strftime("%Y-%m", time.localtime(float(msg.get("ts") or time.time()))))
+        if retained and key in self._alerted_usage:
+            return
+        if key in self._alerted_usage:
+            return
+        self._alerted_usage.add(key)
+        if retained:
+            return                       # al arrancar solo se recuerda el aviso viejo; no se vuelve a alertar
+        pct = msg.get("pct")
+        self._insert_alert(None, f"Consumo de video de las camaras Tuya al {pct}% de la cuota mensual", f"Video Tuya: {pct}% de {msg.get('quota_gb')} GB usados",
+                           "consumo_video_tuya", "medium" if (msg.get("threshold") or 0) >= 80 else "low", {"usage": msg})
+
     def _check_battery(self, dev_id: str, dev: dict, pct) -> None:
         try:
             pct = int(pct)
@@ -195,9 +214,10 @@ class IotListener:
             def on_connect(cl, u, f, rc, p=None, _prefix=prefix):
                 if rc.is_failure:
                     self.status.update(connected=False, error=str(rc))
+                    self._retry.set()
                     return
                 self.status.update(connected=True, error="")
-                cl.subscribe([(f"{_prefix}/+/status", 1), (f"{_prefix}/+/last", 1)])
+                cl.subscribe([(f"{_prefix}/+/status", 1), (f"{_prefix}/+/last", 1), (f"{_prefix}/_usage", 1)])
 
             c.on_connect = on_connect
             c.on_disconnect = lambda cl, u, f, rc, p=None: self.status.update(connected=False)
@@ -206,10 +226,15 @@ class IotListener:
                 c.connect(cfg.get("host", "192.168.0.101"), int(cfg.get("port", 1883)), 30)
                 c.loop_start()
                 backoff = 5
-                while not self._stop.wait(30):
+                self._retry.clear()
+                while not self._stop.wait(5):
+                    if self._retry.is_set():
+                        break
                     self.check_open_too_long()
                 c.loop_stop()
                 c.disconnect()
+                if self._retry.is_set() and not self._stop.is_set():
+                    self._stop.wait(60)           # clave o usuario rechazados: se espera y se reintenta con el archivo actual
             except OSError as exc:
                 self.status.update(connected=False, error=f"sin conexion: {exc}"[:120])
                 self._stop.wait(backoff)

@@ -17,6 +17,13 @@ def devices(request: Request):
     return {"status": m.status, "devices": m.snapshot_state()}
 
 
+@router.get("/api/iot/config")
+def config(request: Request):
+    """Direccion del servicio de video de Tuya (en oapc-devops) para que la pagina /iot lo consulte."""
+    import os
+    return {"tuya_service": os.environ.get("TUYA_SERVICE_URL", "http://192.168.0.194:8765")}
+
+
 @router.get("/api/iot/events")
 def events(request: Request, device_id: str = "", limit: int = 100):
     return {"events": _l(request).recent(device_id, limit)}
