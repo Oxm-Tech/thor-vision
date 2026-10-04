@@ -70,6 +70,8 @@ class ParkedTracker:
         self._cand: dict = {}
         self._last_gc = 0.0
         self.cam_names: dict = {}       # cam_id -> nombre (lo fija main.py)
+        self.snapshots = None           # SnapshotManager (lo fija main.py): captura de cada alerta
+        self._frames: dict = {}         # cam_id -> ultimo cuadro visto (para la alerta "se fue", que no llega con cuadro)
         with db._lock:
             db._conn.executescript(_SCHEMA)
             for col, typ in (("plate_src", "TEXT"), ("plate_img", "BLOB")):
@@ -108,6 +110,7 @@ class ParkedTracker:
         if cam_id not in CAMS:
             return
         now = ts or time.time()
+        self._frames[cam_id] = frame
         fh, fw = frame.shape[:2]
         rw, rh = getattr(result, "frame_w", 0) or fw, getattr(result, "frame_h", 0) or fh
         sx, sy = fw / rw, fh / rh
@@ -228,9 +231,16 @@ class ParkedTracker:
                    "severity": sev, "confidence": "high",
                    "parked": {"vehicle_id": rec_id, "state": state, "class": cls, "duration_s": dur, "first_ts": first_ts, "plate": plate}}
         try:
-            self.db.insert_event("nemotron", cam_id, payload, people=0, has_alert=True)
+            eid = self.db.insert_event("nemotron", cam_id, payload, people=0, has_alert=True)
         except sqlite3.Error as exc:          # la alerta no debe romper el seguimiento
             logger.warning("ParkedTracker: no se pudo guardar la alerta: %s", exc)
+            return
+        frame = self._frames.get(cam_id)
+        if self.snapshots is not None and frame is not None:
+            try:
+                self.snapshots.save(cam_id, frame, "estacionado", event_id=eid)
+            except (OSError, ValueError, cv2.error) as exc:
+                logger.warning("ParkedTracker: no se pudo guardar la captura: %s", exc)
 
     def _gc(self, cam_id, now) -> None:
         cands = self._cand.get(cam_id, [])

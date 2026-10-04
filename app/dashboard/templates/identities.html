@@ -61,6 +61,7 @@ th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{co
     <button data-t="revisar" class="on">Por revisar<span class="n" id="n-revisar"></span></button>
     <button data-t="empleado">Empleados<span class="n" id="n-empleado"></span></button>
     <button data-t="invitado">Invitados<span class="n" id="n-invitado"></span></button>
+    <button data-t="calle">Calle y videoportero</button>
     <button data-t="ocupacion">Ocupación</button>
     <button data-t="asistencia">Asistencia</button>
     <button data-t="duplicados">Duplicados</button>
@@ -96,7 +97,8 @@ const HELP = {
   revisar: 'Personas detectadas que aún no clasificas. Pulsa la foto para ver sus parecidos; marca varias y clasifícalas juntas. Las que solo aparecen en cámaras exteriores no se listan.',
   empleado: 'Personal de OXM. Entran al reporte de asistencia. Sus capturas se conservan 90 días; su registro no caduca.',
   invitado: 'Externos: solo se cuentan y se guardan capturas (90 días).',
-  ocupacion: 'Cuánta gente hay en las cámaras interiores y el Garage frontal: ahora, por hora y en el pico del día. Las exteriores no cuentan.',
+  calle: 'Personas que solo pasaron por la calle o el videoportero y nunca entraron. Quedan como registro (también en la línea de tiempo de alertas); no hace falta revisarlas. Si alguna entra, pasa sola a "Por revisar".',
+  ocupacion: 'Cuánta gente hay en las cámaras interiores y el Garage frontal: ahora, por hora y en el pico del día. Las exteriores y el videoportero no cuentan.',
   asistencia: 'Reporte automático solo de empleados: primera y última vez vistos y minutos en oficina.',
   duplicados: 'Pares de identidades que se parecen mucho: probablemente son la misma persona. Fusiónalas para limpiar la base.',
 };
@@ -112,17 +114,18 @@ async function counts(){
 }
 function photo(p){ return `<img loading="lazy" src="/api/subjects/${p.id}/face" onerror="this.onerror=null;this.src='/api/subjects/${p.id}/body';this.onerror=()=>{this.replaceWith(document.createTextNode('sin foto'))}" alt="">`; }
 function card(p){
-  const other = tab === 'revisar'
+  const other = tab === 'revisar' || tab === 'calle'
     ? `<button class="btn pri sm" data-a="cat" data-c="empleado">Empleado</button><button class="btn sm" data-a="cat" data-c="invitado">Invitado</button>`
     : `<button class="btn sm wide" data-a="cat" data-c="${tab === 'empleado' ? 'invitado' : 'empleado'}">Mover a ${tab === 'empleado' ? 'Invitado' : 'Empleado'}</button><button class="btn sm wide" data-a="cat" data-c="revisar">Devolver a revisar</button>`;
   return `<div class="card${sel.has(p.id) ? ' sel' : ''}" data-id="${p.id}">
     <input class="chk" type="checkbox" data-a="chk" ${sel.has(p.id) ? 'checked' : ''}>
     ${p.suggested ? '<span class="tag">Sugerido: Empleado</span>' : ''}
+    ${p.match ? `<span class="tag" title="Se parece a una persona ya identificada">¿Es ${esc(p.match.name)}? ${Math.round(p.match.sim * 100)}%</span>` : ''}
     <div class="ph" data-a="sim" title="Ver parecidos">${photo(p)}</div>
     <div class="bd">
       <div class="nm">${esc(p.name)} <button data-a="name" title="Poner nombre">✎</button></div>
       <div class="meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${esc(p.cams.join(', ') || '–')}</div>
-      <div class="acts">${other}<button class="btn sm wide" data-a="sim">Parecidos</button></div>
+      <div class="acts">${p.match ? `<button class="btn pri sm wide" data-a="merge" data-from="${p.id}" data-into="${p.match.id}">Sí, es ${esc(p.match.name)}</button>` : ''}${other}<button class="btn sm wide" data-a="sim">Parecidos</button></div>
     </div></div>`;
 }
 async function render(){
@@ -134,7 +137,14 @@ async function render(){
   if (tab === 'ocupacion') return occupancy();
   if (tab === 'duplicados') return dups();
   tools.innerHTML = `<input type="text" id="q" placeholder="Buscar nombre…" value="${esc(q)}"><label class="chip"><input type="checkbox" id="on" ${onlyNamed ? 'checked' : ''}> solo con nombre</label>`
-    + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button>' : '');
+    + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button><button class="btn sm" id="auto" title="Une a cada persona sin nombre con la persona identificada a la que más se parece (solo quienes entraron)">Unir sugeridos (≥50%)</button>' : '');
+  if ($('#auto')) $('#auto').onclick = async () => {
+    const d = await send('/api/people/accept-suggestions', 'POST', {min_sim: 0.5, dry: true});
+    if (!d.candidates.length) return alert('No hay sugerencias con 50% o más de parecido.');
+    if (!confirm('Se unirán ' + d.candidates.length + ' personas a la identidad más parecida:\n' + d.candidates.slice(0, 12).map(c => '· #' + c.from + ' → ' + c.name + ' (' + Math.round(c.sim * 100) + '%)').join('\n') + '\n\nNo se deshace. ¿Continuar?')) return;
+    const r = await send('/api/people/accept-suggestions', 'POST', {min_sim: 0.5, dry: false});
+    alert('Identidades unidas: ' + r.merged); counts(); load();
+  };
   $('#q').oninput = e => { q = e.target.value; clearTimeout(render.t); render.t = setTimeout(load, 250); };
   $('#on').onchange = e => { onlyNamed = e.target.checked; load(); };
   if ($('#all')) $('#all').onclick = () => { cache.forEach(p => sel.add(p.id)); load(true); bulk(); };
@@ -144,7 +154,7 @@ async function load(keep){
   const v = $('#view');
   try {
     if (!keep){
-      const d = await J(`/api/people?category=${tab}&limit=300&only_named=${onlyNamed ? 1 : 0}&q=${encodeURIComponent(q)}`);
+      const d = await J(`/api/people?category=${tab === 'calle' ? 'revisar&scope=calle' : tab}&limit=300&only_named=${onlyNamed ? 1 : 0}&q=${encodeURIComponent(q)}`);
       cache = d.people;
     }
     v.innerHTML = cache.length ? `<div class="grid">${cache.map(card).join('')}</div>` : '<div class="empty">No hay nadie en esta lista.</div>';
@@ -215,7 +225,7 @@ async function attendance(date){
   try {
     const d = await J('/api/attendance?date=' + date);
     v.innerHTML = `<p class="help">Cámaras usadas: ${esc(d.internal_cams.join(', '))}${d.partial_day ? ' · día en curso' : ''}</p>`
-      + (d.employees.length ? `<table><tr><th>Empleado</th><th>Presente</th><th>Llegada</th><th>Última vez</th><th>Minutos en oficina</th><th>Cámaras</th></tr>${d.employees.map(e => `<tr><td>${esc(e.name)}</td><td class="${e.present ? 'ok' : 'no'}">${e.present ? 'Sí' : 'No'}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${esc(e.cams.join(', '))}</td></tr>`).join('')}</table>` : '<div class="empty">Aún no hay empleados clasificados. Clasifícalos en “Por revisar”.</div>')
+      + (d.employees.length ? `<table><tr><th>Empleado</th><th>Presente</th><th>Llegada</th><th>Última vez</th><th>Minutos en oficina</th><th>Cámaras</th></tr>${d.employees.map(e => `<tr><td>${esc(e.name)}</td><td class="${e.present ? 'ok' : 'no'}">${e.present ? 'Sí' : (e.left ? 'Salió ' + hm(e.exit_ts) : (e.attended ? 'Ya no está' : 'No'))}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${esc(e.cams.join(', '))}</td></tr>`).join('')}</table>` : '<div class="empty">Aún no hay empleados clasificados. Clasifícalos en “Por revisar”.</div>')
       + `<h3 style="margin-top:20px">Invitados: ${d.guests.count} · por revisar hoy: ${d.pending_review}</h3><div class="row">${d.guests.people.map(g => `<div class="mini"><img src="${g.snapshot}" onerror="this.style.visibility='hidden'"><div>${esc(g.name)}<br>${hm(g.first_ts)}–${hm(g.last_ts)}</div></div>`).join('')}</div>`;
   } catch (e) { v.innerHTML = '<div class="empty">Error cargando asistencia.</div>'; }
 }

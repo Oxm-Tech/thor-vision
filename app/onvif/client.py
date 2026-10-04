@@ -9,6 +9,7 @@ import hashlib
 import os
 import re
 import urllib.error
+import ssl
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -47,6 +48,9 @@ def _envelope(body: str, user: str = "", password: str = "", offset: float = 0.0
     return f'<?xml version="1.0" encoding="utf-8"?><s:Envelope {ns}>{header}<s:Body>{body}</s:Body></s:Envelope>'.encode()
 
 
+_INSECURE = ssl._create_unverified_context()     # camaras con certificado propio (ej. cam-236); es la red interna
+
+
 def _esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -55,7 +59,7 @@ def soap(url: str, body: str, user: str = "", password: str = "", offset: float 
     req = urllib.request.Request(url, data=_envelope(body, user, password, offset),
                                  headers={"Content-Type": "application/soap+xml; charset=utf-8"})
     try:
-        raw = urllib.request.urlopen(req, timeout=timeout).read()
+        raw = urllib.request.urlopen(req, timeout=timeout, context=_INSECURE if url.startswith("https") else None).read()
     except urllib.error.HTTPError as exc:
         raw = exc.read()
         try:

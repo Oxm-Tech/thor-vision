@@ -6,6 +6,7 @@ camara asociada; tambien si sigue abierta mucho tiempo y cuando la bateria del s
 
 Credenciales: data/mqtt.json (permisos 600, fuera de git): {"host","port","user","password","topic"}.
 """
+import base64
 import json
 import logging
 import os
@@ -13,6 +14,8 @@ import sqlite3
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 
 import yaml
 
@@ -21,6 +24,10 @@ logger = logging.getLogger(__name__)
 MQTT_PATH = os.environ.get("MQTT_CONFIG", "/app/data/mqtt.json")
 IOT_YML = os.environ.get("IOT_CONFIG", "/app/config/iot.yml")
 LIBS = os.environ.get("PLATES_LIBS", "/app/data/pylibs")        # paho-mqtt se instala junto a fast-alpr (scripts/setup_mqtt.sh)
+
+TUYA_SERVICE = os.environ.get("TUYA_SERVICE_URL", "http://192.168.0.194:8765")
+MOTION_CODES = {"ipc_motion", "ipc_bang"}
+CAMERA_ALERT_COOLDOWN_S = float(os.environ.get("TUYA_ALERT_COOLDOWN_S", "120"))
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS iot_events (
@@ -57,6 +64,8 @@ class IotListener:
         self._alerted_open: dict = {}    # device_id -> ts de la ultima alerta de "sigue abierto"
         self._low_batt: dict = {}
         self._alerted_usage: set = set()
+        self._recent: dict = {}          # (device, codigo, valor) -> ts: el mismo mensaje llega duplicado desde la nube
+        self._last_motion: dict = {}     # device_id -> ts de la ultima alerta de movimiento/ruido
         self._stop = threading.Event()
         self._retry = threading.Event()      # se activa si el broker rechaza la conexion: se vuelve a leer data/mqtt.json y se reintenta
         self.status = {"connected": False, "error": "", "messages": 0}
@@ -83,7 +92,14 @@ class IotListener:
         st["last_ts"] = ts
         source = "sync" if retained else "event"
         for code, value in changes.items():
+            if code == "initiative_message":
+                value = self._decode_initiative(value)
+                if value is None:
+                    continue
+                code = value["cmd"]
             self._store(ts, dev_id, dev, code, value, source)
+            if dev.get("kind") == "camera" and not retained and code in MOTION_CODES:
+                self._camera_alert(dev_id, dev, ts, code)
         if "battery_percentage" in changes:
             st["battery"] = changes["battery_percentage"]
             self._check_battery(dev_id, dev, st["battery"])
@@ -101,7 +117,48 @@ class IotListener:
         elif changed and not op:
             self._store(ts, dev_id, dev, "cerrada", "true", "derived")
 
+    @staticmethod
+    def _decode_initiative(value):
+        """Mensaje de la camara Tuya (base64 de un JSON): comando (ipc_motion, ipc_bang...), hora y tipo. La imagen queda cifrada en la nube de Tuya."""
+        try:
+            m = json.loads(base64.b64decode(value))
+        except (ValueError, TypeError):
+            return None
+        cmd = str(m.get("cmd") or "")
+        return {"cmd": cmd, "time": m.get("time"), "type": m.get("type"), "alarm": m.get("alarm")} if cmd else None
+
+    def _camera_alert(self, dev_id: str, dev: dict, ts: float, code: str) -> None:
+        """Movimiento (ipc_motion) o ruido fuerte (ipc_bang) de una camara Tuya: una alerta con captura por camara cada CAMERA_ALERT_COOLDOWN_S."""
+        if ts - self._last_motion.get(dev_id, 0) < CAMERA_ALERT_COOLDOWN_S:
+            return
+        self._last_motion[dev_id] = ts
+        sound = code == "ipc_bang"
+        name = dev["name"].replace(" (Tuya)", "")
+        eid = self._insert_alert(dev.get("alias") or dev_id, f"{'Ruido fuerte' if sound else 'Movimiento'} en {name}", f"{'Ruido' if sound else 'Movimiento'} detectado por {name}",
+                                 "ruido_tuya" if sound else "movimiento_tuya", "low", {"device_id": dev_id, "name": dev["name"], "code": code})
+        threading.Thread(target=self._grab_frame, args=(eid, dev_id, dev), daemon=True, name="iot-grab").start()
+
+    def _grab_frame(self, event_id: int, dev_id: str, dev: dict) -> None:
+        """Una captura de la camara Tuya por el servicio de video (consume un poco de la cuota; el servicio la bloquea al llegar al tope)."""
+        import cv2
+        import numpy as np
+        try:
+            with urllib.request.urlopen(f"{TUYA_SERVICE}/frame/{dev_id}", timeout=25) as r:
+                jpg = r.read()
+            frame = cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)
+            if frame is not None and self.snapshots is not None:
+                self.snapshots.save(dev.get("alias") or dev_id, frame, "tuya", event_id=event_id)
+        except (OSError, urllib.error.URLError, ValueError, cv2.error) as exc:
+            logger.warning("iot: sin captura de %s: %s", dev.get("name"), exc)
+
     def _store(self, ts, dev_id, dev, code, value, source) -> None:
+        if source == "event":
+            key = (dev_id, code, json.dumps(value))
+            if ts - self._recent.get(key, 0) < 5:
+                return
+            self._recent[key] = ts
+            if len(self._recent) > 500:
+                self._recent = {k: t for k, t in self._recent.items() if ts - t < 60}
         try:
             with self.db._lock:
                 self.db._conn.execute("INSERT INTO iot_events (ts, device_id, name, kind, code, value, source) VALUES (?,?,?,?,?,?,?)",

@@ -133,6 +133,15 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/identidades` | Identities Page |  |  |
 
+## iot
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/iot/config` | Config |  |  |
+| GET | `/api/iot/devices` | Devices |  |  |
+| GET | `/api/iot/events` | Events | `device_id`, `limit` |  |
+| GET | `/iot` | Iot Page |  |  |
+
 ## knowledge
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
@@ -166,6 +175,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | GET | `/api/people` | People | `category`, `q`, `only_named`, `limit`, `scope` |  |
+| POST | `/api/people/accept-suggestions` | Accept Suggestions |  | AcceptBody |
 | POST | `/api/people/bulk-category` | Bulk Category |  | BulkBody |
 | POST | `/api/people/consolidate` | Consolidate |  |  |
 | GET | `/api/people/duplicates` | Duplicates | `min_sim`, `limit` |  |

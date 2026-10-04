@@ -114,3 +114,24 @@ def test_usage_alert_once_per_threshold_and_never_from_retained():
     m.handle("oxm/tuya/_usage", msg(80, 82.0))
     m.handle("oxm/tuya/_usage", msg(80, 83.0))                         # mismo umbral: una sola vez
     assert [e[2]["alert_types"] for e in db.events] == [["consumo_video_tuya"]] and db.events[0][2]["severity"] == "medium"
+
+
+def _im(cmd="ipc_motion", t=1791154788):
+    import base64
+    return base64.b64encode(json.dumps({"v": "4.0", "cmd": cmd, "time": t, "alarm": True}).encode()).decode()
+
+
+def test_camera_message_is_decoded_deduped_and_alerts_once_per_cooldown(monkeypatch):
+    m, db, sn = make()
+    grabbed = []
+    monkeypatch.setattr(m, "_grab_frame", lambda *a: grabbed.append(a))
+    t = time.time()
+    for _ in range(2):                                              # la nube entrega cada mensaje duplicado
+        m.handle("t/C1/status", msg("C1", {"initiative_message": _im(), "dp239": "motion"}, ts=t))
+    codes = [r["code"] for r in m.recent("C1")]
+    assert codes.count("ipc_motion") == 1 and codes.count("dp239") == 1
+    assert len(db.events) == 1 and db.events[0][2]["alert_types"] == ["movimiento_tuya"]
+    m.handle("t/C1/status", msg("C1", {"initiative_message": _im("ipc_bang")}, ts=t + 30))   # dentro del enfriamiento: sin alerta nueva
+    assert len(db.events) == 1
+    m.handle("t/C1/status", msg("C1", {"initiative_message": _im("ipc_bang")}, ts=t + 500))
+    assert len(db.events) == 2 and db.events[1][2]["alert_types"] == ["ruido_tuya"]

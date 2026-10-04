@@ -2,6 +2,18 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.9.0 — Correlación de eventos, tráfico de calle y limpieza de ruido (2026-10-04)
+
+El timbre, las cámaras Tuya y los autos estacionados ahora dejan captura; el tráfico de la calle y el videoportero queda como registro separado de la ocupación interior, y las personas nuevas se sugieren contra las ya identificadas.
+
+- **Videoportero · Sin ruido y con captura**: Se dejan de guardar los latidos del equipo (registro SIP y hora NTP, ~1,400 filas al día). El timbre toma una captura del propio videoportero (snapshot.cgi) cuando el flujo aún no trae cuadro.
+- **Tuya · Movimiento y ruido con alerta y captura**: Los mensajes de las cámaras Tuya se decodifican (movimiento / ruido fuerte), ya no se guardan duplicados y cada cámara genera una alerta con captura (una por 120 s). La captura usa el servicio de video y respeta el medidor de consumo.
+- **Alertas · Autos estacionados con captura**: Las alertas de llegada, permanencia cada hora y salida de un vehículo guardan la captura de la cámara.
+- **Línea de tiempo · Categorías nuevas, todas/ninguna y tráfico de calle**: Botón Todas/Ninguna para afinar las categorías; categorías renombradas y nuevas (Tráfico calle y videoportero, Tuya y sensores). Las personas de Exterior 1 y 2 quedan como registro. Las descripciones repetidas se colapsan en la lista.
+- **Identidades · Calle separada, sugerencias y asistencia real**: Quien solo pasó por la calle o el videoportero va a la pestaña Calle y no a Por revisar; quien entra pasa a revisar con la sugerencia de a quién se parece y un botón para unir las coincidencias. La asistencia ya no cuenta el videoportero como presencia y marca la salida cuando lo ven en la calle.
+- **API · /api/correlation**: Todo lo ocurrido alrededor de un momento o alerta (timbre, personas, alertas, puertas, cámaras Tuya) en orden.
+- **ONVIF · Certificados propios y videoportero**: Las cámaras con certificado propio (Escaleras P2) ya responden en la prueba ONVIF y el videoportero ya no aparece duplicado con un nombre sin resolver.
+
 ## v2.8.0 — IoT Tuya: puertas, cámaras y consumo de video (2026-10-04)
 
 thor-vision recibe los cambios de puertas, ventanas y garage de Tuya por MQTT (solo lectura) y alerta con captura; las cámaras Tuya se pueden ver bajo demanda con un medidor de consumo de la cuota de video de la nube.

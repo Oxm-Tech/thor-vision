@@ -6,6 +6,9 @@ import time
 
 import cv2
 import numpy as np
+import requests
+
+from app.onvif.dahua_events import DahuaError
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,7 @@ class DoorAlerts:
     def __init__(self, db, snapshots, buffers: dict, cam_id: str = "cam-vto", cam_name: str = "Videoportero"):
         self.db, self.snapshots, self.buffers, self.cam_id, self.cam_name = db, snapshots, buffers, cam_id, cam_name
         self._last_ring: dict = {}
+        self.grab = None            # callable() -> bytes JPEG; lo fija main.py (snapshot.cgi del videoportero)
 
     def _save_snapshot(self, event_id: int, trigger: str, frame) -> None:
         if self.snapshots is None or frame is None:
@@ -67,5 +71,10 @@ class DoorAlerts:
         frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
         if isinstance(frame, tuple):
             frame = frame[0]
+        if frame is None and self.grab is not None:
+            try:
+                frame = cv2.imdecode(np.frombuffer(self.grab(), np.uint8), cv2.IMREAD_COLOR)
+            except (OSError, ValueError, requests.RequestException, DahuaError) as exc:
+                logger.warning("doorbell: sin captura del timbre: %s", exc)
         self._save_snapshot(eid, "timbre", frame)
         logger.info("doorbell: timbre (%s/%s) alerta=%d", code, action, eid)

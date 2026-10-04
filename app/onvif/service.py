@@ -12,6 +12,7 @@ from app.onvif import registry
 
 logger = logging.getLogger(__name__)
 
+NOISE_CODES = {"Heartbeat", "SIPRegisterResult", "NTPAdjustTime"}      # latidos del equipo: no son eventos de la puerta
 RETENTION_DAYS = int(os.environ.get("ONVIF_EVENTS_RETENTION_DAYS", "90"))
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS onvif_events (
@@ -126,6 +127,7 @@ class OnvifManager:
                 last_purge = time.time()
                 with self.db._lock:
                     self.db._conn.execute("DELETE FROM onvif_events WHERE ts < ?", (time.time() - RETENTION_DAYS * 86400,))
+                    self.db._conn.execute("DELETE FROM onvif_events WHERE topic IN ('dahua/SIPRegisterResult','dahua/NTPAdjustTime')")
                     self.db._conn.commit()
             self._stop.wait(15)
 
@@ -150,7 +152,7 @@ class OnvifManager:
             user, pw = self._creds(ep_id)
 
             def on_event(code, action, index, data):
-                if code in ("Heartbeat",):
+                if code in NOISE_CODES:
                     return
                 self._store(ep_id, f"dahua/{code}", {**data, "index": index}, action)
                 if self.dahua_cb is not None:

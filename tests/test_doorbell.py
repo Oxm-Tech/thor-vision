@@ -91,3 +91,8 @@ def test_stream_reads_byte_lines_and_reports_events(monkeypatch):
     except de.DahuaError:
         pass                                              # al terminar el flujo se avisa que el equipo cerro la conexion
     assert got == [("Invite", "Start", 0, {"CallID": "7"})]
+
+
+def test_dahua_noise_codes_are_not_stored():
+    from app.onvif.service import NOISE_CODES
+    assert {"SIPRegisterResult", "NTPAdjustTime", "Heartbeat"} <= NOISE_CODES and "CallNoAnswered" not in NOISE_CODES

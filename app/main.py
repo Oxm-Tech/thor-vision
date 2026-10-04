@@ -194,6 +194,7 @@ async def lifespan(app: FastAPI):
         from app.onvif.service import OnvifManager
         app.state.onvif = OnvifManager(db, config)
         app.state.onvif.start()
+    app.state.parked.snapshots = snapshots
     from app.vision.doorbell import DoorAlerts
     _door_cams = [c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()]
     app.state.doorbell = None
@@ -206,6 +207,12 @@ async def lifespan(app: FastAPI):
             app.state.visits.visit_cb[_dc] = app.state.doorbell.visitor_alert
         if getattr(app.state, "onvif", None) is not None:
             app.state.onvif.dahua_cb = app.state.doorbell.ring_alert
+            def _vto_grab(_ep=_dc, _on=app.state.onvif):
+                from app.onvif import dahua_events as _de, registry as _reg
+                ep = next((e for e in _reg.endpoints(config) if e.get("kind") == "vto"), None)
+                u, p = _on._creds(ep["id"])
+                return _de.snapshot(ep["host"], u, p)
+            app.state.doorbell.grab = _vto_grab
     if os.environ.get("IOT_ENABLED", "true").lower() == "true":
         from app.iot.listener import IotListener
         app.state.iot = IotListener(db, snapshots, manager._buffers, {c.id: c.name for c in config.cameras})

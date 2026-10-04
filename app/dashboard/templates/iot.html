@@ -39,10 +39,11 @@ async function tick(){
       <td>${x.open === null || x.open === undefined ? '<span class="muted">sin datos</span>' : (x.open ? '<span class="b warn">abierta</span>' : '<span class="b ok">cerrada</span>')}</td>
       <td>${x.battery != null ? `<span class="b ${x.battery <= 15 ? 'bad' : ''}">${x.battery}%</span>` : '<span class="muted">—</span>'}</td><td>${when(x.last_ts)}</td></tr>`).join('');
     const e = (await (await fetch('/api/iot/events?limit=40')).json()).events;
-    $('#ev').innerHTML = e.length ? e.map(r => `<div class="ev"><span class="muted">${when(r.ts)}</span> · <b>${esc(r.name)}</b> · ${esc(r.code)} = ${esc(JSON.stringify(r.value))} <span class="muted">(${esc(r.source)})</span></div>`).join('') : 'Sin eventos todavía.';
+    $('#ev').innerHTML = e.length ? e.map(r => `<div class="ev"><span class="muted">${when(r.ts)}</span> · <b>${esc(r.name)}</b> · ${esc(LABEL[r.code] || r.code)}${r.value && typeof r.value === 'object' ? '' : ' = ' + esc(JSON.stringify(r.value))} <span class="muted">(${esc(r.source)})</span></div>`).join('') : 'Sin eventos todavía.';
   } catch (er) { $('#st').className = 'b bad'; $('#st').textContent = 'sin respuesta'; }
 }
 let SVC = '';
+const LABEL = { ipc_motion: 'Movimiento detectado', ipc_bang: 'Ruido fuerte detectado', dp239: 'Aviso de movimiento' };
 async function usage(){
   if (!SVC) return;
   try {

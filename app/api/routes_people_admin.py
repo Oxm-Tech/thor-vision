@@ -13,7 +13,13 @@ from pydantic import BaseModel
 router = APIRouter()
 CATEGORIES = ("revisar", "empleado", "invitado")
 ATTENDANCE_EXTRA = {c.strip() for c in os.environ.get("ATTENDANCE_EXTRA_CAMS", "cam-228").split(",") if c.strip()}   # acceso peatonal: Garage frontal
+DOORBELL_CAMS = {c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()}
 GAP_S = 600   # huecos menores a 10 min dentro de una cámara interna cuentan como presencia continua
+
+
+def _street(request: Request) -> list:
+    """Camaras de la calle: exteriores y videoportero. Su trafico queda como registro, no cuenta en ocupacion ni asistencia ni en 'por revisar'."""
+    return [c.id for c in request.app.state.config.cameras if getattr(c, "zone", "") == "exterior" or c.id in DOORBELL_CAMS]
 
 
 def _db(request: Request):
@@ -79,21 +85,76 @@ def people(request: Request, category: str = "revisar", q: Optional[str] = None,
     where, args = " AND s.category=?", [category]
     if only_named:
         where += " AND s.named=1"
-    if scope == "interior":
-        ext = [c.id for c in request.app.state.config.cameras if getattr(c, "zone", "") == "exterior"]
-        if ext:
-            where += (" AND (s.named=1 OR EXISTS (SELECT 1 FROM person_visits v WHERE v.subject_id=s.id AND v.fp=0 AND v.static=0 AND v.cam_id NOT IN ("
-                      + ",".join("?" * len(ext)) + ")))")
-            args.extend(ext)
+    ext = _street(request)
+    if scope in ("interior", "calle") and ext:
+        ph = ",".join("?" * len(ext))
+        if scope == "interior":       # entraron: alguna visita en camara interior (o ya tienen nombre)
+            where += f" AND (s.named=1 OR EXISTS (SELECT 1 FROM person_visits v WHERE v.subject_id=s.id AND v.fp=0 AND v.static=0 AND v.cam_id NOT IN ({ph})))"
+        else:                          # solo pasaron por la calle / videoportero: registro, sin revisar a mano
+            where += f" AND s.named=0 AND NOT EXISTS (SELECT 1 FROM person_visits v WHERE v.subject_id=s.id AND v.fp=0 AND v.static=0 AND v.cam_id NOT IN ({ph}))"
+        args.extend(ext)
     if q:
         where += " AND lower(COALESCE(s.name,'')) LIKE ?"
         args.append(f"%{q.lower()}%")
     out = []
+    sug = _suggestions(db) if category == "revisar" else {}
     for sid, name, named, cat, created, last, visits, cams, faces in _subject_rows(db, where, tuple(args), limit):
         out.append({"id": sid, "name": name, "named": bool(named), "category": cat, "created_ts": created, "last_ts": last,
                     "visits": visits, "cams": [names.get(c, c) for c in (cams or "").split(",") if c],
-                    "has_face": faces > 0, "suggested": "empleado" if (named and cat == "revisar") else None})
+                    "has_face": faces > 0, "suggested": "empleado" if (named and cat == "revisar") else None,
+                    "match": sug.get(sid)})
     return {"category": category, "people": out}
+
+
+def _suggestions(db, min_sim: float = 0.38) -> dict:
+    """Para cada persona sin nombre, la persona con nombre (empleado o invitado) a la que mas se parece: {id: {id,name,category,sim}}."""
+    ids, E = _embeddings(db)
+    if len(ids) < 2:
+        return {}
+    with db._lock:
+        meta = {r[0]: r for r in db._conn.execute("SELECT id, COALESCE(name,'Persona #'||id), named, category FROM subjects").fetchall()}
+    tgt = [j for j, i in enumerate(ids) if i in meta and meta[i][2] and meta[i][3] in ("empleado", "invitado")]
+    if not tgt:
+        return {}
+    S = E @ E[tgt].T
+    out = {}
+    for j, i in enumerate(ids):
+        if i not in meta or meta[i][2]:
+            continue
+        k = int(np.argmax(np.where(np.array(ids)[tgt] == i, -1, S[j])))
+        sim = float(S[j, k])
+        if sim >= min_sim:
+            t = meta[ids[tgt[k]]]
+            out[i] = {"id": t[0], "name": t[1], "category": t[3], "sim": round(sim, 3)}
+    return out
+
+
+class AcceptBody(BaseModel):
+    min_sim: float = 0.5
+    dry: bool = True
+
+
+@router.post("/api/people/accept-suggestions")
+def accept_suggestions(body: AcceptBody, request: Request):
+    """Fusiona las personas sin nombre que se parecen >= min_sim a una persona con nombre (dry=true solo lista)."""
+    db = _db(request)
+    m = getattr(request.app.state, "visits", None)
+    if m is None:
+        raise HTTPException(503, "tracker apagado")
+    street = set(_street(request))
+    pairs = []
+    for sid, s in _suggestions(db, max(0.3, body.min_sim)).items():
+        with db._lock:
+            inside = db._conn.execute("SELECT 1 FROM person_visits WHERE subject_id=? AND fp=0 AND static=0 AND cam_id NOT IN (%s) LIMIT 1" % ",".join("?" * len(street) or "NULL"),
+                                      (sid, *street)).fetchone()
+        if inside:                                 # solo quienes entraron; la gente de la calle no se mezcla con empleados
+            pairs.append((sid, s))
+    done = 0
+    if not body.dry:
+        for sid, s in pairs:
+            if m.merge_subjects(sid, s["id"]):
+                done += 1
+    return {"dry": body.dry, "candidates": [{"from": sid, **s} for sid, s in pairs], "merged": done}
 
 
 class CategoryBody(BaseModel):
@@ -194,7 +255,8 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
         raise HTTPException(400, "fecha invalida; usa YYYY-MM-DD")
     cams = request.app.state.config.cameras
     names = {c.id: c.name for c in cams}
-    internal = [c.id for c in cams if getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA]
+    street = set(_street(request))
+    internal = [c.id for c in cams if (getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA) and c.id not in street]
     now = time.time()
     with db._lock:
         emp = db._conn.execute("SELECT id, COALESCE(name,'Persona #'||id) FROM subjects WHERE category='empleado' ORDER BY name").fetchall()
@@ -206,6 +268,10 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
             "SELECT v.subject_id, COALESCE(s.name,'Invitado #'||s.id), MIN(v.start_ts), MAX(COALESCE(v.end_ts,v.start_ts)), COUNT(*), group_concat(DISTINCT v.cam_id) "
             "FROM person_visits v JOIN subjects s ON s.id=v.subject_id WHERE s.category='invitado' AND v.fp=0 AND v.static=0 "
             "AND v.start_ts>=? AND v.start_ts<? GROUP BY v.subject_id ORDER BY MIN(v.start_ts)", (t0, t1)).fetchall()
+        out_vis = db._conn.execute(
+            "SELECT v.subject_id, MAX(COALESCE(v.end_ts, v.start_ts)) FROM person_visits v JOIN subjects s ON s.id=v.subject_id "
+            "WHERE s.category='empleado' AND v.fp=0 AND v.static=0 AND v.start_ts>=? AND v.start_ts<? "
+            f"AND v.cam_id IN ({','.join('?' * len(street)) or 'NULL'}) GROUP BY v.subject_id", (t0, t1, *street)).fetchall()
         pend = db._conn.execute(
             "SELECT COUNT(DISTINCT v.subject_id) FROM person_visits v JOIN subjects s ON s.id=v.subject_id WHERE s.category='revisar' "
             "AND v.fp=0 AND v.static=0 AND v.start_ts>=? AND v.start_ts<?", (t0, t1)).fetchone()[0]
@@ -221,8 +287,13 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
         v = [x for m_sid, _ in members for x in by.get(m_sid, [])]
         segs = _merge([(a, b) for a, b, _ in v])
         present = sum(b - a for a, b in segs)
-        rows.append({"id": sid, "name": name, "present": bool(v), "first_ts": min((a for a, _, _ in v), default=None),
-                     "last_ts": max((b for _, b, _ in v), default=None), "minutes": round(present / 60),
+        last_in = max((b for _, b, _ in v), default=None)
+        last_out = max((t for m_sid, t in out_vis if m_sid in {x for x, _ in members}), default=None)
+        left = bool(last_out and last_in and last_out >= last_in)           # lo vieron en la calle despues de su ultima vez adentro
+        inside = bool(v) and not left and (not (t0 <= now < t1) or now - last_in < 900)
+        rows.append({"id": sid, "name": name, "present": inside, "attended": bool(v), "left": left, "exit_ts": last_out if left else None,
+                     "first_ts": min((a for a, _, _ in v), default=None),
+                     "last_ts": max(last_in or 0, last_out or 0) or None, "minutes": round(present / 60),
                      "segments": len(segs), "cams": sorted({names.get(c, c) for _, _, c in v})})
     return {"date": time.strftime("%Y-%m-%d", time.localtime(t0)), "internal_cams": [names[c] for c in internal],
             "partial_day": t0 <= now < t1,
@@ -313,7 +384,8 @@ def occupancy(request: Request, date: Optional[str] = None):
     t0, t1 = _day_bounds(date)
     cams = request.app.state.config.cameras
     names = {c.id: c.name for c in cams}
-    ids = [c.id for c in cams if getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA]
+    street = set(_street(request))
+    ids = [c.id for c in cams if (getattr(c, "zone", "interior") == "interior" or c.id in ATTENDANCE_EXTRA) and c.id not in street]
     ph = ",".join("?" * len(ids)) or "NULL"
     now = time.time()
     with db._lock:

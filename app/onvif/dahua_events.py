@@ -20,6 +20,14 @@ class DahuaError(Exception):
     pass
 
 
+def snapshot(host: str, user: str, password: str, channel: int = 1, timeout: float = 6.0) -> bytes:
+    """JPEG actual del videoportero (snapshot.cgi, Digest). Sirve cuando el flujo RTSP aun no tiene cuadro."""
+    r = requests.get(f"http://{host}/cgi-bin/snapshot.cgi?channel={channel}", auth=HTTPDigestAuth(user, password), timeout=timeout)
+    if r.status_code != 200 or not r.content.startswith(b"\xff\xd8"):
+        raise DahuaError(f"snapshot HTTP {r.status_code}")
+    return r.content
+
+
 def parse_event(block: str):
     """Texto de un evento -> (code, action, index, data_dict) o None (latidos y bloques sin evento)."""
     text = " ".join(l.strip() for l in block.replace("\r", "").splitlines() if l.strip() and not l.startswith(("Content-", "--")))
