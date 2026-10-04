@@ -1,0 +1,15 @@
+# Dispositivos Tuya que thor-vision vigila por MQTT (el puente tuya_bridge publica en oxm/tuya/<id>/status).
+# cam: camara de thor-vision de la que se toma la captura cuando el dispositivo cambia (confirmed: false = suposicion por confirmar).
+# open_code/open_value: que cambio significa "abierto". Los ids no son secretos.
+alert_open_minutes: 10        # alerta de nuevo si sigue abierto este tiempo
+low_battery_pct: 15
+devices:
+  ebd84e19bf42731470j1ao: {name: "Recepcion Puerta (cristal)", kind: door,   cam: cam-113,       confirmed: false, open_code: doorcontact_state, open_value: true}
+  ebbd958cb06f9669f80fyc: {name: "Oficina Abr Puerta Cristal", kind: door,   cam: cam-cowork,    confirmed: false, open_code: doorcontact_state, open_value: true}
+  eb1e69b9cf71ccfc05plub: {name: "Puerta Comedor",            kind: door,   cam: cam-215,       confirmed: false, open_code: doorcontact_state, open_value: true}
+  eb73fc0af524735e99irh8: {name: "Cocina Ventana",            kind: window, cam: cam-215,       confirmed: false, open_code: doorcontact_state, open_value: true}
+  ebd376c2d51a16859eizkw: {name: "Oficina Adm ventana",       kind: window, cam: null,          confirmed: false, open_code: doorcontact_state, open_value: true}
+  eb841b85892ac7f25fjb5d: {name: "Garage (abre-puertas)",     kind: garage, cam: cam-228,       confirmed: false, open_code: doorcontact_state, open_value: true}
+  eb2d6b38b8299a0a85gosq: {name: "Security Camera (Tuya)",    kind: camera, cam: null}
+  eb0ba0012624a25aeaessh: {name: "Jardin camara (Tuya)",      kind: camera, cam: null}
+  ebe7b3e437b01b584813lw: {name: "Camara garaje (Tuya)",      kind: camera, cam: null}

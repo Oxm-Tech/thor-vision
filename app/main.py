@@ -206,6 +206,10 @@ async def lifespan(app: FastAPI):
             app.state.visits.visit_cb[_dc] = app.state.doorbell.visitor_alert
         if getattr(app.state, "onvif", None) is not None:
             app.state.onvif.dahua_cb = app.state.doorbell.ring_alert
+    if os.environ.get("IOT_ENABLED", "true").lower() == "true":
+        from app.iot.listener import IotListener
+        app.state.iot = IotListener(db, snapshots, manager._buffers, {c.id: c.name for c in config.cameras})
+        app.state.iot.start()
     from app.devices.manager import DeviceManager
     app.state.devices = DeviceManager(db, config)
     from app.api.chat_agent import start_chat_probe
@@ -312,6 +316,7 @@ async def lifespan(app: FastAPI):
     report_stop.set()
     getattr(app.state, "chat_probe_stop", None) and app.state.chat_probe_stop.set()
     getattr(app.state, "onvif", None) and app.state.onvif.stop()
+    getattr(app.state, "iot", None) and app.state.iot.stop()
     for w in yolo_workers:
         w.stop()
     for nw in vlm_workers:
@@ -348,6 +353,8 @@ from app.api.routes_devices import router as devices_router
 app.include_router(devices_router)
 from app.api.routes_knowledge import router as knowledge_router
 app.include_router(knowledge_router)
+from app.api.routes_iot import router as iot_router
+app.include_router(iot_router)
 app.include_router(people_router)
 
 
