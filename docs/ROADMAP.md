@@ -70,3 +70,8 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 - **Puerta Tuya (192.168.10.205):** responde y tiene el puerto local 6668 abierto (protocolo local de Tuya, alcanzable desde Thor por el router). Falta el id del dispositivo y su clave local (se obtienen con el proyecto de Tuya IoT / `tinytuya wizard`). Con eso: conexión persistente para el estado de la puerta, alerta al abrirse con captura de las cámaras cercanas y, con confirmación, apertura remota desde `/dispositivos`.
 - **Timbre:** afinar `DOORBELL_CODES` con una pulsación real viendo `onvif_events` (`dahua/*`).
 - **Avatar de Gigi:** las mejores 10 capturas son de Cocina-Patio (62–165 px, resolución nativa del recorte). Para más calidad hace falta fotografiarla de cerca; el coleccionador de mascotas ya guarda crops nativos.
+
+## Decisiones del 2026-10-04
+
+- **Hardening pendiente (no ahora):** accesos por niveles, incluida la API y el dashboard (hoy sin autenticación, solo red interna y sin usuarios), y respaldos programados de `events.db` y de los archivos de `data/`. Se hace en una fase de hardening, no antes.
+- **Tuya:** el proyecto de la nube de Tuya ya tiene IoT Core, Authorization Token Management, Smart Home Basic Service, Device Status Notification (mensajes MQTT con los cambios de estado) e IoT Video Live Stream (WebRTC/RTSP/HLS; 5 GB mensuales de flujo incluidos, luego 0.15 USD/GB). Opciones de integración: (a) agente de operación en oapc-devops por la API de la nube, (b) eventos de estado por el servicio de notificaciones, (c) conexión local con tinytuya para la puerta. Los dispositivos Zigbee no tienen IP propia: se controlan por su puerta de enlace.
