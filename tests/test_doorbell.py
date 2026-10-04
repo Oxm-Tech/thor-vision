@@ -68,3 +68,26 @@ def test_ring_codes_alert_once_per_debounce_and_ignore_the_rest():
     d.ring_alert("VideoMotion", "Start", {})                  # no es timbre
     d.ring_alert("Invite", "Stop", {})                        # fin de llamada
     assert len(db.events) == 1 and db.events[0][2]["alert_types"] == ["timbre_videoportero"] and db.events[0][2]["severity"] == "medium"
+
+
+def test_stream_reads_byte_lines_and_reports_events(monkeypatch):
+    """Regresion: el equipo manda multipart sin charset y requests entrega bytes; antes el hilo moria con TypeError."""
+    lines = [b"--myboundary", b"Content-Type: text/plain", b"", b"Heartbeat", b"--myboundary",
+             b"Code=Invite;action=Start;index=0;data={", b'  "CallID": "7"', b"}", b"--myboundary"]
+
+    class FakeResp:
+        status_code = 200
+
+        def iter_lines(self):
+            yield from lines
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(de.requests.Session, "get", lambda self, url, **kw: FakeResp())
+    got = []
+    try:
+        de.stream_events("h", "u", "p", lambda: False, lambda *e: got.append(e))
+    except de.DahuaError:
+        pass                                              # al terminar el flujo se avisa que el equipo cerro la conexion
+    assert got == [("Invite", "Start", 0, {"CallID": "7"})]

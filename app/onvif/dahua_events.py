@@ -48,11 +48,12 @@ def stream_events(host: str, user: str, password: str, should_stop, on_event, ti
         raise DahuaError(f"HTTP {r.status_code}")
     block: list = []
     try:
-        for line in r.iter_lines(decode_unicode=True):
+        for raw in r.iter_lines():
             if should_stop():
                 return
-            if line is None:
+            if raw is None:
                 continue
+            line = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw      # el equipo no declara charset: llegan bytes
             if line.startswith("--"):
                 ev = parse_event("\n".join(block)) if block else None
                 block = []
