@@ -14,7 +14,8 @@ main{max-width:1500px;margin:0 auto;padding:14px 16px 60px}
 .btn,input,select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}input{cursor:text}
 .btn:hover{border-color:var(--accent)}.btn.on{border-color:var(--accent);color:var(--accent);font-weight:600}.btn.pri{background:var(--accent);border-color:var(--accent);color:#0d1400;font-weight:600}.btn.bad{border-color:var(--bad);color:var(--bad)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.pick{display:flex;gap:6px;flex-wrap:wrap;max-height:130px;overflow:auto;margin-bottom:10px}
+.pick{display:flex;gap:6px;flex-wrap:wrap;max-height:260px;overflow:auto;margin-bottom:10px}
+.pk{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px}.pk img{width:34px;height:34px;border-radius:6px;object-fit:cover;background:#000}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .th{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer}.th.sel{border-color:var(--accent)}
 .th img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#000}.th .c{position:absolute;left:6px;top:6px;width:20px;height:20px;accent-color:var(--accent)}
@@ -55,7 +56,7 @@ async function people(){
     <div class="pick" id="pick"></div><div id="g"></div>`;
   const find = async () => {
     const d = await J(`/api/people?category=${$('#cat').value}&limit=300&scope=all&q=${encodeURIComponent($('#q').value.trim())}`);
-    $('#pick').innerHTML = d.people.map(p => `<button class="btn${cur === p.id ? ' on' : ''}" data-id="${p.id}">${esc(p.name)} <small style="color:var(--muted)">${p.visits}</small></button>`).join('') || '<span class="help">Sin resultados</span>';
+    $('#pick').innerHTML = d.people.filter(p => p.visits > 0).map(p => `<button class="btn pk${cur === p.id ? ' on' : ''}" data-id="${p.id}"><img loading="lazy" src="/api/subjects/${p.id}/face" onerror="this.onerror=null;this.src='/api/subjects/${p.id}/body'" alt="">${esc(p.name)} <small style="color:var(--muted)">${p.visits}</small></button>`).join('') || '<span class="help">Sin resultados</span>';
   };
   $('#q').oninput = () => { clearTimeout(people.t); people.t = setTimeout(find, 250); };
   $('#cat').onchange = find;

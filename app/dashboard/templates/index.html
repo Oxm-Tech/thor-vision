@@ -2499,9 +2499,9 @@ const TL_GROUPS = [
   { k:'iot',      label:'Tuya y sensores',   color:'#b07acc', types:['movimiento_tuya', 'ruido_tuya', 'consumo_video_tuya', 'sensor_bateria_baja'] },
 ];
 const TL_T2G = {}; TL_GROUPS.forEach((g, i) => g.types.forEach(t => { TL_T2G[t] = i; }));
-const TL_SPANS = [1, 3, 6, 12, 24, 72, 168];
-const TL_BUCKET = { 1:120, 3:300, 6:600, 12:900, 24:1800, 72:3600, 168:10800 };
-const TL_TICK = { 1:600, 3:1800, 6:3600, 12:7200, 24:10800, 72:43200, 168:86400 };
+const TL_SPANS = [0.25, 1, 3, 6, 12, 24, 72, 168];
+const TL_BUCKET = { 0.25:30, 1:120, 3:300, 6:600, 12:900, 24:1800, 72:3600, 168:10800 };
+const TL_TICK = { 0.25:120, 1:600, 3:1800, 6:3600, 12:7200, 24:10800, 72:43200, 168:86400 };
 const TL = { span:24, end:null, data:null, sel:null, hidden:new Set(), timer:null, drag:null };
 try { (JSON.parse(localStorage.getItem('thor_tl_hidden') || '[]')).forEach(k => TL.hidden.add(k)); } catch (_) {}
 try { const sp = +localStorage.getItem('thor_tl_span'); if (TL_SPANS.includes(sp)) TL.span = sp; } catch (_) {}
@@ -2656,7 +2656,7 @@ function _tlRender(animate){
   const camsWith = new Set(evs.map(e => e.cam)).size;
   document.getElementById('tl-sum').textContent = `${total} alertas · ${camsWith} cámaras` + (pk >= 0 ? ` · pico ${_tlFmt(since + pk * bucket)} (${pv})` : '') + (TL.data.truncated ? ' · recortado' : '');
   document.getElementById('tl-range').textContent = `${_tlFmt(since, true)} → ${TL.end ? _tlFmt(until, true) : 'ahora'}`;
-  document.getElementById('tl-span').textContent = TL.span >= 24 ? `${TL.span / 24} d`.replace('1 d', '24 h') : `${TL.span} h`;
+  document.getElementById('tl-span').textContent = TL.span < 1 ? `${TL.span * 60} min` : TL.span >= 24 ? `${TL.span / 24} d`.replace('1 d', '24 h') : `${TL.span} h`;
   _tlLegend();
 }
 
