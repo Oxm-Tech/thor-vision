@@ -65,6 +65,7 @@ th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{co
     <button data-t="sugerencias">Sugerencias</button>
     <button data-t="calle">Calle y videoportero</button>
     <a class="btn" href="/galeria" style="text-decoration:none">Miniaturas</a>
+    <button data-t="capturas">Capturas</button>
     <button data-t="ocupacion">Ocupación</button>
     <button data-t="asistencia">Asistencia</button>
     <button data-t="duplicados">Duplicados</button>
@@ -102,6 +103,7 @@ const HELP = {
   invitado: 'Externos: solo se cuentan y se guardan capturas (90 días).',
   sugerencias: 'Personas sin nombre que se parecen a alguien ya identificado. Marca las que sí son la misma y pulsa Unir; con "No son la misma" esa sugerencia no vuelve a salir. Unir no se deshace (pero desde Miniaturas puedes sacar una captura equivocada).',
   calle: 'Personas que solo pasaron por la calle o el videoportero y nunca entraron. Quedan como registro (también en la línea de tiempo de alertas); no hace falta revisarlas. Si alguna entra, pasa sola a "Por revisar".',
+  capturas: 'Dónde salen las mejores capturas de rostro en cada cámara: calidad mediana y un mapa del encuadre (más verde = mejor calidad media). Sirve para decidir dónde conviene captar o mover una cámara. El mapa se llena con las visitas nuevas.',
   ocupacion: 'Cuánta gente hay en las cámaras interiores y el Garage frontal: ahora, por hora y en el pico del día. Las exteriores y el videoportero no cuentan.',
   asistencia: 'Reporte automático solo de empleados: primera y última vez vistos y minutos en oficina.',
   duplicados: 'Pares de identidades que se parecen mucho: probablemente son la misma persona. Fusiónalas para limpiar la base.',
@@ -141,6 +143,7 @@ async function render(){
   if (tab === 'asistencia') return attendance();
   if (tab === 'ocupacion') return occupancy();
   if (tab === 'duplicados') return dups();
+  if (tab === 'capturas') return capture();
   if (tab === 'sugerencias') return suggestions();
   tools.innerHTML = `<input type="text" id="q" placeholder="Buscar nombre…" value="${esc(q)}"><label class="chip"><input type="checkbox" id="on" ${onlyNamed ? 'checked' : ''}> solo con nombre</label>`
     + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button>' : '');
@@ -193,6 +196,19 @@ document.addEventListener('click', async e => {
     counts(); return tab === 'duplicados' ? dups() : load();
   }
 });
+async function capture(){
+  const v = $('#view'); $('#tools').innerHTML = '';
+  const d = await J('/api/presence/capture-quality?hours=168');
+  const mx = Math.max(1, ...d.cams.flatMap(c => c.cells.map(z => z.q)));
+  v.innerHTML = d.cams.map(c => {
+    const [gx, gy] = d.grid, cell = {}; c.cells.forEach(z => { cell[z.x + ',' + z.y] = z; });
+    let g = '';
+    for (let y = 0; y < gy; y++) for (let x = 0; x < gx; x++) { const z = cell[x + ',' + y]; g += `<div title="${z ? z.n + ' capturas · calidad ' + z.q : 'sin capturas'}" style="aspect-ratio:4/3;border-radius:3px;background:${z ? 'rgba(118,185,0,' + (0.15 + 0.85 * z.q / mx).toFixed(2) + ')' : 'rgba(255,255,255,.04)'}"></div>`; }
+    return `<div class="card" style="flex-direction:row;gap:14px;padding:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <div style="min-width:180px"><b>${esc(c.cam)}</b><div class="meta">${c.visits} visitas · ${c.with_face} con rostro (${c.pct_face}%)<br>calidad mediana ${c.q_median ?? '–'} · p90 ${c.q_p90 ?? '–'}<br>${c.mapped} con posición</div></div>
+      <div style="display:grid;grid-template-columns:repeat(${gx},1fr);gap:2px;width:240px">${g}</div></div>`;
+  }).join('') || '<div class="empty">Sin datos todavía.</div>';
+}
 async function suggestions(){
   const v = $('#view'), tools = $('#tools');
   v.innerHTML = '<div class="empty">Buscando parecidos…</div>';

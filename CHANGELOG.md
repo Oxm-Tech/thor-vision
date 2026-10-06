@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.15.0 — Rostros: videoportero más sensible y mapa de dónde salen las mejores capturas (2026-10-06)
+
+El detector de rostros del videoportero usa entrada de 960 px y umbral 0.45 (medido sobre recortes reales: 54% a 88% de detección), y cada visita guarda en qué parte del encuadre salió su mejor rostro para ver dónde conviene captar.
+
+- **Reconocimiento · Detector del videoportero**: InsightFace con det_size 960 y det_thresh 0.45 solo en el videoportero (cámara de solo rostros, sin riesgo de falsos por gente de fondo). Las demás cámaras conservan 640/0.6 y la validación contra la persona de YOLO.
+- **Capturas · Dónde salen las mejores capturas**: Cada visita guarda la posición normalizada de su mejor rostro. Identidades > Capturas muestra por cámara la calidad mediana/p90 y un mapa de calor del encuadre; /api/presence/capture-quality da los mismos datos.
+- **Revisión · Máscara de Sala de Juntas retirada**: La máscara de privacidad de esa cámara se puso por una suposición equivocada el 30-sep y se quitó; la zona vuelve a verse y analizarse.
+
 ## v2.14.0 — Vehículos en polígono con placa, capturas por vehículo, Umami con identidad y móvil (2026-10-06)
 
 Los vehículos del polígono (los que importan) generan alertas y se leen con OCR y, de respaldo, con el VLM; los demás quedan como informativos; cada vehículo muestra sus capturas de llegada y salida. Umami identifica el dispositivo y registra eventos con propiedades, y el panel se adapta solo al tamaño y al tacto.

@@ -279,7 +279,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
-| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`*, `hd` |  |
+| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`*, `hd`, `native` |  |
 
 ## snapshots
 
@@ -345,6 +345,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | PATCH | `/api/vehicles/{vid}` | Vehicle Patch | `vid`* | VehiclePatch |
 | GET | `/api/vehicles/{vid}/image` | Vehicle Image | `vid`* |  |
 | GET | `/api/vehicles/{vid}/plate` | Vehicle Plate Image | `vid`* |  |
+| GET | `/api/vehicles/{vid}/snaps` | Vehicle Snaps | `vid`* |  |
 
 ## version
 

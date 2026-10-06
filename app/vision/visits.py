@@ -122,6 +122,8 @@ class Track:
         self.subject_id: Optional[int] = None
         self.face: Optional[bytes] = None
         self.face_q = 0.0
+        self.face_xy: Optional[str] = None
+        self.dims: tuple = (0, 0)
         self.body: Optional[bytes] = None
         self.body_q = 0.0
         self.scene: Optional[bytes] = None
@@ -232,6 +234,7 @@ class VisitManager:
             for face in (result.faces or []):
                 tr = self._track_for_face(face.bbox, persons, det_tracks)
                 if tr is not None:
+                    tr.dims = (getattr(result, "frame_w", 0) or 0, getattr(result, "frame_h", 0) or 0)
                     self._face_obs(tr, face, src)
             self._housekeeping(cam_id, tracks, now)
         if new_track and src == "stream" and self.burst_cb is not None:
@@ -381,6 +384,9 @@ class VisitManager:
         tr.q_src[src] = max(tr.q_src.get(src, 0.0), q)
         if f.thumb_b64 and q > tr.face_q * 1.1:
             tr.face, tr.face_q, tr.face_src = base64.b64decode(f.thumb_b64), q, src
+            dw, dh = tr.dims
+            if dw and dh:        # donde del encuadre salio la mejor cara (centro de la persona seguida), para saber en que zonas conviene captar
+                tr.face_xy = "%.3f,%.3f" % (min(1.0, max(0.0, (tr.bbox[0] + tr.bbox[2]) / 2 / dw)), min(1.0, max(0.0, (tr.bbox[1] + tr.bbox[3]) / 2 / dh)))
         if (f.embedding is not None and area >= FACE_MIN_AREA
                 and f.det_score >= FACE_MIN_DET and f.sharpness >= FACE_BLUR_MIN
                 and yaw <= FACE_MAX_YAW):
@@ -471,7 +477,7 @@ class VisitManager:
                       and ((tr.last_ts - tr.first_ts) >= 8 or tr.subject_id is not None))
         self.db.update_person_visit(
             tr.visit_id, scene=tr.scene if keep_scene else None, end_ts=tr.last_ts, hits=tr.hits, status=status,
-            static=int(tr.static), face=tr.face, face_score=tr.face_q,
+            static=int(tr.static), face=tr.face, face_score=tr.face_q, face_xy=tr.face_xy,
             body=tr.body, body_score=tr.body_q, embedding=emb, n_emb=tr.n_emb,
             known_name=known, known_conf=kconf, subject_id=tr.subject_id)
         if tr.subject_id is not None:

@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.15.0",
+    "date": "2026-10-06",
+    "name": "Rostros: videoportero más sensible y mapa de dónde salen las mejores capturas",
+    "summary": "El detector de rostros del videoportero usa entrada de 960 px y umbral 0.45 (medido sobre recortes reales: 54% a 88% de detección), y cada visita guarda en qué parte del encuadre salió su mejor rostro para ver dónde conviene captar.",
+    "highlights": [
+      {
+        "area": "Reconocimiento",
+        "title": "Detector del videoportero",
+        "text": "InsightFace con det_size 960 y det_thresh 0.45 solo en el videoportero (cámara de solo rostros, sin riesgo de falsos por gente de fondo). Las demás cámaras conservan 640/0.6 y la validación contra la persona de YOLO."
+      },
+      {
+        "area": "Capturas",
+        "title": "Dónde salen las mejores capturas",
+        "text": "Cada visita guarda la posición normalizada de su mejor rostro. Identidades > Capturas muestra por cámara la calidad mediana/p90 y un mapa de calor del encuadre; /api/presence/capture-quality da los mismos datos."
+      },
+      {
+        "area": "Revisión",
+        "title": "Máscara de Sala de Juntas retirada",
+        "text": "La máscara de privacidad de esa cámara se puso por una suposición equivocada el 30-sep y se quitó; la zona vuelve a verse y analizarse."
+      }
+    ]
+  },
+  {
     "version": "2.14.0",
     "date": "2026-10-06",
     "name": "Vehículos en polígono con placa, capturas por vehículo, Umami con identidad y móvil",

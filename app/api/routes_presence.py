@@ -34,3 +34,43 @@ def backfill(request: Request, hours: float = 24.0):
         raise HTTPException(503, "reconocimiento de cuerpo apagado")
     threading.Thread(target=lambda: bid.backfill(hours), daemon=True, name="bodyid-backfill").start()
     return {"ok": True, "hours": hours, "note": "procesando en segundo plano; consulta /api/presence/stats"}
+
+
+@router.get("/api/presence/capture-quality")
+def capture_quality(request: Request, hours: float = 168.0, grid_x: int = 8, grid_y: int = 6):
+    """Donde salen las mejores capturas de rostro: por camara, calidad (mediana y p90) y un mapa de calor del encuadre (calidad media por celda)."""
+    db = getattr(request.app.state, "db", None)
+    if db is None:
+        raise HTTPException(503, "sin base de datos")
+    names = {c.id: c.name for c in request.app.state.config.cameras}
+    since = time.time() - min(max(hours, 1), 24 * 30) * 3600
+    with db._lock:
+        rows = db._conn.execute("SELECT cam_id, face IS NOT NULL, face_score, face_xy FROM person_visits WHERE fp=0 AND static=0 AND start_ts>=?", (since,)).fetchall()
+    cams: dict = {}
+    for cam, has, q, xy in rows:
+        c = cams.setdefault(cam, {"visits": 0, "with_face": 0, "q": [], "cells": {}})
+        c["visits"] += 1
+        if has and q:
+            c["with_face"] += 1
+            c["q"].append(q)
+            if xy:
+                try:
+                    x, y = (float(v) for v in xy.split(","))
+                except ValueError:
+                    continue
+                k = (min(grid_x - 1, int(x * grid_x)), min(grid_y - 1, int(y * grid_y)))
+                cell = c["cells"].setdefault(k, [0, 0.0])
+                cell[0] += 1
+                cell[1] += q
+    out = []
+    for cam, c in cams.items():
+        qs = sorted(c["q"])
+        pct = lambda p: round(qs[min(len(qs) - 1, int(len(qs) * p))], 1) if qs else None
+        cells = [{"x": k[0], "y": k[1], "n": v[0], "q": round(v[1] / v[0], 1)} for k, v in c["cells"].items()]
+        best = sorted(cells, key=lambda z: -(z["q"] * min(z["n"], 10)))[:3]
+        out.append({"cam_id": cam, "cam": names.get(cam, cam), "visits": c["visits"], "with_face": c["with_face"],
+                    "pct_face": round(100 * c["with_face"] / c["visits"], 1) if c["visits"] else 0, "q_median": pct(0.5), "q_p90": pct(0.9),
+                    "cells": cells, "best_cells": best, "mapped": sum(z["n"] for z in cells)})
+    out.sort(key=lambda z: -z["with_face"])
+    return {"hours": hours, "grid": [grid_x, grid_y], "cams": out,
+            "note": "El mapa se llena con las visitas nuevas (la posicion no se guardaba antes)."}

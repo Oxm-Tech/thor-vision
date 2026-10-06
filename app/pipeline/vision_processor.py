@@ -43,6 +43,8 @@ _OBJECT_MIN_CONF = float(os.environ.get("YOLO_OBJECT_CONF", "0.35"))
 # Validacion de personas con esqueleto (YOLO26-pose): una persona real tiene puntos del cuerpo visibles; un sofa, una bolsa o un reflejo no.
 _POSE_CAMS = {c.strip() for c in os.environ.get("POSE_CAMS", "cam-sala-juntas,cam-215,cam-120,cam-113,cam-118,cam-228,cam-236,cam-cowork").split(",") if c.strip()}
 _POSE_DROP = {c.strip() for c in os.environ.get("POSE_DROP_CAMS", "cam-sala-juntas,cam-215").split(",") if c.strip()}   # en el resto solo se mide
+_VTO_DET_SIZE = int(os.environ.get("VTO_FACE_DET_SIZE", "960"))
+_VTO_DET_THRESH = float(os.environ.get("VTO_FACE_DET_THRESH", "0.45"))
 _HIRES_IMGSZ = int(os.environ.get("YOLO_HIRES_IMGSZ", "1280"))     # camaras exteriores de 5 MP: la GPU de Thor esta casi libre
 _POSE_MIN_KP = int(os.environ.get("POSE_MIN_KP", "6"))
 _POSE_PATH = os.environ.get("POSE_MODEL", "/app/data/models/yolo26n-pose.pt")
@@ -64,6 +66,7 @@ class VisionModels:
         self.faces_only: set = set()      # camaras en modo solo-rostros (videoportero)
         self.hires_cams: set = set()      # camaras con mucha resolucion (5 MP): YOLO a mayor tamano para ver personas lejanas
         self._face_app = None
+        self._face_app_vto = None         # detector mas sensible para el videoportero (camara solo-rostros)
         self._pose = None
         self._pose_failed = False
         self.pose_stats = {"checked": 0, "confirmed": 0, "rejected": 0, "dropped": 0, "by_cam": {}}
@@ -153,6 +156,13 @@ class VisionModels:
             # de FaceDB, que solo decide a QUIEN se parece, no SI es una cara).
             self._face_app.prepare(ctx_id=0, det_size=(640, 640), det_thresh=0.6)
             logger.info("InsightFace buffalo_sc loaded (det_size=640, det_thresh=0.6)")
+            try:      # videoportero: el cuadro ya viene centrado en la cara, el umbral de 0.6 descartaba ~40% (medido: 54% -> 88% con 960/0.45)
+                self._face_app_vto = FaceAnalysis(name="buffalo_sc", providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+                self._face_app_vto.prepare(ctx_id=0, det_size=(_VTO_DET_SIZE, _VTO_DET_SIZE), det_thresh=_VTO_DET_THRESH)
+                logger.info("InsightFace videoportero: det_size=%d det_thresh=%.2f", _VTO_DET_SIZE, _VTO_DET_THRESH)
+            except (RuntimeError, ValueError, OSError) as exc:
+                logger.warning("detector del videoportero no disponible, se usa el general: %s", exc)
+                self._face_app_vto = None
         except Exception as exc:
             logger.warning("InsightFace load failed: %s", exc)
 
@@ -179,7 +189,7 @@ class VisionModels:
 
     def _process_faces_only(self, frame: np.ndarray, cam_id: str, face_db: FaceDB, t0: float) -> CameraDetection:
         """Videoportero: solo rostros, sin YOLO. La cara ampliada hace de 'persona' para el seguimiento de visitas."""
-        faces = self._detect_faces(frame, face_db, None)
+        faces = self._detect_faces(frame, face_db, None, sensitive=True)
         h, w = frame.shape[:2]
         boxes = []
         for f in faces:
@@ -242,16 +252,18 @@ class VisionModels:
         return False
 
     def _detect_faces(self, frame: np.ndarray, face_db: FaceDB,
-                       person_bboxes: Optional[list] = None) -> list:
-        if self._face_app is None:
+                       person_bboxes: Optional[list] = None, sensitive: bool = False) -> list:
+        app = (self._face_app_vto if sensitive else None) or self._face_app
+        if app is None:
             return []
+        min_score = _VTO_DET_THRESH if (sensitive and app is self._face_app_vto) else self.MIN_DET_SCORE
         try:
             from app.vision.visits import face_yaw
-            detected = self._face_app.get(frame)
+            detected = app.get(frame)
             faces = []
             for face in detected:
                 score = float(face.det_score) if face.det_score is not None else 1.0
-                if score < self.MIN_DET_SCORE:
+                if score < min_score:
                     logger.debug("Cara descartada por baja confianza de deteccion: %.3f", score)
                     continue
                 bbox = tuple(map(int, face.bbox.tolist()))

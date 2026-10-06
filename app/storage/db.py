@@ -183,6 +183,8 @@ class EventDB:
             if "body" not in scols:
                 self._conn.execute("ALTER TABLE face_sightings ADD COLUMN body BLOB")
             pvcols = {r[1] for r in self._conn.execute("PRAGMA table_info(person_visits)").fetchall()}
+            if "face_xy" not in pvcols:
+                self._conn.execute("ALTER TABLE person_visits ADD COLUMN face_xy TEXT")      # posicion normalizada "x,y" donde salio la mejor cara
             if "scene" not in pvcols:
                 self._conn.execute("ALTER TABLE person_visits ADD COLUMN scene BLOB")      # cuadro completo con el recuadro de la persona (trafico de calle)
             subcols = {r[1] for r in self._conn.execute("PRAGMA table_info(subjects)").fetchall()}
@@ -613,7 +615,7 @@ class EventDB:
 
     # ── Personas: visitas y sujetos ───────────────────────────────────────
 
-    _PV_COLS = frozenset({"scene", "body_emb", "attrs", "end_ts", "hits", "status", "static", "fp", "face", "face_score",
+    _PV_COLS = frozenset({"face_xy", "scene", "body_emb", "attrs", "end_ts", "hits", "status", "static", "fp", "face", "face_score",
                           "body", "body_score", "embedding", "n_emb", "known_name",
                           "known_conf", "vlm_desc", "subject_id"})
 
