@@ -75,7 +75,8 @@ header {
 }
 .persons-label { font-size:.65rem; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); font-weight:600; }
 .persons-value { font-size:1.4rem; font-weight:800; color:var(--oxm-blue); font-variant-numeric:tabular-nums; line-height:1; }
-.persons-unit  { font-size:.6rem; color:var(--text-muted); margin-top:-1px; }
+.persons-unit.has-alert { color:var(--red-alert, #e66767); font-weight:600; }
+.persons-unit  { max-width:170px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:.6rem; color:var(--text-muted); margin-top:-1px; }
 
 /* ── VLM health card ── */
 .vlm-card {
@@ -123,6 +124,8 @@ header {
 .gauge-card.alert .gauge-value { color:var(--red-alert); }
 
 /* ── Clock ── */
+.hdr-icons { flex:0 0 100%; display:flex; flex-wrap:wrap; gap:0; padding:0 0 10px; }
+.hdr-icons .hdr-btn:first-child { margin-left:0; }
 .header-clock {
   font-size:.82rem; color:var(--text-muted);
   font-variant-numeric:tabular-nums;
@@ -960,6 +963,9 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .ppl-simrow img { width:34px !important; height:34px !important; border-radius:6px; }
 .ppl-simrow span { flex:1; line-height:1.2; }
 .ppl-link { color:var(--oxm-blue); margin-left:8px; }
+html.tl-only header, html.tl-only main, html.tl-only footer, html.tl-only .chat-fab, html.tl-only #chat-dock { display:none !important; }
+html.tl-only body { padding:0; }
+html.tl-only .tl { margin:0; border:0; border-radius:0; }
 </style>
 {% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
@@ -986,10 +992,11 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <div class="persons-counter">
     <span class="persons-label">Personas</span>
     <span class="persons-value" id="h-persons">0</span>
-    <span class="persons-unit">en cámaras</span>
+    <span class="persons-unit" id="h-persons-unit">en cámaras</span>
   </div>
 
   <div class="header-clock" id="clock">—</div>
+  <div class="hdr-icons">
   <button class="hdr-btn" id="btn-history" title="Histórico de eventos" aria-label="Histórico de eventos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
   <button class="hdr-btn" id="btn-spot" title="Cómo funciona OXM Vision (animación)" aria-label="Cómo funciona OXM Vision (animación)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></button>
   <a class="hdr-btn" id="btn-ppl" href="/identidades" title="Identidades: empleados, invitados y asistencia" aria-label="Identidades" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14c3 0 5 1.8 5 4.5"/></svg></a>
@@ -1002,6 +1009,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
   <button class="hdr-btn" id="btn-conn" title="Conexiones a las cámaras" aria-label="Conexiones a las cámaras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg></button>
   <button class="hdr-btn" id="btn-reports" title="Reportes generados por IA" aria-label="Reportes generados por IA"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4"/></svg></button>
   <button class="hdr-btn" id="btn-settings" title="Configuración" aria-label="Configuración"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
 </header>
 
 <main>
@@ -1369,6 +1377,22 @@ function updateDetections(detections, totalPersons) {
   // Header counter
   const hpEl = document.getElementById('h-persons');
   if (hpEl) hpEl.textContent = total;
+
+  // Que camaras tienen personas (y cual esta generando una alerta ahora)
+  const unitEl = document.getElementById('h-persons-unit');
+  if (unitEl) {
+    const withP = [], withAlert = [];
+    for (const [camId, d] of Object.entries(detections || {})) {
+      const n = d.person_count || 0;
+      if (n > 0) withP.push(`${_camName(camId)}${n > 1 ? ' ×' + n : ''}`);
+      const al = ((d.nemotron || {}).alerts || []).filter(a => !['error','empty response','bad json','encode failed','unreachable',''].includes(String(a).trim()));
+      if (al.length && Date.now() / 1000 - ((d.nemotron || {})._ts || 0) < 120) withAlert.push(_camName(camId));
+    }
+    unitEl.textContent = withP.length ? 'en ' + withP.join(', ') : 'en cámaras';
+    unitEl.title = withAlert.length ? 'Alerta activa en: ' + withAlert.join(', ') : 'Sin alertas activas';
+    unitEl.classList.toggle('has-alert', withAlert.length > 0);
+    if (withAlert.length) unitEl.textContent += ' · ⚠ ' + withAlert.join(', ');
+  }
 
   // Footer counter
   const fpEl = document.getElementById('f-persons');
@@ -2096,6 +2120,12 @@ function renderHistEvents(events, snapMap, boxId = 'hist-events', camIndex = nul
     </div>`;
   }).join('');
   _wireEventReview(box);
+  box.querySelectorAll('.hist-ev-snap').forEach(a => a.addEventListener('click', ev => {
+    ev.preventDefault();
+    const row = a.closest('.hist-ev');
+    _vaLightbox({ url: a.getAttribute('href'), hora: row.querySelector('.hist-ev-t')?.textContent || '', cam: row.querySelector('.hist-ev-c')?.textContent || '',
+                  texto: row.querySelector('.hist-ev-a')?.childNodes[0]?.textContent?.trim() || '' });
+  }));
 }
 
 function _wireEventReview(box){
@@ -2499,6 +2529,8 @@ const TL_GROUPS = [
   { k:'iot',      label:'Tuya y sensores',   color:'#b07acc', types:['movimiento_tuya', 'ruido_tuya', 'consumo_video_tuya', 'sensor_bateria_baja'] },
 ];
 const TL_T2G = {}; TL_GROUPS.forEach((g, i) => g.types.forEach(t => { TL_T2G[t] = i; }));
+const TL_ONLY = new URLSearchParams(location.search).get('tl') || '';
+if (TL_ONLY) document.documentElement.classList.add('tl-only');
 const TL_SPANS = [0.25, 1, 3, 6, 12, 24, 72, 168];
 const TL_BUCKET = { 0.25:30, 1:120, 3:300, 6:600, 12:900, 24:1800, 72:3600, 168:10800 };
 const TL_TICK = { 0.25:120, 1:600, 3:1800, 6:3600, 12:7200, 24:10800, 72:43200, 168:86400 };
@@ -2663,7 +2695,7 @@ function _tlRender(animate){
 async function tlLoad(){
   const [since, until] = _tlWin();
   try {
-    const d = await (await fetch(`/api/timeline?since=${since.toFixed(0)}&until=${until.toFixed(0)}`)).json();
+    const d = await (await fetch(`/api/timeline?since=${since.toFixed(0)}&until=${until.toFixed(0)}${TL_ONLY ? '&cam_id=' + encodeURIComponent(TL_ONLY) : ''}`)).json();
     TL.data = d;
     _tlRender(true);
   } catch (_) { document.getElementById('tl-sum').textContent = 'sin datos'; }

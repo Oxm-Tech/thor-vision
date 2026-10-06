@@ -41,10 +41,11 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
     events += _street_traffic(db, config, since, until)
     if cam_id:
         events = [e for e in events if e["cam"] == cam_id]
+        cams = [c for c in cams if c["id"] == cam_id]
     events.sort(key=lambda e: e["ts"])
     iot = getattr(request.app.state, "iot", None)
     if iot is not None:
-        cams += [{"id": d["alias"], "name": d["name"].replace(" (Tuya)", " (Tuya)"), "zone": "tuya"} for d in iot.devices.values() if d.get("alias")]
+        cams += [{"id": d["alias"], "name": d["name"], "zone": "tuya"} for d in iot.devices.values() if d.get("alias") and (not cam_id or d["alias"] == cam_id)]
     return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated}
 
 

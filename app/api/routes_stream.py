@@ -166,6 +166,18 @@ def stream(cam_id: str, request: Request):
     )
 
 
+def _stamp(frame: np.ndarray, name: str) -> np.ndarray:
+    """Nombre de la camara y fecha/hora (la captura HD de la camara no trae el rotulo del video)."""
+    out = frame.copy()
+    h, w = out.shape[:2]
+    sc = max(0.6, w / 1280 * 0.7)
+    txt = f"{name}  {time.strftime('%d-%m-%Y %H:%M:%S')}"
+    (tw, th), _ = cv2.getTextSize(txt, cv2.FONT_HERSHEY_SIMPLEX, sc, 2)
+    cv2.rectangle(out, (0, 0), (tw + 20, th + 18), (0, 0, 0), -1)
+    cv2.putText(out, txt, (10, th + 8), cv2.FONT_HERSHEY_SIMPLEX, sc, (255, 255, 255), 2, cv2.LINE_AA)
+    return out
+
+
 @router.get("/api/snapshot/{cam_id}")
 def snapshot(cam_id: str, request: Request, hd: int = 0):
     """
@@ -190,6 +202,7 @@ def snapshot(cam_id: str, request: Request, hd: int = 0):
                 full = cv2.resize(full, (1920, int(h * 1920 / w)), interpolation=cv2.INTER_AREA)
             if store is not None:
                 full = _draw_overlay(full, store.get(cam_id))
+            full = _stamp(full, next((c.name for c in request.app.state.config.cameras if c.id == cam_id), cam_id))
             return Response(content=_jpeg_encode(full, 85), media_type="image/jpeg", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     if frame is None:
         return Response(

@@ -133,6 +133,12 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | DELETE | `/api/faces/{face_id}` | Delete Face | `face_id`* |  |
 | GET | `/api/faces/{face_id}/image` | Face Image | `face_id`* |  |
 
+## galeria
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/galeria` | Gallery Page |  |  |
+
 ## health
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
@@ -191,10 +197,14 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | POST | `/api/people/bulk-category` | Bulk Category |  | BulkBody |
 | POST | `/api/people/consolidate` | Consolidate |  |  |
 | GET | `/api/people/duplicates` | Duplicates | `min_sim`, `limit` |  |
+| POST | `/api/people/merge-many` | Merge Many |  | MergeMany |
 | GET | `/api/people/overview` | Overview |  |  |
+| POST | `/api/people/reject` | Reject Pair |  | RejectBody |
 | GET | `/api/people/same-name` | Same Name |  |  |
+| GET | `/api/people/suggestions` | Suggestions | `min_sim`, `limit` |  |
 | GET | `/api/people/today` | People Today |  |  |
 | PATCH | `/api/people/{sid}/category` | Set Category | `sid`* | CategoryBody |
+| GET | `/api/people/{sid}/gallery` | Gallery | `sid`*, `limit`, `offset` |  |
 | GET | `/api/people/{sid}/similar` | Similar | `sid`*, `min_sim`, `limit` |  |
 | GET | `/api/people/{sid}/visits` | Person Visits | `sid`*, `limit` |  |
 
@@ -203,6 +213,8 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | GET | `/api/person-visits` | List Visits | `cam_id`, `subject_id`, `since`, `until`, `limit`, `include_hidden`, `unassigned` |  |
+| POST | `/api/person-visits/delete` | Delete Visits |  | MoveBody |
+| POST | `/api/person-visits/move` | Move Visits |  | MoveBody |
 | GET | `/api/person-visits/{vid}/body` | Visit Body | `vid`* |  |
 | GET | `/api/person-visits/{vid}/face` | Visit Face | `vid`* |  |
 
@@ -210,7 +222,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
-| GET | `/api/pets/crops` | Pets Crops | `unlabeled`, `label`, `limit`, `order`, `pred` |  |
+| GET | `/api/pets/crops` | Pets Crops | `unlabeled`, `label`, `limit`, `order`, `pred`, `offset` |  |
 | GET | `/api/pets/crops/{cid}/image` | Pets Image | `cid`* |  |
 | POST | `/api/pets/crops/{cid}/label` | Pets Label | `cid`* | PetLabel |
 | GET | `/api/pets/model` | Pets Model |  |  |
@@ -246,7 +258,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
-| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`* |  |
+| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`*, `hd` |  |
 
 ## snapshots
 

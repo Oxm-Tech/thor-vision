@@ -269,6 +269,37 @@ def _day_bounds(date: Optional[str]) -> tuple:
     return day0, day0 + 86400
 
 
+def _habits(db, sids: list, internal: list, street: set, days: int = 30) -> dict:
+    """Horario habitual aprendido del historial: mediana de la primera y la ultima vez vistos por dia (entre semana / fin de semana)."""
+    if not sids:
+        return {}
+    since = time.time() - days * 86400
+    ph_s, ph_c = ",".join("?" * len(sids)), ",".join("?" * len(internal)) or "NULL"
+    with db._lock:
+        rows = db._conn.execute(
+            f"SELECT subject_id, cam_id, start_ts, COALESCE(end_ts, start_ts) FROM person_visits WHERE fp=0 AND static=0 AND start_ts>=? AND subject_id IN ({ph_s})",
+            (since, *sids)).fetchall()
+    per: dict = {}                       # (grupo, dia) -> [primera, ultima] en segundos desde medianoche
+    for sid, cam, a, b in rows:
+        lt = time.localtime(a)
+        day = (lt.tm_year, lt.tm_yday)
+        lo = lambda t: time.localtime(t).tm_hour * 3600 + time.localtime(t).tm_min * 60
+        if cam in internal or cam in street:
+            e = per.setdefault((lt.tm_wday >= 5, day), [lo(a), lo(b)])
+            e[0], e[1] = min(e[0], lo(a)), max(e[1], lo(b))
+    out: dict = {}
+    for weekend in (False, True):
+        ds = [v for (we, _), v in per.items() if we == weekend and v[1] - v[0] >= 1800]     # dias con al menos media hora de presencia
+        if len(ds) >= 3:
+            ds_in, ds_out = sorted(v[0] for v in ds), sorted(v[1] for v in ds)
+            out["weekend" if weekend else "weekday"] = {"in": ds_in[len(ds_in) // 2], "out": ds_out[len(ds_out) // 2], "days": len(ds)}
+    return out
+
+
+def _hm(sec: int) -> str:
+    return f"{sec // 3600:02d}:{sec % 3600 // 60:02d}"
+
+
 def build_attendance(request: Request, date: Optional[str]) -> dict:
     db = _db(request)
     try:
@@ -313,7 +344,18 @@ def build_attendance(request: Request, date: Optional[str]) -> dict:
         last_out = max((t for m_sid, t in out_vis if m_sid in {x for x, _ in members}), default=None)
         left = bool(last_out and last_in and last_out >= last_in)           # lo vieron en la calle despues de su ultima vez adentro
         inside = bool(v) and not left and (not (t0 <= now < t1) or now - last_in < 900)
-        rows.append({"id": sid, "name": name, "present": inside, "attended": bool(v), "left": left, "exit_ts": last_out if left else None,
+        hab = _habits(db, [x for x, _ in members], set(internal), street)
+        usual = hab.get("weekend" if time.localtime(t0).tm_wday >= 5 else "weekday")
+        status = ""
+        if usual and t0 <= now < t1:
+            sec = time.localtime(now).tm_hour * 3600 + time.localtime(now).tm_min * 60
+            if not inside and not left and usual["in"] + 1800 <= sec <= usual["out"] - 1800 and not v:
+                status = "deberia estar"
+            elif inside and sec > usual["out"] + 3600:
+                status = "se quedo"
+        rows.append({"id": sid, "name": name, "usual_in": _hm(usual["in"]) if usual else None, "usual_out": _hm(usual["out"]) if usual else None,
+                     "usual_days": usual["days"] if usual else 0, "status": status,
+                     "present": inside, "attended": bool(v), "left": left, "exit_ts": last_out if left else None,
                      "first_ts": min((a for a, _, _ in v), default=None),
                      "last_ts": max(last_in or 0, last_out or 0) or None, "minutes": round(present / 60),
                      "segments": len(segs), "cams": sorted({names.get(c, c) for _, _, c in v})})
