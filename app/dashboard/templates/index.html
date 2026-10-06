@@ -124,8 +124,8 @@ header {
 .gauge-card.alert .gauge-value { color:var(--red-alert); }
 
 /* ── Clock ── */
-.hdr-icons { flex:0 0 100%; display:flex; flex-wrap:wrap; gap:0; padding:0 0 10px; }
-.hdr-icons .hdr-btn:first-child { margin-left:0; }
+.hdr-icons { flex:0 0 100%; display:flex; flex-wrap:wrap; justify-content:center; gap:10px; padding:10px 0 12px; margin-top:4px; border-top:1px solid var(--border); }
+.hdr-icons .hdr-btn { margin-left:0 !important; }
 .header-clock {
   font-size:.82rem; color:var(--text-muted);
   font-variant-numeric:tabular-nums;
@@ -968,9 +968,11 @@ html.tl-only header, html.tl-only main, html.tl-only footer, html.tl-only .chat-
 html.tl-only body { padding:0; }
 html.tl-only .tl { margin:0; border:0; border-radius:0; }
 /* iconos de la segunda fila: etiqueta visible y brillo que sigue al mouse */
-.hdr-icons .hdr-btn { position:relative; display:inline-flex; flex-direction:column; align-items:center; gap:3px; min-width:62px; padding:7px 10px 5px; color:var(--text-secondary); overflow:hidden; text-decoration:none; }
-.hdr-icons .hdr-btn .ico { width:22px; height:22px; stroke-width:1.9; }
-.hdr-icons .hdr-btn::after { content:attr(data-l); font-size:.62rem; letter-spacing:.2px; color:var(--text-muted); }
+.hdr-icons .hdr-btn { position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:80px; padding:10px 12px 8px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); transition:transform .15s, border-color .2s, color .2s; color:var(--text-secondary); overflow:hidden; text-decoration:none; }
+.hdr-icons .hdr-btn .ico { width:26px; height:26px; stroke-width:1.8; }
+.hdr-icons .hdr-btn:hover { transform:translateY(-2px); }
+header { padding-top:8px; }
+.hdr-icons .hdr-btn::after { content:attr(data-l); font-size:.68rem; font-weight:500; letter-spacing:.2px; color:var(--text-muted); }
 .hdr-icons .hdr-btn:hover { color:var(--oxm-blue); border-color:var(--oxm-blue-dark); }
 .hdr-icons .hdr-btn:hover::after { color:var(--text-primary); }
 .glow:hover { background-image:radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(118,185,0,.20), transparent 65%); }

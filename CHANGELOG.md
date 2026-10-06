@@ -2,6 +2,15 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.13.1 — Exteriores a 5 MP, YOLO de mayor tamaño y timbres con captura (2026-10-06)
+
+Exterior 2 pasa a 2592x1944 sin deformar la imagen, las cámaras exteriores detectan personas con YOLO a 1280 px, los timbres viejos muestran al visitante cercano y el encabezado queda centrado.
+
+- **Cámaras · Exterior 2 a 2592x1944**: La cámara ya entrega 5 MP en su perfil H.264; la configuración declaraba 1920x1080 y la imagen 4:3 se aplastaba en 16:9. Ahora se declara la resolución real.
+- **Detección · YOLO a 1280 px en exteriores**: Las personas lejanas (por ejemplo junto al portón) no se veían a 640 px. La GPU de Thor tiene holgura, por lo que las cámaras exteriores usan 1280 px (YOLO_HIRES_IMGSZ).
+- **Línea de tiempo · Timbres sin captura**: Los timbres anteriores a la corrección muestran la captura del visitante que el videoportero registró a menos de 90 s.
+- **Interfaz · Iconos centrados**: Segunda fila centrada, con botones más grandes, degradado y elevación al pasar el mouse.
+
 ## v2.13.0 — Alertas más limpias: timbre aparte, tránsito, mascotas conocidas y capturas con recuadro (2026-10-06)
 
 Se separan en la línea de tiempo el timbre, las cámaras Tuya y los sensores; el videoportero distingue visitas de simple tránsito; se dejan de alertar mascotas conocidas, personal identificado en el site y personas con bicicleta; y las capturas de calle muestran el cuadro completo con el recuadro de la persona.

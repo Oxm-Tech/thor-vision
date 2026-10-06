@@ -80,6 +80,7 @@ async def lifespan(app: FastAPI):
     )
     vision_models = VisionModels(device="cuda:0", yolo_conf=0.25)
     vision_models.setup()
+    vision_models.hires_cams = {c.id for c in config.cameras if getattr(c, "zone", "") == "exterior"}
     app.state.vision_models = vision_models
 
     visit_manager = None

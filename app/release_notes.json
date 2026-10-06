@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.13.1",
+    "date": "2026-10-06",
+    "name": "Exteriores a 5 MP, YOLO de mayor tamaño y timbres con captura",
+    "summary": "Exterior 2 pasa a 2592x1944 sin deformar la imagen, las cámaras exteriores detectan personas con YOLO a 1280 px, los timbres viejos muestran al visitante cercano y el encabezado queda centrado.",
+    "highlights": [
+      {
+        "area": "Cámaras",
+        "title": "Exterior 2 a 2592x1944",
+        "text": "La cámara ya entrega 5 MP en su perfil H.264; la configuración declaraba 1920x1080 y la imagen 4:3 se aplastaba en 16:9. Ahora se declara la resolución real."
+      },
+      {
+        "area": "Detección",
+        "title": "YOLO a 1280 px en exteriores",
+        "text": "Las personas lejanas (por ejemplo junto al portón) no se veían a 640 px. La GPU de Thor tiene holgura, por lo que las cámaras exteriores usan 1280 px (YOLO_HIRES_IMGSZ)."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Timbres sin captura",
+        "text": "Los timbres anteriores a la corrección muestran la captura del visitante que el videoportero registró a menos de 90 s."
+      },
+      {
+        "area": "Interfaz",
+        "title": "Iconos centrados",
+        "text": "Segunda fila centrada, con botones más grandes, degradado y elevación al pasar el mouse."
+      }
+    ]
+  },
+  {
     "version": "2.13.0",
     "date": "2026-10-06",
     "name": "Alertas más limpias: timbre aparte, tránsito, mascotas conocidas y capturas con recuadro",

@@ -217,6 +217,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | POST | `/api/person-visits/move` | Move Visits |  | MoveBody |
 | GET | `/api/person-visits/{vid}/body` | Visit Body | `vid`* |  |
 | GET | `/api/person-visits/{vid}/face` | Visit Face | `vid`* |  |
+| GET | `/api/person-visits/{vid}/scene` | Visit Scene | `vid`* |  |
 
 ## pets
 

@@ -43,6 +43,7 @@ _OBJECT_MIN_CONF = float(os.environ.get("YOLO_OBJECT_CONF", "0.35"))
 # Validacion de personas con esqueleto (YOLO26-pose): una persona real tiene puntos del cuerpo visibles; un sofa, una bolsa o un reflejo no.
 _POSE_CAMS = {c.strip() for c in os.environ.get("POSE_CAMS", "cam-sala-juntas,cam-215,cam-120,cam-113,cam-118,cam-228,cam-236,cam-cowork").split(",") if c.strip()}
 _POSE_DROP = {c.strip() for c in os.environ.get("POSE_DROP_CAMS", "cam-sala-juntas,cam-215").split(",") if c.strip()}   # en el resto solo se mide
+_HIRES_IMGSZ = int(os.environ.get("YOLO_HIRES_IMGSZ", "1280"))     # camaras exteriores de 5 MP: la GPU de Thor esta casi libre
 _POSE_MIN_KP = int(os.environ.get("POSE_MIN_KP", "6"))
 _POSE_PATH = os.environ.get("POSE_MODEL", "/app/data/models/yolo26n-pose.pt")
 _POSE_URL = "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n-pose.pt"
@@ -61,6 +62,7 @@ class VisionModels:
         self.yolo_conf = yolo_conf
         self._yolo = None
         self.faces_only: set = set()      # camaras en modo solo-rostros (videoportero)
+        self.hires_cams: set = set()      # camaras con mucha resolucion (5 MP): YOLO a mayor tamano para ver personas lejanas
         self._face_app = None
         self._pose = None
         self._pose_failed = False
@@ -158,7 +160,7 @@ class VisionModels:
         t0 = time.monotonic()
         if cam_id in self.faces_only:
             return self._process_faces_only(frame, cam_id, face_db, t0)
-        person_bboxes, objects = self._detect(frame)
+        person_bboxes, objects = self._detect(frame, _HIRES_IMGSZ if cam_id in self.hires_cams else 640)
         person_bboxes, objects = zones.filter_detections(cam_id, person_bboxes, objects, int(frame.shape[1]), int(frame.shape[0]))
         if cam_id in _POSE_CAMS and person_bboxes:
             person_bboxes = self._validate_persons(frame, cam_id, person_bboxes)
@@ -187,7 +189,7 @@ class VisionModels:
         return CameraDetection(cam_id=cam_id, person_count=len(boxes), person_bboxes=boxes, objects=[], faces=faces,
                                updated_at=time.time(), inference_ms=(time.monotonic() - t0) * 1000, frame_w=int(w), frame_h=int(h))
 
-    def _detect(self, frame: np.ndarray) -> tuple:
+    def _detect(self, frame: np.ndarray, imgsz: int = 640) -> tuple:
         """(personas [(x1,y1,x2,y2)], objetos [{c, conf, b}]) en una sola pasada."""
         if self._yolo is None:
             return [], []
@@ -197,7 +199,7 @@ class VisionModels:
                 frame,
                 classes=classes,
                 conf=self.yolo_conf,
-                imgsz=640,
+                imgsz=imgsz,
                 verbose=False,
                 device=self.device,
             )

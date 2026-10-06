@@ -39,6 +39,7 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
                        "type": _effective_type(d),
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],
                        "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
+    _fill_ring_images(db, events)
     events += _street_traffic(db, config, since, until)
     if cam_id:
         events = [e for e in events if e["cam"] == cam_id]
@@ -48,6 +49,20 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
     if iot is not None:
         cams += [{"id": d["alias"], "name": d["name"], "zone": "tuya"} for d in iot.devices.values() if d.get("alias") and (not cam_id or d["alias"] == cam_id)]
     return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated}
+
+
+def _fill_ring_images(db, events: list) -> None:
+    """Timbres viejos que quedaron sin captura: se usa la persona que el videoportero registro a menos de 90 s del timbre."""
+    for e in events:
+        if e["type"] != "timbre_videoportero" or e.get("img"):
+            continue
+        with db._lock:
+            row = db._conn.execute(
+                "SELECT id, scene IS NOT NULL, face IS NOT NULL FROM person_visits WHERE cam_id=? AND start_ts BETWEEN ? AND ? AND (face IS NOT NULL OR body IS NOT NULL) "
+                "ORDER BY ABS(start_ts - ?) LIMIT 1", (e["cam"], e["ts"] - 90, e["ts"] + 90, e["ts"])).fetchone()
+        if row:
+            e["img"] = f"/api/person-visits/{row[0]}/{'scene' if row[1] else ('face' if row[2] else 'body')}"
+            e["text"] = (e["text"] + " (captura del visitante cercano)")[:200]
 
 
 def _effective_type(d: dict) -> str:
