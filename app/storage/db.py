@@ -610,7 +610,7 @@ class EventDB:
 
     # ── Personas: visitas y sujetos ───────────────────────────────────────
 
-    _PV_COLS = frozenset({"end_ts", "hits", "status", "static", "fp", "face", "face_score",
+    _PV_COLS = frozenset({"body_emb", "attrs", "end_ts", "hits", "status", "static", "fp", "face", "face_score",
                           "body", "body_score", "embedding", "n_emb", "known_name",
                           "known_conf", "vlm_desc", "subject_id"})
 

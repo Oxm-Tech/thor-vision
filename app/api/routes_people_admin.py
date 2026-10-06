@@ -560,16 +560,24 @@ def gallery(sid: int, request: Request, limit: int = 120, offset: int = 0):
             raise HTTPException(404, "sujeto inexistente")
         tot = db._conn.execute("SELECT COUNT(*) FROM person_visits WHERE subject_id=? AND fp=0", (sid,)).fetchone()[0]
         rows = db._conn.execute(
-            "SELECT id, cam_id, start_ts, face IS NOT NULL, body IS NOT NULL, COALESCE(vlm_desc,'') FROM person_visits "
+            "SELECT id, cam_id, start_ts, face IS NOT NULL, body IS NOT NULL, COALESCE(vlm_desc,''), attrs FROM person_visits "
             "WHERE subject_id=? AND fp=0 ORDER BY start_ts DESC LIMIT ? OFFSET ?", (sid, min(limit, 300), offset)).fetchall()
     return {"id": sid, "name": s[0], "category": s[1], "total": tot,
-            "visits": [{"id": i, "cam": names.get(c, c), "cam_id": c, "ts": t, "face": bool(f), "body": bool(b), "desc": d[:160]} for i, c, t, f, b, d in rows]}
+            "visits": [{"id": i, "cam": names.get(c, c), "cam_id": c, "ts": t, "face": bool(f), "body": bool(b), "desc": d[:160], "attrs": _attrs(at)} for i, c, t, f, b, d, at in rows]}
 
 
 class MoveBody(BaseModel):
     ids: list
     to: Optional[int] = None          # None = identidad nueva
     name: Optional[str] = None
+
+
+def _attrs(raw) -> dict:
+    import json
+    try:
+        return json.loads(raw) if raw else {}
+    except ValueError:
+        return {}
 
 
 def _recompute(db, sid: int) -> None:

@@ -235,6 +235,19 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/api/pipeline` | Pipeline |  |  |
 
+## presence
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| POST | `/api/presence/backfill` | Backfill | `hours` |  |
+| GET | `/api/presence/stats` | Stats | `hours` |  |
+
+## reglas
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/reglas` | Rules Page |  |  |
+
 ## releases
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
@@ -247,6 +260,13 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/api/reports` | List Reports | `limit` |  |
 | POST | `/api/reports/generate` | Generate Report Now | `period_hours` |  |
+
+## rules
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/rules` | Rules | `days` |  |
+| POST | `/api/rules/analyze` | Analyze |  | AnalyzeBody |
 
 ## searxng
 

@@ -80,11 +80,17 @@ async def lifespan(app: FastAPI):
     )
     vision_models = VisionModels(device="cuda:0", yolo_conf=0.25)
     vision_models.setup()
+    app.state.vision_models = vision_models
 
     visit_manager = None
     if os.environ.get("TRACKER_ENABLED", "true").lower() == "true":
         from app.vision.visits import VisitManager
         visit_manager = VisitManager(db)
+        try:
+            from app.vision.bodyid import BodyID
+            visit_manager.bodyid = BodyID(db)
+        except (ImportError, OSError) as exc:
+            logger.warning("BodyID apagado: %s", exc)
         visit_manager.zones = {c.id: c.zone for c in config.cameras}
     app.state.visits = visit_manager
 
@@ -365,6 +371,8 @@ app.include_router(iot_router)
 app.include_router(people_router)
 from app.api.routes_rules import router as rules_router
 app.include_router(rules_router)
+from app.api.routes_presence import router as presence_router
+app.include_router(presence_router)
 
 
 @app.get("/reglas", response_class=HTMLResponse)

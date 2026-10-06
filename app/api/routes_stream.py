@@ -188,8 +188,8 @@ def snapshot(cam_id: str, request: Request, hd: int = 0):
     manager   = _get_manager(request)
     store     = _get_store(request)
     cfg       = request.app.state.config.global_cfg
-    max_w     = cfg.frame_width
-    quality   = min(cfg.jpeg_quality, 70)
+    max_w     = 2560 if hd else cfg.frame_width        # HD: resolucion nativa de la camara (hasta 2560 px de ancho)
+    quality   = 85 if hd else min(cfg.jpeg_quality, 70)
 
     frame = manager.get_frame(cam_id)
     if hd:                                          # captura a resolucion completa de la propia camara (SUNAPI), si la soporta

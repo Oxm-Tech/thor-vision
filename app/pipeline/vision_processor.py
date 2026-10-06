@@ -40,6 +40,20 @@ _OBJECT_NAMES = {1: "bicicleta", 2: "auto", 3: "moto", 5: "autobus", 7: "camion"
 _OBJECTS_ENABLED = os.environ.get("YOLO_OBJECTS_ENABLED", "true").lower() == "true"
 _OBJECT_MIN_CONF = float(os.environ.get("YOLO_OBJECT_CONF", "0.35"))
 
+# Validacion de personas con esqueleto (YOLO26-pose): una persona real tiene puntos del cuerpo visibles; un sofa, una bolsa o un reflejo no.
+_POSE_CAMS = {c.strip() for c in os.environ.get("POSE_CAMS", "cam-sala-juntas,cam-215,cam-120,cam-113,cam-118,cam-228,cam-236,cam-cowork").split(",") if c.strip()}
+_POSE_DROP = {c.strip() for c in os.environ.get("POSE_DROP_CAMS", "cam-sala-juntas,cam-215").split(",") if c.strip()}   # en el resto solo se mide
+_POSE_MIN_KP = int(os.environ.get("POSE_MIN_KP", "6"))
+_POSE_PATH = os.environ.get("POSE_MODEL", "/app/data/models/yolo26n-pose.pt")
+_POSE_URL = "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n-pose.pt"
+
+
+def _iou(a, b) -> float:
+    ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = ix * iy
+    return inter / float((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter + 1e-9)
+
 
 class VisionModels:
     def __init__(self, device: str = "cpu", yolo_conf: float = 0.25):
@@ -48,6 +62,64 @@ class VisionModels:
         self._yolo = None
         self.faces_only: set = set()      # camaras en modo solo-rostros (videoportero)
         self._face_app = None
+        self._pose = None
+        self._pose_failed = False
+        self.pose_stats = {"checked": 0, "confirmed": 0, "rejected": 0, "dropped": 0, "by_cam": {}}
+
+    def _pose_model(self):
+        if self._pose is not None or self._pose_failed:
+            return self._pose
+        try:
+            from ultralytics import YOLO
+            if not os.path.exists(_POSE_PATH):
+                import urllib.request
+                os.makedirs(os.path.dirname(_POSE_PATH), exist_ok=True)
+                urllib.request.urlretrieve(_POSE_URL, _POSE_PATH)
+            self._pose = YOLO(_POSE_PATH)
+            self._pose(np.zeros((64, 64, 3), dtype=np.uint8), verbose=False, imgsz=640, device=self.device)
+            logger.info("YOLO26-pose cargado (%s) para validar personas en %s; descarta en %s", _POSE_PATH, sorted(_POSE_CAMS), sorted(_POSE_DROP))
+        except (OSError, ImportError, RuntimeError, ValueError) as exc:
+            logger.warning("YOLO26-pose no disponible (sin validacion por esqueleto): %s", exc)
+            self._pose_failed = True
+            self._pose = None
+        return self._pose
+
+    def _validate_persons(self, frame: np.ndarray, cam_id: str, persons: list) -> list:
+        """Marca cada persona de YOLO con la cantidad de puntos del cuerpo visibles; en las camaras de _POSE_DROP descarta las que no tienen esqueleto."""
+        model = self._pose_model()
+        if model is None or not persons:
+            return persons
+        try:
+            res = model(frame, imgsz=640, conf=0.25, verbose=False, device=self.device)
+        except (RuntimeError, ValueError) as exc:
+            logger.debug("pose error: %s", exc)
+            return persons
+        dets = []
+        for r in res:
+            if r.keypoints is None or r.boxes is None:
+                continue
+            kc = r.keypoints.conf.cpu().numpy() if r.keypoints.conf is not None else None
+            for i, box in enumerate(r.boxes):
+                dets.append((tuple(box.xyxy[0].tolist()), int((kc[i] > 0.4).sum()) if kc is not None else 0))
+        keep = []
+        st = self.pose_stats
+        cs = st["by_cam"].setdefault(cam_id, {"checked": 0, "rejected": 0, "dropped": 0})
+        for p in persons:
+            best = max(((_iou(p, d[0]), d[1]) for d in dets), default=(0.0, 0), key=lambda t: t[0])
+            ok = best[0] >= 0.25 and best[1] >= _POSE_MIN_KP
+            st["checked"] += 1
+            cs["checked"] += 1
+            if ok:
+                st["confirmed"] += 1
+            else:
+                st["rejected"] += 1
+                cs["rejected"] += 1
+            if ok or cam_id not in _POSE_DROP:
+                keep.append(p)
+            else:
+                st["dropped"] += 1
+                cs["dropped"] += 1
+        return keep
 
     def setup(self) -> None:
         _apply_thread_limits()
@@ -88,6 +160,8 @@ class VisionModels:
             return self._process_faces_only(frame, cam_id, face_db, t0)
         person_bboxes, objects = self._detect(frame)
         person_bboxes, objects = zones.filter_detections(cam_id, person_bboxes, objects, int(frame.shape[1]), int(frame.shape[0]))
+        if cam_id in _POSE_CAMS and person_bboxes:
+            person_bboxes = self._validate_persons(frame, cam_id, person_bboxes)
         faces = self._detect_faces(frame, face_db, person_bboxes)
         return CameraDetection(
             cam_id=cam_id,

@@ -146,6 +146,7 @@ class VisitManager:
         self._tracks: dict = {}
         self._next_tid: dict = {}
         self._subjects: dict = {}     # id -> {emb, n, name, named}
+        self.bodyid = None                 # BodyID (fase 1): embedding de cuerpo y color de ropa al cerrar cada visita
         self.visit_cb: dict = {}           # cam_id -> callable(dict) al cerrarse una visita (alertas del videoportero)
         self.zones: dict = {}         # cam_id -> zone (interior/exterior/garage)
         self._analyzer = None
@@ -409,6 +410,8 @@ class VisitManager:
                         cam_id, tr.visit_id, qs, qn, qp, tr.snap_n, tr.pre_n, tr.face_src)
         self._flush(tr, time.time(), "closed")
         self.stats["visits_closed"] += 1
+        if self.bodyid is not None and tr.body and not tr.static and tr.visit_id is not None:
+            self.bodyid.submit(tr.visit_id, tr.body)
         cb = self.visit_cb.get(cam_id)
         if cb is not None and tr.visit_id is not None and not tr.static:
             try:

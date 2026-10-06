@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.12.0 — Fase 1: identidad por cuerpo, color de ropa y validación por esqueleto (2026-10-06)
+
+Cada visita cierra con un embedding de cuerpo (GPU) y el color de su ropa, y las que no tienen rostro reciben una sugerencia de quién podrían ser; las personas dudosas de YOLO se validan con un esqueleto (YOLO26-pose).
+
+- **Reconocimiento · Identidad por cuerpo (sugerencias)**: Modelo de re-identificación de personas (ONNX en la GPU, ~3 ms) sobre la mejor captura de cuerpo de cada visita. Con rostro confirmado separa a las personas con AUC 0.73: es una señal moderada, por eso solo sugiere (parecido alto con alguien con nombre visto en las últimas 12 h y ropa compatible) y nunca asigna ni fusiona.
+- **Reconocimiento · Color de ropa por visita**: Color de la parte de arriba y de abajo; se guarda con la visita y se muestra en la línea de tiempo de calle y en la galería.
+- **Detección · Validación por esqueleto**: YOLO26-pose confirma las personas de YOLO en cámaras interiores (puntos del cuerpo visibles). En Cocina y Sala de Juntas descarta las que no tienen esqueleto (sillas, perros, reflejos que se contaban como persona); en el resto solo mide.
+- **API · /api/presence/stats y backfill**: Porcentaje de visitas identificadas por rostro y con sugerencia por cámara, estadísticas de los modelos y procesamiento de visitas anteriores.
+- **Cámaras · HD a resolución nativa**: La captura HD de la vista de cámara usa la resolución nativa (hasta 2560 px) también en las cámaras de 5 MP.
+
 ## v2.11.0 — Reglas de alertas, modo oscuro fijo y línea de tiempo sincronizada (2026-10-06)
 
 Página de reglas con datos reales y análisis con el modelo, modo oscuro en todas las páginas, brillo que sigue al mouse y la lista de cada cámara sincronizada con su línea de tiempo.

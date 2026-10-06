@@ -56,14 +56,21 @@ def _street_traffic(db, config, since, until) -> list:
         return []
     with db._lock:
         rows = db._conn.execute(
-            "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
+            "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc, v.attrs FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
             f"WHERE v.fp=0 AND v.static=0 AND v.start_ts>=? AND v.start_ts<=? AND v.cam_id IN ({','.join('?' * len(ext))}) "
             "AND (s.named=1 OR v.end_ts - v.start_ts >= 8) ORDER BY v.start_ts DESC LIMIT 600", (since, until, *ext)).fetchall()
     out = []
-    for vid, ts, cam, name, named, desc in rows:
+    for vid, ts, cam, name, named, desc, at in rows:
         who = name if named else "Persona sin identificar"
+        try:
+            a = json.loads(at) if at else {}
+        except ValueError:
+            a = {}
+        cl = ", ".join(f"{k} {a[v]}" for k, v in (("arriba", "upper"), ("abajo", "lower")) if a.get(v))
+        g = a.get("guess")
+        extra = (f" · ropa: {cl}" if cl else "") + (f" · ¿{g['name']}? {round(g['sim'] * 100)}%" if g and not named else "")
         out.append({"id": f"v{vid}", "ts": ts, "cam": cam, "people": 1, "type": "trafico_calle", "sev": "none",
-                    "text": (f"{who} en la calle" + (f": {desc}" if desc else ""))[:160], "review": None,
+                    "text": (f"{who} en la calle" + (f": {desc}" if desc else "") + extra)[:220], "review": None,
                     "img": f"/api/person-visits/{vid}/body"})
     return out
 

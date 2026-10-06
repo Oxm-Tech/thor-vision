@@ -73,7 +73,7 @@ async function gallery(off){
     <button class="btn pri" id="mv">Mover a otra identidad…</button><button class="btn" id="nw">Sacar a una identidad nueva</button><button class="btn bad" id="del">Eliminar</button><span id="n" class="help" style="margin:0"></span></div>
     <div class="grid">${shown.map(v => `<div class="th${sel.has(v.id) ? ' sel' : ''}" data-id="${v.id}"><input class="c" type="checkbox" ${sel.has(v.id) ? 'checked' : ''}>
       <img loading="lazy" src="/api/person-visits/${v.id}/${v.face ? 'face' : 'body'}" alt=""><button class="z" data-z="/api/person-visits/${v.id}/${v.body ? 'body' : 'face'}" title="Ampliar">⤢</button>
-      <div class="m">${esc(v.cam)} · ${fmt(v.ts)}${v.face ? '' : ' · sin rostro'}</div></div>`).join('')}</div>
+      <div class="m">${esc(v.cam)} · ${fmt(v.ts)}${v.face ? '' : ' · sin rostro'}${v.attrs && v.attrs.upper ? ' · ' + esc(v.attrs.upper) + '/' + esc(v.attrs.lower || '?') : ''}${v.attrs && v.attrs.guess ? ' · ¿' + esc(v.attrs.guess.name) + '?' : ''}</div></div>`).join('')}</div>
     ${shown.length < d.total ? '<div class="row" style="margin-top:12px"><button class="btn" id="more">Cargar más</button></div>' : ''}`;
   const upd = () => { $('#n').textContent = sel.size + ' seleccionadas'; document.querySelectorAll('.th').forEach(t => { const on = sel.has(+t.dataset.id); t.classList.toggle('sel', on); t.querySelector('.c').checked = on; }); };
   upd();

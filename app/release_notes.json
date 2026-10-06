@@ -1,5 +1,38 @@
 [
   {
+    "version": "2.12.0",
+    "date": "2026-10-06",
+    "name": "Fase 1: identidad por cuerpo, color de ropa y validación por esqueleto",
+    "summary": "Cada visita cierra con un embedding de cuerpo (GPU) y el color de su ropa, y las que no tienen rostro reciben una sugerencia de quién podrían ser; las personas dudosas de YOLO se validan con un esqueleto (YOLO26-pose).",
+    "highlights": [
+      {
+        "area": "Reconocimiento",
+        "title": "Identidad por cuerpo (sugerencias)",
+        "text": "Modelo de re-identificación de personas (ONNX en la GPU, ~3 ms) sobre la mejor captura de cuerpo de cada visita. Con rostro confirmado separa a las personas con AUC 0.73: es una señal moderada, por eso solo sugiere (parecido alto con alguien con nombre visto en las últimas 12 h y ropa compatible) y nunca asigna ni fusiona."
+      },
+      {
+        "area": "Reconocimiento",
+        "title": "Color de ropa por visita",
+        "text": "Color de la parte de arriba y de abajo; se guarda con la visita y se muestra en la línea de tiempo de calle y en la galería."
+      },
+      {
+        "area": "Detección",
+        "title": "Validación por esqueleto",
+        "text": "YOLO26-pose confirma las personas de YOLO en cámaras interiores (puntos del cuerpo visibles). En Cocina y Sala de Juntas descarta las que no tienen esqueleto (sillas, perros, reflejos que se contaban como persona); en el resto solo mide."
+      },
+      {
+        "area": "API",
+        "title": "/api/presence/stats y backfill",
+        "text": "Porcentaje de visitas identificadas por rostro y con sugerencia por cámara, estadísticas de los modelos y procesamiento de visitas anteriores."
+      },
+      {
+        "area": "Cámaras",
+        "title": "HD a resolución nativa",
+        "text": "La captura HD de la vista de cámara usa la resolución nativa (hasta 2560 px) también en las cámaras de 5 MP."
+      }
+    ]
+  },
+  {
     "version": "2.11.0",
     "date": "2026-10-06",
     "name": "Reglas de alertas, modo oscuro fijo y línea de tiempo sincronizada",
