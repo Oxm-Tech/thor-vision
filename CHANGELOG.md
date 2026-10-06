@@ -2,6 +2,15 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.16.0 — Viajes entre cámaras, Tuya del garage como aviso de entrada y recolección de marcha (2026-10-06)
+
+Las visitas de una misma persona se enlazan entre cámaras en un viaje; si en algún punto se ve su rostro, las demás visitas quedan como sugerencia con confirmación en bloque. La cámara Tuya del garage anticipa la entrada y se recolecta, sin usarla aún, el vector de marcha a partir de la postura.
+
+- **Seguimiento · Viajes**: Cada visita cerrada se enlaza al viaje más compatible según tiempo entre cámaras (mapa en config/topology.yml), cuerpo (ReID), ropa e identidad por rostro; si dos viajes son igual de compatibles no se enlaza. Identidades > Viajes muestra los recorridos con visitas por confirmar y permite aceptarlos o rechazarlos.
+- **Tuya · Entrada anunciada por la Tuya del garage**: El movimiento de la cámara Tuya del garage abre una ventana de 60 s en la que se espera una visita en Garage frontal, reanaliza el pre-roll de esa cámara y, si no llega nadie, registra una alerta de baja severidad 'entrada probable sin captura'.
+- **Marcha · Recolección de rasgos de marcha**: Para cada visita en movimiento de cámaras interiores se muestrean ~3 s a 12 fps del búfer, se estima la postura con YOLO26-pose en la GPU y se guarda un vector de 8 rasgos normalizado por el torso. No se usa para identificar: /api/gait/eval mide su AUC con visitas de rostro confirmado.
+- **API · /api/journeys y /api/gait/eval**: Lista de viajes, aceptar/rechazar, estadísticas (visitas recuperadas por recorrido, entradas por Tuya) y evaluación de la marcha.
+
 ## v2.15.0 — Rostros: videoportero más sensible y mapa de dónde salen las mejores capturas (2026-10-06)
 
 El detector de rostros del videoportero usa entrada de 960 px y umbral 0.45 (medido sobre recortes reales: 54% a 88% de detección), y cada visita guarda en qué parte del encuadre salió su mejor rostro para ver dónde conviene captar.

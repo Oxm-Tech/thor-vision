@@ -669,6 +669,10 @@ class EventDB:
                 "created_ts=MIN(created_ts, (SELECT created_ts FROM subjects WHERE id=?)) WHERE id=?",
                 (src, src, dst))
             self._conn.execute("DELETE FROM subjects WHERE id=?", (src,))
+            try:
+                self._conn.execute("UPDATE journeys SET subject_id=? WHERE subject_id=?", (dst, src))
+            except sqlite3.OperationalError:
+                pass               # aun no existe la tabla de viajes
 
     def delete_subject(self, sid: int) -> bool:
         with self._lock:

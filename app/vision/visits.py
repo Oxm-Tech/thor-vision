@@ -124,6 +124,8 @@ class Track:
         self.face_q = 0.0
         self.face_xy: Optional[str] = None
         self.dims: tuple = (0, 0)
+        self.gait_done = False
+        self.first_bbox: tuple = bbox
         self.body: Optional[bytes] = None
         self.body_q = 0.0
         self.scene: Optional[bytes] = None
@@ -163,6 +165,7 @@ class VisitManager:
         self._tracks: dict = {}
         self._next_tid: dict = {}
         self._subjects: dict = {}     # id -> {emb, n, name, named}
+        self.gait = None                   # GaitCollector: rasgos de marcha por visita (recoleccion)
         self.bodyid = None                 # BodyID (fase 1): embedding de cuerpo y color de ropa al cerrar cada visita
         self.visit_cb: dict = {}           # cam_id -> callable(dict) al cerrarse una visita (alertas del videoportero)
         self.zones: dict = {}         # cam_id -> zone (interior/exterior/garage)
@@ -236,6 +239,12 @@ class VisitManager:
                 if tr is not None:
                     tr.dims = (getattr(result, "frame_w", 0) or 0, getattr(result, "frame_h", 0) or 0)
                     self._face_obs(tr, face, src)
+            for tr in tracks:
+                tr.dims = (getattr(result, "frame_w", 0) or tr.dims[0], getattr(result, "frame_h", 0) or tr.dims[1])
+                if (self.gait is not None and src == "stream" and not tr.gait_done and tr.visit_id is not None and tr.hits >= 5 and tr.dims[0]
+                        and math.hypot((tr.bbox[0] + tr.bbox[2]) / 2 - (tr.first_bbox[0] + tr.first_bbox[2]) / 2,
+                                       (tr.bbox[1] + tr.bbox[3]) / 2 - (tr.first_bbox[1] + tr.first_bbox[3]) / 2) > 0.5 * max(1, tr.bbox[3] - tr.bbox[1])):
+                    tr.gait_done = self.gait.submit(cam_id, tr.visit_id, tuple(tr.bbox), tr.dims) or tr.gait_done        # solo si la persona se mueve
             self._housekeeping(cam_id, tracks, now)
         if new_track and src == "stream" and self.burst_cb is not None:
             try:

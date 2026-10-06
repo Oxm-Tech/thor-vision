@@ -98,7 +98,9 @@ def _street_traffic(db, config, since, until) -> list:
             a = {}
         cl = ", ".join(f"{k} {a[v]}" for k, v in (("arriba", "upper"), ("abajo", "lower")) if a.get(v))
         g = a.get("guess")
-        extra = (f" · ropa: {cl}" if cl else "") + (f" · ¿{g['name']}? {round(g['sim'] * 100)}%" if g and not named else "")
+        jy = a.get("journey")
+        extra = ((f" · ropa: {cl}" if cl else "") + (f" · ¿{g['name']}? {round(g['sim'] * 100)}%" if g and not named else "")
+                 + (f" · probable {jy['name']} (por su recorrido)" if jy and not named else ""))
         out.append({"id": f"v{vid}", "ts": ts, "cam": cam, "people": 1, "type": "trafico_calle", "sev": "none",
                     "text": (f"{who} en la calle" + (f": {desc}" if desc else "") + extra)[:220], "review": None,
                     "img": f"/api/person-visits/{vid}/{'scene' if has_scene else 'body'}"})

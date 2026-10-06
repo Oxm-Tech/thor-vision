@@ -241,6 +241,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | POST | `/api/presence/backfill` | Backfill | `hours` |  |
+| GET | `/api/presence/capture-quality` | Capture Quality | `hours`, `grid_x`, `grid_y` |  |
 | GET | `/api/presence/stats` | Stats | `hours` |  |
 
 ## reglas

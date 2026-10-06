@@ -66,6 +66,7 @@ class IotListener:
         self._alerted_usage: set = set()
         self._recent: dict = {}          # (device, codigo, valor) -> ts: el mismo mensaje llega duplicado desde la nube
         self._last_motion: dict = {}     # device_id -> ts de la ultima alerta de movimiento/ruido
+        self.on_motion = None            # callable(alias, ts): aviso de movimiento de una camara Tuya (viajes y rafaga en la camara de entrada)
         self._stop = threading.Event()
         self._retry = threading.Event()      # se activa si el broker rechaza la conexion: se vuelve a leer data/mqtt.json y se reintenta
         self.status = {"connected": False, "error": "", "messages": 0}
@@ -129,6 +130,11 @@ class IotListener:
 
     def _camera_alert(self, dev_id: str, dev: dict, ts: float, code: str) -> None:
         """Movimiento (ipc_motion) o ruido fuerte (ipc_bang) de una camara Tuya: una alerta con captura por camara cada CAMERA_ALERT_COOLDOWN_S."""
+        if self.on_motion is not None and code == "ipc_motion":
+            try:
+                self.on_motion(dev.get("alias") or dev_id, ts)
+            except (TypeError, ValueError, KeyError, OSError, sqlite3.Error) as exc:
+                logger.warning("iot: on_motion: %s", exc)
         if ts - self._last_motion.get(dev_id, 0) < CAMERA_ALERT_COOLDOWN_S:
             return
         self._last_motion[dev_id] = ts

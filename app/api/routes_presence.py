@@ -74,3 +74,41 @@ def capture_quality(request: Request, hours: float = 168.0, grid_x: int = 8, gri
     out.sort(key=lambda z: -z["with_face"])
     return {"hours": hours, "grid": [grid_x, grid_y], "cams": out,
             "note": "El mapa se llena con las visitas nuevas (la posicion no se guardaba antes)."}
+
+
+@router.get("/api/gait/eval")
+def gait_eval(request: Request, min_per_id: int = 4):
+    """Mide si el vector de marcha separa a las personas: AUC entre pares de la misma identidad y de identidades distintas (visitas con rostro confirmado)."""
+    import json as _json
+
+    import numpy as np
+
+    from app.vision import gait
+    db = getattr(request.app.state, "db", None)
+    if db is None:
+        raise HTTPException(503, "sin base de datos")
+    with db._lock:
+        rows = db._conn.execute("SELECT g.feat, v.subject_id, g.cam_id, g.ts FROM gait_samples g JOIN person_visits v ON v.id=g.visit_id "
+                                "JOIN subjects s ON s.id=v.subject_id WHERE s.named=1 AND g.quality>=0.5").fetchall()
+        total = db._conn.execute("SELECT COUNT(*), AVG(quality), AVG(fps) FROM gait_samples").fetchone()
+    by: dict = {}
+    for f, sid, cam, ts in rows:
+        by.setdefault(sid, []).append((np.array(_json.loads(f)), ts))
+    keep = {s: v for s, v in by.items() if len(v) >= min_per_id}
+    if len(keep) < 2:
+        return {"samples": total[0], "quality_avg": round(total[1] or 0, 2), "fps_avg": round(total[2] or 0, 1), "identities_usable": len(keep),
+                "note": "Aun no hay suficientes muestras de personas identificadas (se necesitan >= %d por persona y 2 personas)." % min_per_id}
+    allv = np.stack([x for v in keep.values() for x, _ in v])
+    sd = allv.std(axis=0) + 1e-6
+    items = [(sid, (x - allv.mean(axis=0)) / sd, ts) for sid, v in keep.items() for x, ts in v]
+    pos, neg, pos_day, neg_day = [], [], [], []
+    for i in range(len(items)):
+        for j in range(i + 1, len(items)):
+            d = float(np.linalg.norm(items[i][1] - items[j][1]))
+            same_day = abs(items[i][2] - items[j][2]) < 86400
+            (pos if items[i][0] == items[j][0] else neg).append(d)
+            if same_day:
+                (pos_day if items[i][0] == items[j][0] else neg_day).append(d)
+    return {"samples": total[0], "quality_avg": round(total[1] or 0, 2), "fps_avg": round(total[2] or 0, 1), "identities_usable": len(keep), "labeled_samples": len(items),
+            "auc": round(gait.auc(pos, neg), 3), "auc_same_day": round(gait.auc(pos_day, neg_day), 3) if pos_day and neg_day else None, "features": gait.NAMES,
+            "decision": "usar solo si el AUC supera claramente 0.8 (el cuerpo/ReID dio 0.73)"}

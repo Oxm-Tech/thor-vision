@@ -109,6 +109,9 @@ async def lifespan(app: FastAPI):
     app.state.pets = PetCollector(db)
     vision_queue.hooks = [app.state.parked.update, app.state.pets.update]
     vision_queue.start()
+    if visit_manager is not None:
+        from app.vision.gait import GaitCollector
+        visit_manager.gait = GaitCollector(db, vision_models, manager._buffers)
 
     if visit_manager is not None and os.environ.get("PREROLL_ENABLED", "true").lower() == "true":
         from app.capture.preroll import PreRoll
@@ -226,6 +229,16 @@ async def lifespan(app: FastAPI):
         from app.iot.listener import IotListener
         app.state.iot = IotListener(db, snapshots, manager._buffers, {c.id: c.name for c in config.cameras})
         app.state.iot.start()
+        from app.vision.journeys import JourneyLinker
+        app.state.journeys = JourneyLinker(db, snapshots)
+        app.state.journeys.start()
+
+        def _tuya_motion(alias, ts, _j=app.state.journeys, _vq=vision_queue):
+            _j.tuya_event(alias, ts)
+            cam = (_j.topo.get("tuya_entries") or {}).get(alias)
+            if cam:
+                _vq.submit_burst(cam, "tuya")          # reanaliza el pre-roll de la camara de entrada: la persona puede estar entrando
+        app.state.iot.on_motion = _tuya_motion
     from app.devices.manager import DeviceManager
     app.state.devices = DeviceManager(db, config)
     from app.api.chat_agent import start_chat_probe
@@ -382,6 +395,8 @@ from app.api.routes_rules import router as rules_router
 app.include_router(rules_router)
 from app.api.routes_presence import router as presence_router
 app.include_router(presence_router)
+from app.api.routes_journeys import router as journeys_router
+app.include_router(journeys_router)
 
 
 @app.get("/reglas", response_class=HTMLResponse)

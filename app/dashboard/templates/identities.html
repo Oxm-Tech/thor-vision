@@ -62,6 +62,7 @@ th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{co
     <button data-t="revisar" class="on">Por revisar<span class="n" id="n-revisar"></span></button>
     <button data-t="empleado">Empleados<span class="n" id="n-empleado"></span></button>
     <button data-t="invitado">Invitados<span class="n" id="n-invitado"></span></button>
+    <button data-t="viajes">Viajes</button>
     <button data-t="sugerencias">Sugerencias</button>
     <button data-t="calle">Calle y videoportero</button>
     <a class="btn" href="/galeria" style="text-decoration:none">Miniaturas</a>
@@ -101,6 +102,7 @@ const HELP = {
   revisar: 'Personas detectadas que aún no clasificas. Pulsa la foto para ver sus parecidos; marca varias y clasifícalas juntas. Las que solo aparecen en cámaras exteriores no se listan.',
   empleado: 'Personal de OXM. Entran al reporte de asistencia. Sus capturas se conservan 90 días; su registro no caduca.',
   invitado: 'Externos: solo se cuentan y se guardan capturas (90 días).',
+  viajes: 'Recorridos de una misma persona entre cámaras (Garage → Acceso Site → Cocina…). Si en algún punto del recorrido se vio su rostro, las visitas de espalda o sin cara quedan como "probable". Confirma el viaje para asignarlas todas de una vez, o recházalo.',
   sugerencias: 'Personas sin nombre que se parecen a alguien ya identificado. Marca las que sí son la misma y pulsa Unir; con "No son la misma" esa sugerencia no vuelve a salir. Unir no se deshace (pero desde Miniaturas puedes sacar una captura equivocada).',
   calle: 'Personas que solo pasaron por la calle o el videoportero y nunca entraron. Quedan como registro (también en la línea de tiempo de alertas); no hace falta revisarlas. Si alguna entra, pasa sola a "Por revisar".',
   capturas: 'Dónde salen las mejores capturas de rostro en cada cámara: calidad mediana y un mapa del encuadre (más verde = mejor calidad media). Sirve para decidir dónde conviene captar o mover una cámara. El mapa se llena con las visitas nuevas.',
@@ -145,6 +147,7 @@ async function render(){
   if (tab === 'duplicados') return dups();
   if (tab === 'capturas') return capture();
   if (tab === 'sugerencias') return suggestions();
+  if (tab === 'viajes') return journeysView();
   tools.innerHTML = `<input type="text" id="q" placeholder="Buscar nombre…" value="${esc(q)}"><label class="chip"><input type="checkbox" id="on" ${onlyNamed ? 'checked' : ''}> solo con nombre</label>`
     + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button>' : '');
 
@@ -196,6 +199,24 @@ document.addEventListener('click', async e => {
     counts(); return tab === 'duplicados' ? dups() : load();
   }
 });
+async function journeysView(){
+  const v = $('#view'), tools = $('#tools');
+  const st = await J('/api/journeys/stats?hours=24');
+  tools.innerHTML = `<span class="chip">24 h: <b>${st.journeys.multi_camera}</b> viajes entre cámaras</span><span class="chip">visitas recuperadas por recorrido <b>${st.visits.recovered_by_journey}</b></span>`
+    + `<span class="chip">entradas por Tuya <b>${st.journeys.started_by_tuya}</b></span><span class="chip">Tuya sin captura <b>${(st.tuya_entries || {}).orphan || 0}</b></span>`;
+  const d = await J('/api/journeys?hours=24&pending=1&limit=40');
+  const hm = ts => new Date(ts * 1000).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', hour12: false});
+  v.innerHTML = d.journeys.length ? d.journeys.map(j => `<div class="card" data-j="${j.id}" style="flex-direction:column;gap:8px;padding:10px;margin-bottom:10px">
+      <div><b>¿${esc(j.subject.name)}?</b> <span class="meta">${hm(j.start_ts)}–${hm(j.last_ts)} · ${j.visits.length} visitas · ${j.to_confirm} por confirmar${j.origin === 'tuya' ? ' · anunciada por la Tuya del garage' : ''}</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${j.visits.map(x => `<div style="text-align:center;width:96px"><img loading="lazy" src="/api/person-visits/${x.id}/${x.face ? 'face' : 'body'}" style="width:96px;height:120px;object-fit:cover;border-radius:8px;background:#000;${x.identified ? 'outline:2px solid var(--accent)' : ''}"><div class="meta">${esc(x.cam)} ${hm(x.ts)}${x.identified ? ' ✓' : ''}${x.ropa.upper ? '<br>' + esc(x.ropa.upper) + '/' + esc(x.ropa.lower || '?') : ''}</div></div>`).join('')}</div>
+      <div class="acts"><button class="btn pri sm" data-jacc="${j.id}">Es ${esc(j.subject.name)}: asignar las ${j.to_confirm}</button><button class="btn sm" data-jrej="${j.id}">No es</button></div></div>`).join('')
+    : '<div class="empty">No hay viajes por confirmar. Aparecen cuando una persona identificada por rostro tiene visitas anteriores o posteriores sin identidad.</div>';
+  v.onclick = async e => {
+    const a = e.target.closest('[data-jacc]'), r = e.target.closest('[data-jrej]');
+    if (a){ const x = await send(`/api/journeys/${a.dataset.jacc}/accept`, 'POST', {}); alert('Visitas asignadas: ' + x.assigned); counts(); journeysView(); }
+    if (r){ await send(`/api/journeys/${r.dataset.jrej}/reject`, 'POST', {}); journeysView(); }
+  };
+}
 async function capture(){
   const v = $('#view'); $('#tools').innerHTML = '';
   const d = await J('/api/presence/capture-quality?hours=168');
