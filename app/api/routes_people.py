@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+import sqlite3
+
 from fastapi import APIRouter, Body, Request, Response
 from fastapi.responses import JSONResponse
 
@@ -31,6 +33,11 @@ def rename_subject(sid: int, request: Request, payload: dict = Body(...)):
     m = _mgr(request)
     if not name or m is None or not m.rename_subject(sid, name):
         return JSONResponse(status_code=400, content={"error": "nombre invalido o sujeto inexistente"})
+    try:
+        from app.api.routes_people_admin import consolidate_db
+        consolidate_db(request.app.state.db, m)          # si ya existe otra identidad con ese nombre, se unen
+    except (ImportError, AttributeError, sqlite3.Error):
+        pass
     return {"ok": True, "name": name}
 
 

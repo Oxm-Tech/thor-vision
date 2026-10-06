@@ -62,7 +62,9 @@ th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{co
     <button data-t="revisar" class="on">Por revisar<span class="n" id="n-revisar"></span></button>
     <button data-t="empleado">Empleados<span class="n" id="n-empleado"></span></button>
     <button data-t="invitado">Invitados<span class="n" id="n-invitado"></span></button>
+    <button data-t="sugerencias">Sugerencias</button>
     <button data-t="calle">Calle y videoportero</button>
+    <a class="btn" href="/galeria" style="text-decoration:none">Miniaturas</a>
     <button data-t="ocupacion">Ocupación</button>
     <button data-t="asistencia">Asistencia</button>
     <button data-t="duplicados">Duplicados</button>
@@ -98,6 +100,7 @@ const HELP = {
   revisar: 'Personas detectadas que aún no clasificas. Pulsa la foto para ver sus parecidos; marca varias y clasifícalas juntas. Las que solo aparecen en cámaras exteriores no se listan.',
   empleado: 'Personal de OXM. Entran al reporte de asistencia. Sus capturas se conservan 90 días; su registro no caduca.',
   invitado: 'Externos: solo se cuentan y se guardan capturas (90 días).',
+  sugerencias: 'Personas sin nombre que se parecen a alguien ya identificado. Marca las que sí son la misma y pulsa Unir; con "No son la misma" esa sugerencia no vuelve a salir. Unir no se deshace (pero desde Miniaturas puedes sacar una captura equivocada).',
   calle: 'Personas que solo pasaron por la calle o el videoportero y nunca entraron. Quedan como registro (también en la línea de tiempo de alertas); no hace falta revisarlas. Si alguna entra, pasa sola a "Por revisar".',
   ocupacion: 'Cuánta gente hay en las cámaras interiores y el Garage frontal: ahora, por hora y en el pico del día. Las exteriores y el videoportero no cuentan.',
   asistencia: 'Reporte automático solo de empleados: primera y última vez vistos y minutos en oficina.',
@@ -127,7 +130,7 @@ function card(p){
       <div class="nm">${esc(p.name)} <button data-a="name" title="Poner nombre">✎</button></div>
       <div class="meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${(p.cam_ids || []).map((id, k) => `<a class="camlink" href="/camara/${encodeURIComponent(id)}" title="Abrir la vista de esta cámara y sus alertas">${esc(p.cams[k] || id)}</a>`).join(', ') || '–'}</div>
       ${p.last_desc ? `<div class="meta" title="Lo último que el VLM vio de esta persona">${esc(p.last_desc)}</div>` : ''}
-      <div class="acts">${p.match ? `<button class="btn pri sm wide" data-a="merge" data-from="${p.id}" data-into="${p.match.id}">Sí, es ${esc(p.match.name)}</button>` : ''}${other}<button class="btn sm wide" data-a="sim">Parecidos</button></div>
+      <div class="acts">${p.match ? `<button class="btn pri sm wide" data-a="merge" data-from="${p.id}" data-into="${p.match.id}">Sí, es ${esc(p.match.name)}</button><button class="btn sm wide" data-a="nomatch" data-from="${p.id}" data-into="${p.match.id}">No es ${esc(p.match.name)}</button>` : ''}${other}<button class="btn sm wide" data-a="sim">Parecidos</button><a class="btn sm wide" style="text-align:center;text-decoration:none" href="/galeria?kind=persona&id=${p.id}">Miniaturas</a></div>
     </div></div>`;
 }
 async function render(){
@@ -138,15 +141,10 @@ async function render(){
   if (tab === 'asistencia') return attendance();
   if (tab === 'ocupacion') return occupancy();
   if (tab === 'duplicados') return dups();
+  if (tab === 'sugerencias') return suggestions();
   tools.innerHTML = `<input type="text" id="q" placeholder="Buscar nombre…" value="${esc(q)}"><label class="chip"><input type="checkbox" id="on" ${onlyNamed ? 'checked' : ''}> solo con nombre</label>`
-    + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button><button class="btn sm" id="auto" title="Une a cada persona sin nombre con la persona identificada a la que más se parece (solo quienes entraron)">Unir sugeridos (≥50%)</button>' : '');
-  if ($('#auto')) $('#auto').onclick = async () => {
-    const d = await send('/api/people/accept-suggestions', 'POST', {min_sim: 0.5, dry: true});
-    if (!d.candidates.length) return alert('No hay sugerencias con 50% o más de parecido.');
-    if (!confirm('Se unirán ' + d.candidates.length + ' personas a la identidad más parecida:\n' + d.candidates.slice(0, 12).map(c => '· #' + c.from + ' → ' + c.name + ' (' + Math.round(c.sim * 100) + '%)').join('\n') + '\n\nNo se deshace. ¿Continuar?')) return;
-    const r = await send('/api/people/accept-suggestions', 'POST', {min_sim: 0.5, dry: false});
-    alert('Identidades unidas: ' + r.merged); counts(); load();
-  };
+    + (tab === 'revisar' ? '<button class="btn sm" id="all">Seleccionar visibles</button>' : '');
+
   $('#q').oninput = e => { q = e.target.value; clearTimeout(render.t); render.t = setTimeout(load, 250); };
   $('#on').onchange = e => { onlyNamed = e.target.checked; load(); };
   if ($('#all')) $('#all').onclick = () => { cache.forEach(p => sel.add(p.id)); load(true); bulk(); };
@@ -181,12 +179,44 @@ document.addEventListener('click', async e => {
     if (n === null) return; await send(`/api/subjects/${id}`, 'PATCH', {name: n.trim()}); return load();
   }
   if (a === 'sim') return similar(id, c);
+  if (a === 'nomatch'){ await send('/api/people/reject', 'POST', {a: +el.dataset.from, b: +el.dataset.into}); return load(); }
   if (a === 'merge'){
     if (!confirm('¿Fusionar? Esto une todo el historial de ambas identidades y no se deshace.')) return;
     await send(`/api/subjects/${el.dataset.from}/merge`, 'POST', {into: +el.dataset.into});
     counts(); return tab === 'duplicados' ? dups() : load();
   }
 });
+async function suggestions(){
+  const v = $('#view'), tools = $('#tools');
+  v.innerHTML = '<div class="empty">Buscando parecidos…</div>';
+  const d = await J('/api/people/suggestions?min_sim=0.4&limit=150');
+  const key = p => p.from + '>' + p.into;
+  tools.innerHTML = '<button class="btn sm" id="s-all">Seleccionar ≥ 60%</button><button class="btn sm" id="s-none">Ninguna</button><button class="btn pri sm" id="s-go">Unir seleccionadas</button><span class="chip" id="s-n"></span>';
+  const picked = new Set();
+  const upd = () => { $('#s-n').textContent = picked.size + ' seleccionadas de ' + d.pairs.length; v.querySelectorAll('.sgrow').forEach(r => { const on = picked.has(r.dataset.k); r.classList.toggle('sel', on); r.querySelector('input').checked = on; }); };
+  const img = id => `<img loading="lazy" src="/api/subjects/${id}/face" onerror="this.onerror=null;this.src='/api/subjects/${id}/body'" alt="" style="width:92px;height:92px;object-fit:cover;border-radius:8px;background:#000">`;
+  v.innerHTML = d.pairs.length ? d.pairs.map(p => `<div class="sgrow card" data-k="${key(p)}" style="display:flex;flex-direction:row;align-items:center;gap:12px;padding:8px;margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" style="width:20px;height:20px">
+      <div style="text-align:center">${img(p.from)}<div class="meta">${esc(p.from_name)} · ${p.visits} vis.</div></div>
+      <div style="font-size:20px;color:var(--accent);min-width:56px;text-align:center">${Math.round(p.sim * 100)}%</div>
+      <div style="text-align:center">${img(p.into)}<div class="meta"><b>${esc(p.into_name)}</b> · ${esc(p.category)}</div></div>
+      <button class="btn sm" data-no="${key(p)}" style="margin-left:auto">No son la misma</button></div>`).join('') : '<div class="empty">Sin sugerencias nuevas.</div>';
+  upd();
+  v.onclick = async e => {
+    const no = e.target.closest('[data-no]');
+    if (no){ const [a, b] = no.dataset.no.split('>'); await send('/api/people/reject', 'POST', {a: +a, b: +b}); no.closest('.sgrow').remove(); d.pairs = d.pairs.filter(p => key(p) !== no.dataset.no); picked.delete(no.dataset.no); return upd(); }
+    const row = e.target.closest('.sgrow'); if (!row) return;
+    const k = row.dataset.k; picked.has(k) ? picked.delete(k) : picked.add(k); upd();
+  };
+  $('#s-all').onclick = () => { d.pairs.filter(p => p.sim >= 0.6).forEach(p => picked.add(key(p))); upd(); };
+  $('#s-none').onclick = () => { picked.clear(); upd(); };
+  $('#s-go').onclick = async () => {
+    if (!picked.size) return alert('Marca al menos una.');
+    if (!confirm('Se unirán ' + picked.size + ' identidades. No se deshace. ¿Continuar?')) return;
+    const r = await send('/api/people/merge-many', 'POST', {pairs: [...picked].map(k => { const [f, i] = k.split('>'); return {from: +f, into: +i}; })});
+    alert('Identidades unidas: ' + r.merged); counts(); suggestions();
+  };
+}
 async function similar(id, c){
   document.querySelectorAll('.drawer').forEach(d => d.remove());
   const d = await J(`/api/people/${id}/similar?min_sim=0.3&limit=10`);

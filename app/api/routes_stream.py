@@ -167,7 +167,7 @@ def stream(cam_id: str, request: Request):
 
 
 @router.get("/api/snapshot/{cam_id}")
-def snapshot(cam_id: str, request: Request):
+def snapshot(cam_id: str, request: Request, hd: int = 0):
     """
     Snapshot JPEG estático. Usado por el dashboard como polling
     (evita límite de 6 conexiones HTTP/1.1 concurrentes del navegador).
@@ -180,6 +180,15 @@ def snapshot(cam_id: str, request: Request):
     quality   = min(cfg.jpeg_quality, 70)
 
     frame = manager.get_frame(cam_id)
+    if hd:                                          # captura a resolucion completa de la propia camara (SUNAPI), si la soporta
+        vm = getattr(request.app.state, "visits", None)
+        g = (getattr(vm, "_grabbers", None) or {}).get(cam_id)
+        full = g.grab() if g is not None else None
+        if full is not None:
+            h, w = full.shape[:2]
+            if w > 1920:
+                full = cv2.resize(full, (1920, int(h * 1920 / w)), interpolation=cv2.INTER_AREA)
+            return Response(content=_jpeg_encode(full, 85), media_type="image/jpeg", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     if frame is None:
         return Response(
             content=_offline_frame(),

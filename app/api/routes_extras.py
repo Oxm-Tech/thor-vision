@@ -116,7 +116,7 @@ def pets_stats(request: Request):
 
 @router.get("/api/pets/crops")
 def pets_crops(request: Request, unlabeled: int = 1, label: Optional[str] = None, limit: int = 24,
-               order: str = "random", pred: Optional[str] = None):
+               order: str = "random", pred: Optional[str] = None, offset: int = 0):
     db = _db(request)
     sql, args = "SELECT id, cam_id, ts, cls, conf, label, pred_label, pred_conf FROM pet_crops WHERE ", []
     if label:
@@ -129,9 +129,9 @@ def pets_crops(request: Request, unlabeled: int = 1, label: Optional[str] = None
     if pred:
         sql += " AND pred_label=?"
         args.append(pred)
-    sql += " ORDER BY pred_conf DESC" if order == "confident" else " ORDER BY RANDOM()"
-    sql += " LIMIT ?"
-    args.append(min(limit, 60))
+    sql += {"confident": " ORDER BY pred_conf DESC", "recent": " ORDER BY ts DESC"}.get(order, " ORDER BY RANDOM()")
+    sql += " LIMIT ? OFFSET ?"
+    args.extend([min(limit, 60), max(0, offset)])
     names = {c.id: c.name for c in request.app.state.config.cameras}
     with db._lock:
         rows = db._conn.execute(sql, args).fetchall()

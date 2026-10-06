@@ -824,6 +824,7 @@ input:focus-visible, select:focus-visible { outline-offset:0; }
 .va-typing i { width:6px; height:6px; border-radius:50%; background:var(--text-muted); animation:va-dot 1s infinite ease-in-out; }
 .va-typing i:nth-child(2) { animation-delay:.15s; } .va-typing i:nth-child(3) { animation-delay:.3s; }
 @keyframes va-dot { 0%, 80%, 100% { opacity:.25; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
+.va-lb-inner img { min-height:46vh; max-width:92vw; max-height:78vh; object-fit:contain; }
 .va-lb-nav { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:10px; color:var(--text-secondary); }
 .va-lb-nav button { background:var(--bg-panel); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; padding:8px 18px; font-size:1.1rem; cursor:pointer; }
 .va-lb-nav button:hover { border-color:var(--oxm-blue); }
@@ -3411,15 +3412,15 @@ function _vaLightbox(img, nav){
     lb.className = 'modal-backdrop va-lightbox';
     lb.id = 'va-lightbox';
     lb.innerHTML = '<div class="va-lb-inner"><button class="modal-x" type="button" title="Cerrar">✕</button><img alt=""><div class="va-lb-cap"></div>'
-      + '<div class="va-lb-nav" hidden><button type="button" data-d="-1" title="Anterior (←)">‹</button><span></span><button type="button" data-d="1" title="Siguiente (→)">›</button></div></div>';
+      + '<div class="va-lb-nav" hidden><button type="button" data-d="-1" title="Anterior de esta cámara (←)">‹</button><span></span><button type="button" data-d="1" title="Siguiente de esta cámara (→)">›</button></div></div>';
     document.body.appendChild(lb);
     const close = () => { lb.hidden = true; };
     lb.querySelector('.modal-x').addEventListener('click', close);
     lb.addEventListener('click', e => { if (e.target === lb) close(); });
-    lb.querySelector('.va-lb-nav').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) _vaStep(+b.dataset.d, false); });
+    lb.querySelector('.va-lb-nav').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) _vaStep(+b.dataset.d, true); });
     let sx = null;                                   // deslizar con el dedo
     lb.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-    lb.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) _vaStep(dx < 0 ? 1 : -1, false); });
+    lb.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) _vaStep(dx < 0 ? 1 : -1, true); });
   }
   lb._nav = nav || null;
   const nv = lb.querySelector('.va-lb-nav');
@@ -3432,7 +3433,7 @@ function _vaLightbox(img, nav){
   lb.hidden = false;
 }
 
-// Navegacion del visor de la linea de tiempo: ←/→ alertas en orden de tiempo, ↑/↓ solo las de la misma camara.
+// Navegacion del visor de la linea de tiempo: ←/→ alertas de la misma camara, ↑/↓ todas las camaras, en orden de tiempo.
 function _tlViewer(list, i){
   const e = list[i];
   const cam = (TL.geom.cams.find(c => c.id === e.cam) || {}).name || e.cam;
@@ -3450,7 +3451,7 @@ function _vaStep(d, sameCam){
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('va-lightbox');
   if (!lb || lb.hidden || !lb._nav) return;
-  const k = { ArrowLeft:[-1, false], ArrowRight:[1, false], ArrowUp:[-1, true], ArrowDown:[1, true] }[e.key];
+  const k = { ArrowLeft:[-1, true], ArrowRight:[1, true], ArrowUp:[-1, false], ArrowDown:[1, false] }[e.key];
   if (k){ e.preventDefault(); _vaStep(k[0], k[1]); }
 });
 

@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.10.0 — Galería de miniaturas, sugerencias con selección y línea propia por cámara (2026-10-06)
+
+Se pueden validar y corregir las miniaturas de cada persona y mascota, las sugerencias de identidad se revisan y se unen por selección con opción de rechazo, y cada cámara tiene su propia línea de tiempo.
+
+- **Identidades · Galería /galeria**: Todas las miniaturas de una persona (o de cada mascota, etiquetadas y sugeridas por el modelo) con selección múltiple: mover a otra identidad, sacar a una nueva, eliminar o reetiquetar. El rostro promedio se recalcula al mover.
+- **Identidades · Sugerencias seleccionables y "No es"**: Nueva pestaña Sugerencias con las parejas parecidas (foto contra foto), selección múltiple y Unir seleccionadas; "No son la misma" (también en cada tarjeta) descarta la sugerencia para siempre. Se retira el botón que unía todo de golpe.
+- **Identidades · Nombres repetidos se unen solos**: Al poner un nombre que ya existe, ambas identidades se funden.
+- **Cámaras · Línea propia, HD y navegación**: La página de cada cámara tiene su línea de tiempo (histograma y puntos por tipo, clic abre la captura), imagen HD y el visor navegable. En el visor principal ← → recorren las alertas de la misma cámara y ↑ ↓ todas; las capturas se amplían.
+- **Ocupación · Menos ruido**: Las personas sin clasificar con visitas menores a 8 s ya no cuentan en la ocupación.
+
 ## v2.9.1 — Capturas del timbre, Tuya recuperado y vista por cámara (2026-10-06)
 
 Se corrige el fallo que dejaba sin captura al timbre y detuvo los eventos de Tuya, y se agrega una página por cámara con sus alertas navegables con el teclado.

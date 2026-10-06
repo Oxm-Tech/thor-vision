@@ -506,6 +506,15 @@ class VisitManager:
                 self._subjects[sid].update(name=name, named=True)
             return True
 
+    def reload_subjects(self) -> None:
+        """Recarga el cache de sujetos desde la base (tras mover visitas entre identidades)."""
+        with self._lock:
+            fresh = {}
+            for s in self.db.load_subjects():
+                emb = np.frombuffer(s["embedding"], dtype=np.float32).copy() if s["embedding"] else None
+                fresh[s["id"]] = {"emb": emb, "n": s["n_emb"] or 0, "name": s["name"], "named": bool(s["named"])}
+            self._subjects = fresh
+
     def merge_subjects(self, src: int, dst: int) -> bool:
         with self._lock:
             if src == dst or src not in self._subjects or dst not in self._subjects:

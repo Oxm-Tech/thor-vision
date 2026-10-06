@@ -27,6 +27,12 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/api/attendance.csv` | Attendance Csv | `date` |  |
 
+## camara
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/camara/{cam_id}` | Camera Page | `cam_id`* |  |
+
 ## cameras
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
@@ -296,7 +302,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
-| GET | `/api/timeline` | Timeline | `since`, `until` |  |
+| GET | `/api/timeline` | Timeline | `since`, `until`, `cam_id` |  |
 
 ## vehicles
 

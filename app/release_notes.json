@@ -1,5 +1,38 @@
 [
   {
+    "version": "2.10.0",
+    "date": "2026-10-06",
+    "name": "Galería de miniaturas, sugerencias con selección y línea propia por cámara",
+    "summary": "Se pueden validar y corregir las miniaturas de cada persona y mascota, las sugerencias de identidad se revisan y se unen por selección con opción de rechazo, y cada cámara tiene su propia línea de tiempo.",
+    "highlights": [
+      {
+        "area": "Identidades",
+        "title": "Galería /galeria",
+        "text": "Todas las miniaturas de una persona (o de cada mascota, etiquetadas y sugeridas por el modelo) con selección múltiple: mover a otra identidad, sacar a una nueva, eliminar o reetiquetar. El rostro promedio se recalcula al mover."
+      },
+      {
+        "area": "Identidades",
+        "title": "Sugerencias seleccionables y \"No es\"",
+        "text": "Nueva pestaña Sugerencias con las parejas parecidas (foto contra foto), selección múltiple y Unir seleccionadas; \"No son la misma\" (también en cada tarjeta) descarta la sugerencia para siempre. Se retira el botón que unía todo de golpe."
+      },
+      {
+        "area": "Identidades",
+        "title": "Nombres repetidos se unen solos",
+        "text": "Al poner un nombre que ya existe, ambas identidades se funden."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Línea propia, HD y navegación",
+        "text": "La página de cada cámara tiene su línea de tiempo (histograma y puntos por tipo, clic abre la captura), imagen HD y el visor navegable. En el visor principal ← → recorren las alertas de la misma cámara y ↑ ↓ todas; las capturas se amplían."
+      },
+      {
+        "area": "Ocupación",
+        "title": "Menos ruido",
+        "text": "Las personas sin clasificar con visitas menores a 8 s ya no cuentan en la ocupación."
+      }
+    ]
+  },
+  {
     "version": "2.9.1",
     "date": "2026-10-06",
     "name": "Capturas del timbre, Tuya recuperado y vista por cámara",

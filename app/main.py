@@ -395,6 +395,11 @@ async def camera_page(request: Request, cam_id: str):
     return templates.TemplateResponse("camera.html", {"request": request})
 
 
+@app.get("/galeria", response_class=HTMLResponse)
+async def gallery_page(request: Request):
+    return templates.TemplateResponse("gallery.html", {"request": request})
+
+
 @app.get("/identidades", response_class=HTMLResponse)
 async def identities_page(request: Request):
     return templates.TemplateResponse("identities.html", {"request": request})

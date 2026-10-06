@@ -23,6 +23,8 @@ main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:16
 .it{display:grid;grid-template-columns:84px 1fr;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;text-align:left;color:inherit;font:inherit}
 .it:hover,.it.cur{border-color:var(--accent)}.it .th{width:84px;height:56px;border-radius:6px;background:#000 center/cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
 .it b{font-size:12.5px}.it small{color:var(--muted);display:block}.it span.t{font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.strip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px 4px}.strip svg{width:100%;height:78px;display:block;cursor:pointer}
+.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:2px}
 .empty{color:var(--muted);padding:20px;text-align:center}
 #vw{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px;touch-action:pan-y}
 #vw.on{display:flex}#vw img{max-width:96vw;max-height:76vh;border-radius:10px;background:#000}
@@ -37,7 +39,8 @@ main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:16
 <main>
   <section>
     <div class="stage"><img id="live" alt="en vivo"><span class="tag" id="tag">en vivo</span></div>
-    <div class="chips" id="chips"></div>
+    <div class="chips" id="chips"><button class="btn on" id="hd" title="Captura a resolución completa de la cámara (más pesada)">HD</button></div>
+    <div class="strip"><svg id="strip" viewBox="0 0 1000 78" preserveAspectRatio="none" role="img" aria-label="Línea de tiempo de alertas de esta cámara"></svg><div class="axis" id="axis"></div></div>
   </section>
   <section>
     <div class="bar" id="bar">
@@ -53,6 +56,9 @@ main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:16
 <script>
 const $ = s => document.querySelector(s);
 const CAM = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+let win = [0, 1];
+const PAL = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767', '#4aa3a8', '#b07acc'];
+const col = t => { let h = 0; for (const ch of String(t)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PAL[h % PAL.length]; };
 let hours = 24, items = [], shown = [], cur = -1, typ = '';
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const lbl = t => (t || 'sin tipo').replace(/_/g, ' ');
@@ -60,8 +66,10 @@ const fmt = ts => { const d = new Date(ts * 1000); return d.toLocaleDateString('
 
 // vista en vivo: una captura nueva apenas llega la anterior
 const live = $('#live'); let alive = true;
-function tick(){ if (!alive) return; live.src = `/api/snapshot/${encodeURIComponent(CAM)}?t=${Date.now()}`; }
-live.onload = () => setTimeout(tick, 600); live.onerror = () => setTimeout(tick, 3000); tick();
+let hd = true;
+function tick(){ if (!alive) return; live.src = `/api/snapshot/${encodeURIComponent(CAM)}?${hd ? 'hd=1&' : ''}t=${Date.now()}`; }
+$('#hd').onclick = () => { hd = !hd; $('#hd').classList.toggle('on', hd); };
+live.onload = () => setTimeout(tick, hd ? 1200 : 600); live.onerror = () => setTimeout(tick, 3000); tick();
 document.addEventListener('visibilitychange', () => { alive = !document.hidden; if (alive) tick(); });
 $('#fs').onclick = () => { const st = document.querySelector('.stage'); document.fullscreenElement ? document.exitFullscreen() : st.requestFullscreen?.(); };
 live.ondblclick = $('#fs').onclick;
@@ -85,15 +93,33 @@ async function load(){
     items = d.events.filter(e => e.cam === CAM).sort((a, b) => b.ts - a.ts);
     const types = [...new Set(items.map(e => e.type))].sort();
     $('#ty').innerHTML = '<option value="">Todos los tipos</option>' + types.map(t => `<option value="${esc(t)}"${t === typ ? ' selected' : ''}>${esc(lbl(t))} (${items.filter(e => e.type === t).length})</option>`).join('');
+    win = [until - hours * 3600, until];
     render();
   } catch (e) { $('#cnt').textContent = 'No se pudieron cargar las alertas'; }
 }
 function render(){
   shown = items.filter(e => !typ || e.type === typ);
   $('#cnt').textContent = shown.length ? `${shown.length} alertas` : 'Sin alertas en este rango';
+  drawStrip();
   $('#list').innerHTML = shown.map((e, i) => `<button class="it${i === cur ? ' cur' : ''}" data-i="${i}"><div class="th" ${e.img ? `style="background-image:url('${e.img}')"` : ''}>${e.img ? '' : 'sin foto'}</div>`
     + `<div><b>${esc(lbl(e.type))}</b><small>${fmt(e.ts)}${e.people ? ' · ' + e.people + ' pers.' : ''}</small><span class="t">${esc(e.text)}</span></div></button>`).join('');
 }
+function drawStrip(){
+  const [a, b] = win, W = 1000, bins = 60, cnt = new Array(bins).fill(0);
+  const x = ts => Math.max(0, Math.min(W, (ts - a) / (b - a) * W));
+  shown.forEach(e => { cnt[Math.min(bins - 1, Math.floor(x(e.ts) / W * bins))]++; });
+  const mx = Math.max(1, ...cnt);
+  let s = cnt.map((n, i) => n ? `<rect x="${i * W / bins + 1}" y="${50 - n / mx * 46}" width="${W / bins - 2}" height="${n / mx * 46}" fill="currentColor" opacity=".18" style="color:var(--accent)"/>` : '').join('');
+  shown.forEach((e, i) => { s += `<circle data-i="${i}" cx="${x(e.ts)}" cy="${60 + (i % 3) * 6}" r="3.4" fill="${col(e.type)}"><title>${esc(fmt(e.ts))} · ${esc(lbl(e.type))}</title></circle>`; });
+  $('#strip').innerHTML = s;
+  const h = n => new Date((a + (b - a) * n) * 1000).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', hour12: false});
+  $('#axis').innerHTML = [0, .25, .5, .75, 1].map(n => `<span>${h(n)}</span>`).join('');
+}
+$('#strip').addEventListener('click', e => {
+  const c = e.target.closest('circle'); if (c){ open(+c.dataset.i); return; }
+  const r = $('#strip').getBoundingClientRect(), ts = win[0] + (e.clientX - r.left) / r.width * (win[1] - win[0]);
+  let best = -1, d = 1e12; shown.forEach((ev, i) => { const k = Math.abs(ev.ts - ts); if (k < d){ d = k; best = i; } }); if (best >= 0) open(best);
+});
 $('#bar').addEventListener('click', e => {
   const b = e.target.closest('[data-h]'); if (!b) return;
   hours = +b.dataset.h; document.querySelectorAll('#bar [data-h]').forEach(x => x.classList.toggle('on', x === b)); load();

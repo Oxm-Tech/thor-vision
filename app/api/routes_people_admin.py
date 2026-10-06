@@ -2,6 +2,7 @@
 import csv
 import io
 import os
+import sqlite3
 import time
 from typing import Optional
 
@@ -36,6 +37,7 @@ def ensure_schema(db) -> None:
         except Exception:
             pass
         db._conn.execute("CREATE INDEX IF NOT EXISTS idx_subjects_cat ON subjects(category)")
+        db._conn.execute("CREATE TABLE IF NOT EXISTS subject_rejects (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b))")
         db._conn.commit()
 
 
@@ -115,6 +117,12 @@ def people(request: Request, category: str = "revisar", q: Optional[str] = None,
     return {"category": category, "people": out}
 
 
+def _rejected(db) -> set:
+    with db._lock:
+        db._conn.execute("CREATE TABLE IF NOT EXISTS subject_rejects (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b))")
+        return {(a, b) for a, b in db._conn.execute("SELECT a, b FROM subject_rejects")}
+
+
 def _suggestions(db, min_sim: float = 0.38) -> dict:
     """Para cada persona sin nombre, la persona con nombre (empleado o invitado) a la que mas se parece: {id: {id,name,category,sim}}."""
     ids, E = _embeddings(db)
@@ -126,12 +134,17 @@ def _suggestions(db, min_sim: float = 0.38) -> dict:
     if not tgt:
         return {}
     S = E @ E[tgt].T
+    rej = _rejected(db)
     out = {}
     for j, i in enumerate(ids):
         if i not in meta or meta[i][2]:
             continue
-        k = int(np.argmax(np.where(np.array(ids)[tgt] == i, -1, S[j])))
-        sim = float(S[j, k])
+        masked = np.where(np.array(ids)[tgt] == i, -1, S[j])
+        for k_, t_ in enumerate(tgt):                 # descarta a quienes el usuario ya dijo "no es"
+            if (i, ids[t_]) in rej:
+                masked[k_] = -1
+        k = int(np.argmax(masked))
+        sim = float(masked[k])
         if sim >= min_sim:
             t = meta[ids[tgt[k]]]
             out[i] = {"id": t[0], "name": t[1], "category": t[3], "sim": round(sim, 3)}
@@ -406,7 +419,7 @@ def occupancy(request: Request, date: Optional[str] = None):
     now_cams: dict = {}
     dwell = {"empleado": [], "invitado": []}
     for sid, cat, cam, a, b, st in vis:
-        if sid is None and b - a < 8:
+        if cat != "empleado" and b - a < 8:
             continue            # visitas sin identidad y de pocos segundos: ruido de deteccion
         key = sid if sid is not None else f"v{a:.0f}{cam}"
         for h in range(24):
@@ -428,3 +441,157 @@ def occupancy(request: Request, date: Optional[str] = None):
             "guests": att["guests"]["count"], "avg_employee_minutes": round(sum(mins) / len(mins)) if mins else 0,
             "avg_guest_visit_min": round(sum(dwell["invitado"]) / len(dwell["invitado"]) / 60, 1) if dwell["invitado"] else 0,
             "cams": [names[c] for c in ids]}
+
+
+class RejectBody(BaseModel):
+    a: int
+    b: int
+
+
+@router.post("/api/people/reject")
+def reject_pair(body: RejectBody, request: Request):
+    """'No son la misma persona': esa sugerencia no vuelve a aparecer."""
+    db = _db(request)
+    _rejected(db)                                        # crea la tabla si no existe
+    with db._lock:
+        db._conn.execute("INSERT OR IGNORE INTO subject_rejects (a, b) VALUES (?, ?)", (body.a, body.b))
+        db._conn.commit()
+    return {"ok": True}
+
+
+@router.get("/api/people/suggestions")
+def suggestions(request: Request, min_sim: float = 0.4, limit: int = 120):
+    """Personas sin nombre que se parecen a una identificada (solo quienes entraron), de mayor a menor parecido."""
+    db = _db(request)
+    street = set(_street(request))
+    out = []
+    for sid, s in sorted(_suggestions(db, max(0.3, min_sim)).items(), key=lambda kv: -kv[1]["sim"]):
+        with db._lock:
+            row = db._conn.execute("SELECT 1 FROM person_visits WHERE subject_id=? AND fp=0 AND static=0 AND cam_id NOT IN (%s) LIMIT 1" % ",".join("?" * len(street) or "NULL"),
+                                   (sid, *street)).fetchone()
+            nm = db._conn.execute("SELECT COALESCE(name,'Persona #'||id), (SELECT COUNT(*) FROM person_visits WHERE subject_id=subjects.id) FROM subjects WHERE id=?", (sid,)).fetchone()
+        if row and nm:
+            out.append({"from": sid, "from_name": nm[0], "visits": nm[1], "into": s["id"], "into_name": s["name"], "category": s["category"], "sim": s["sim"]})
+        if len(out) >= limit:
+            break
+    return {"pairs": out}
+
+
+class MergeMany(BaseModel):
+    pairs: list
+
+
+@router.post("/api/people/merge-many")
+def merge_many(body: MergeMany, request: Request):
+    m = getattr(request.app.state, "visits", None)
+    if m is None:
+        raise HTTPException(503, "tracker apagado")
+    done = 0
+    for p in body.pairs[:200]:
+        try:
+            if m.merge_subjects(int(p["from"]), int(p["into"])):
+                done += 1
+        except (KeyError, TypeError, ValueError):
+            continue
+    return {"ok": True, "merged": done}
+
+
+def consolidate_db(db, m) -> int:
+    rank = {"empleado": 0, "invitado": 1, "revisar": 2}
+    merged = 0
+    for g in _same_name_groups(db):
+        g.sort(key=lambda t: (rank.get(t[1], 3), -t[2], t[0]))
+        for sid, _, _ in g[1:]:
+            if m.merge_subjects(sid, g[0][0]):
+                merged += 1
+    return merged
+
+
+# ---------------- galeria de una identidad: validar / mover / borrar sus miniaturas
+@router.get("/api/people/{sid}/gallery")
+def gallery(sid: int, request: Request, limit: int = 120, offset: int = 0):
+    db = _db(request)
+    names = {c.id: c.name for c in request.app.state.config.cameras}
+    with db._lock:
+        s = db._conn.execute("SELECT COALESCE(name,'Persona #'||id), category FROM subjects WHERE id=?", (sid,)).fetchone()
+        if not s:
+            raise HTTPException(404, "sujeto inexistente")
+        tot = db._conn.execute("SELECT COUNT(*) FROM person_visits WHERE subject_id=? AND fp=0", (sid,)).fetchone()[0]
+        rows = db._conn.execute(
+            "SELECT id, cam_id, start_ts, face IS NOT NULL, body IS NOT NULL, COALESCE(vlm_desc,'') FROM person_visits "
+            "WHERE subject_id=? AND fp=0 ORDER BY start_ts DESC LIMIT ? OFFSET ?", (sid, min(limit, 300), offset)).fetchall()
+    return {"id": sid, "name": s[0], "category": s[1], "total": tot,
+            "visits": [{"id": i, "cam": names.get(c, c), "cam_id": c, "ts": t, "face": bool(f), "body": bool(b), "desc": d[:160]} for i, c, t, f, b, d in rows]}
+
+
+class MoveBody(BaseModel):
+    ids: list
+    to: Optional[int] = None          # None = identidad nueva
+    name: Optional[str] = None
+
+
+def _recompute(db, sid: int) -> None:
+    with db._lock:
+        rows = db._conn.execute("SELECT embedding, n_emb FROM person_visits WHERE subject_id=? AND embedding IS NOT NULL AND n_emb>0", (sid,)).fetchall()
+    acc, n = None, 0
+    for blob, k in rows:
+        v = np.frombuffer(blob, dtype=np.float32)
+        if v.size != 512 or not np.isfinite(v).all() or not float(np.linalg.norm(v)):
+            continue
+        v = v / float(np.linalg.norm(v)) * min(int(k), 5)
+        acc = v if acc is None else acc + v
+        n += int(k)
+    with db._lock:
+        if acc is None:
+            db._conn.execute("UPDATE subjects SET embedding=NULL, n_emb=0 WHERE id=?", (sid,))
+        else:
+            acc = acc / float(np.linalg.norm(acc))
+            db._conn.execute("UPDATE subjects SET embedding=?, n_emb=? WHERE id=?", (acc.astype(np.float32).tobytes(), n, sid))
+        db._conn.commit()
+
+
+@router.post("/api/person-visits/move")
+def move_visits(body: MoveBody, request: Request):
+    """Mueve miniaturas/visitas a otra identidad (o a una nueva) cuando no son de esa persona. Recalcula el rostro promedio de ambas."""
+    db = _db(request)
+    m = getattr(request.app.state, "visits", None)
+    ids = [int(i) for i in body.ids][:500]
+    if not ids:
+        raise HTTPException(400, "ids vacio")
+    ph = ",".join("?" * len(ids))
+    with db._lock:
+        src = [r[0] for r in db._conn.execute(f"SELECT DISTINCT subject_id FROM person_visits WHERE id IN ({ph}) AND subject_id IS NOT NULL", ids)]
+        now = time.time()
+        if body.to is None:
+            to = db._conn.execute("INSERT INTO subjects (name, named, created_ts, last_ts, category) VALUES (?,?,?,?,?)",
+                                  (body.name.strip() if body.name and body.name.strip() else None, 1 if body.name and body.name.strip() else 0, now, now, "revisar")).lastrowid
+        else:
+            to = body.to
+            if not db._conn.execute("SELECT 1 FROM subjects WHERE id=?", (to,)).fetchone():
+                raise HTTPException(404, "identidad destino inexistente")
+        db._conn.execute(f"UPDATE person_visits SET subject_id=? WHERE id IN ({ph})", (to, *ids))
+        db._conn.commit()
+    for sid in set(src) | {to}:
+        _recompute(db, sid)
+    if m is not None:
+        m.reload_subjects()
+    return {"ok": True, "to": to, "moved": len(ids)}
+
+
+@router.post("/api/person-visits/delete")
+def delete_visits(body: MoveBody, request: Request):
+    db = _db(request)
+    m = getattr(request.app.state, "visits", None)
+    ids = [int(i) for i in body.ids][:500]
+    if not ids:
+        raise HTTPException(400, "ids vacio")
+    ph = ",".join("?" * len(ids))
+    with db._lock:
+        src = [r[0] for r in db._conn.execute(f"SELECT DISTINCT subject_id FROM person_visits WHERE id IN ({ph}) AND subject_id IS NOT NULL", ids)]
+        db._conn.execute(f"DELETE FROM person_visits WHERE id IN ({ph})", ids)
+        db._conn.commit()
+    for sid in src:
+        _recompute(db, sid)
+    if m is not None:
+        m.reload_subjects()
+    return {"ok": True, "deleted": len(ids)}
