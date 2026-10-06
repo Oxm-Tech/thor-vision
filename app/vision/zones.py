@@ -117,9 +117,25 @@ def _base_point(box, w: int, h: int) -> tuple:
     return ((box[0] + box[2]) / 2.0 / max(1, w), box[3] / max(1, h))
 
 
-def contains(cam_id: str, types: tuple, box, w: int, h: int) -> bool:
+def overlap_frac(box, pts: list, w: int, h: int) -> float:
+    """Fraccion del area de la caja que cae dentro del poligono (pts normalizados), con una rejilla chica."""
+    import cv2
+    import numpy as np
+    gw, gh = 160, 120
+    x1, y1, x2, y2 = (max(0, int(box[0] / w * gw)), max(0, int(box[1] / h * gh)), min(gw, int(box[2] / w * gw) + 1), min(gh, int(box[3] / h * gh) + 1))
+    if x2 <= x1 or y2 <= y1:
+        return 0.0
+    mask = np.zeros((gh, gw), np.uint8)
+    cv2.fillPoly(mask, [np.array([[int(px * gw), int(py * gh)] for px, py in pts], np.int32)], 1)
+    return float(mask[y1:y2, x1:x2].sum()) / float((x2 - x1) * (y2 - y1))
+
+
+def contains(cam_id: str, types: tuple, box, w: int, h: int, min_overlap: float = 0.35) -> bool:
     x, y = _base_point(box, w, h)
-    return any(point_in_polygon(x, y, z["pts"]) for z in get(cam_id) if z["type"] in types)
+    for z in get(cam_id):
+        if z["type"] in types and (point_in_polygon(x, y, z["pts"]) or overlap_frac(box, z["pts"], w, h) >= min_overlap):
+            return True
+    return False
 
 
 def has(cam_id: str, ztype: str) -> bool:

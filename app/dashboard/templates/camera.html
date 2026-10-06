@@ -6,7 +6,7 @@
 <title>Cámara · THOR Vision</title>
 <style>
 :root{--bg:#0e1117;--panel:#161b24;--panel2:#1c2130;--line:#252c3a;--text:#e8edf3;--muted:#8b949e;--accent:#76B900;--warn:#e6a700}
-@media (prefers-color-scheme:light){:root{--bg:#f4f6fa;--panel:#fff;--panel2:#eef1f7;--line:#d6dbe6;--text:#1a2030;--muted:#5d677d}}
+:root{color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
 header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:5}
 header a{color:var(--muted);text-decoration:none;font-size:13px}header a:hover{color:var(--accent)}h1{font-size:17px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -27,6 +27,7 @@ input[type=datetime-local]{background:var(--panel);color:var(--text);border:1px 
 .tlf{width:100%;height:430px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-top:10px}
 .strip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px 4px}.strip svg{width:100%;height:78px;display:block;cursor:pointer}
 .axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:2px}
+.hint{color:var(--muted);font-size:12px;margin:0 0 6px}
 .empty{color:var(--muted);padding:20px;text-align:center}
 #vw{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px;touch-action:pan-y}
 #vw.on{display:flex}#vw img{max-width:96vw;max-height:76vh;border-radius:10px;background:#000}
@@ -41,15 +42,11 @@ input[type=datetime-local]{background:var(--panel);color:var(--text);border:1px 
 <main>
   <section>
     <div class="stage"><img id="live" alt="en vivo"><span class="tag" id="tag">en vivo</span></div>
-    <div class="chips" id="chips"><button class="btn on" id="hd" title="Captura a resolución completa de la cámara (más pesada)">HD</button></div>
+    <div class="chips" id="chips"><button class="btn" id="hd" title="Captura a resolución completa de la cámara (más pesada)">HD</button></div>
     <iframe id="tlf" class="tlf" title="Línea de tiempo de esta cámara" loading="lazy"></iframe></div>
   </section>
   <section>
-    <div class="bar" id="bar">
-      <button class="btn" data-h="0.25">15 min</button><button class="btn" data-h="1">1 h</button><button class="btn" data-h="3">3 h</button><button class="btn" data-h="6">6 h</button><button class="btn on" data-h="24">24 h</button><button class="btn" data-h="168">7 d</button>
-      <input type="datetime-local" id="t0" title="Desde"><input type="datetime-local" id="t1" title="Hasta"><button class="btn" id="tgo">Ir</button>
-      <select id="ty"><option value="">Todos los tipos</option></select>
-    </div>
+    <p class="hint">La lista sigue a la línea de tiempo de la izquierda: el rango visible (o el que selecciones arrastrando) y las categorías activas.</p>
     <div class="empty" id="cnt"></div>
     <div class="list" id="list"></div>
   </section>
@@ -70,7 +67,7 @@ const fmt = ts => { const d = new Date(ts * 1000); return d.toLocaleDateString('
 // vista en vivo: una captura nueva apenas llega la anterior
 const live = $('#live'); let alive = true;
 $('#tlf').src = '/?tl=' + encodeURIComponent(CAM);
-let hd = true;
+let hd = false;
 function tick(){ if (!alive) return; live.src = `/api/snapshot/${encodeURIComponent(CAM)}?${hd ? 'hd=1&' : ''}t=${Date.now()}`; }
 $('#hd').onclick = () => { hd = !hd; $('#hd').classList.toggle('on', hd); };
 live.onload = () => setTimeout(tick, hd ? 1200 : 600); live.onerror = () => setTimeout(tick, 3000); tick();
@@ -88,48 +85,27 @@ async function info(){
 }
 setInterval(info, 5000); info();
 
+let view = {since: 0, until: 1e12, hidden: new Set()};
 async function load(){
   $('#cnt').textContent = 'Cargando…';
-  const until = custom ? custom[1] : Date.now() / 1000, since = custom ? custom[0] : until - hours * 3600;
+  const until = Date.now() / 1000;
   try {
-    const d = await (await fetch(`/api/timeline?cam_id=${encodeURIComponent(CAM)}&since=${since}&until=${until}`)).json();
+    const d = await (await fetch(`/api/timeline?cam_id=${encodeURIComponent(CAM)}&since=${until - 7 * 86400}&until=${until}`)).json();
     const c = d.cams.find(x => x.id === CAM); if (c){ $('#ttl').textContent = c.name; document.title = c.name + ' · THOR Vision'; }
     items = d.events.filter(e => e.cam === CAM).sort((a, b) => b.ts - a.ts);
-    const types = [...new Set(items.map(e => e.type))].sort();
-    $('#ty').innerHTML = '<option value="">Todos los tipos</option>' + types.map(t => `<option value="${esc(t)}"${t === typ ? ' selected' : ''}>${esc(lbl(t))} (${items.filter(e => e.type === t).length})</option>`).join('');
-    win = [since, until];
     render();
   } catch (e) { $('#cnt').textContent = 'No se pudieron cargar las alertas'; }
 }
+window.addEventListener('message', ev => {                 // la linea de tiempo incrustada manda el rango y las categorias activas
+  const m = ev.data && ev.data.tl; if (!m) return;
+  view = {since: m.since, until: m.until, hidden: new Set(m.hiddenTypes || [])}; cur = -1; render();
+});
 function render(){
-  shown = items.filter(e => !typ || e.type === typ);
+  shown = items.filter(e => e.ts >= view.since && e.ts <= view.until && !view.hidden.has(e.type));
   $('#cnt').textContent = shown.length ? `${shown.length} alertas` : 'Sin alertas en este rango';
-  drawStrip();
   $('#list').innerHTML = shown.map((e, i) => `<button class="it${i === cur ? ' cur' : ''}" data-i="${i}"><div class="th" ${e.img ? `style="background-image:url('${e.img}')"` : ''}>${e.img ? '' : 'sin foto'}</div>`
     + `<div><b>${esc(lbl(e.type))}</b><small>${fmt(e.ts)}${e.people ? ' · ' + e.people + ' pers.' : ''}</small><span class="t">${esc(e.text)}</span></div></button>`).join('');
 }
-function drawStrip(){
-  const [a, b] = win, W = 1000, bins = 60, cnt = new Array(bins).fill(0);
-  const x = ts => Math.max(0, Math.min(W, (ts - a) / (b - a) * W));
-  shown.forEach(e => { cnt[Math.min(bins - 1, Math.floor(x(e.ts) / W * bins))]++; });
-  const mx = Math.max(1, ...cnt);
-  let s = cnt.map((n, i) => n ? `<rect x="${i * W / bins + 1}" y="${50 - n / mx * 46}" width="${W / bins - 2}" height="${n / mx * 46}" fill="currentColor" opacity=".18" style="color:var(--accent)"/>` : '').join('');
-  shown.forEach((e, i) => { s += `<circle data-i="${i}" cx="${x(e.ts)}" cy="${60 + (i % 3) * 6}" r="3.4" fill="${col(e.type)}"><title>${esc(fmt(e.ts))} · ${esc(lbl(e.type))}</title></circle>`; });
-  $('#strip').innerHTML = s;
-  const h = n => new Date((a + (b - a) * n) * 1000).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', hour12: false});
-  $('#axis').innerHTML = [0, .25, .5, .75, 1].map(n => `<span>${h(n)}</span>`).join('');
-}
-$('#strip').addEventListener('click', e => {
-  const c = e.target.closest('circle'); if (c){ open(+c.dataset.i); return; }
-  const r = $('#strip').getBoundingClientRect(), ts = win[0] + (e.clientX - r.left) / r.width * (win[1] - win[0]);
-  let best = -1, d = 1e12; shown.forEach((ev, i) => { const k = Math.abs(ev.ts - ts); if (k < d){ d = k; best = i; } }); if (best >= 0) open(best);
-});
-$('#bar').addEventListener('click', e => {
-  const b = e.target.closest('[data-h]'); if (!b) return;
-  hours = +b.dataset.h; custom = null; document.querySelectorAll('#bar [data-h]').forEach(x => x.classList.toggle('on', x === b)); load();
-});
-$('#tgo').onclick = () => { const a = $('#t0').valueAsNumber, b = $('#t1').valueAsNumber; if (!a || !b || b <= a) return alert('Elige desde y hasta (hasta debe ser posterior).'); const off = new Date().getTimezoneOffset() * 60000; custom = [(a + off) / 1000, (b + off) / 1000]; document.querySelectorAll('#bar [data-h]').forEach(x => x.classList.remove('on')); load(); };
-$('#ty').onchange = e => { typ = e.target.value; cur = -1; render(); };
 $('#list').addEventListener('click', e => { const b = e.target.closest('.it'); if (b) open(+b.dataset.i); });
 
 // visor con navegacion: flechas del teclado, botones y deslizar con el dedo
@@ -156,7 +132,7 @@ document.addEventListener('keydown', e => {
 let sx = null;
 $('#vw').addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive: true});
 $('#vw').addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) open(cur + (dx < 0 ? 1 : -1)); });
-load(); setInterval(() => { if (!custom && !$('#vw').classList.contains('on')) load(); }, 60000);
+load(); setInterval(() => { if (!$('#vw').classList.contains('on')) load(); }, 60000);
 </script>
 </body>
 </html>

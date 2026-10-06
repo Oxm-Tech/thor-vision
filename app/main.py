@@ -363,6 +363,13 @@ app.include_router(knowledge_router)
 from app.api.routes_iot import router as iot_router
 app.include_router(iot_router)
 app.include_router(people_router)
+from app.api.routes_rules import router as rules_router
+app.include_router(rules_router)
+
+
+@app.get("/reglas", response_class=HTMLResponse)
+async def rules_page(request: Request):
+    return templates.TemplateResponse("rules.html", {"request": request})
 
 
 @app.get("/iot", response_class=HTMLResponse)

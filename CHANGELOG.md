@@ -2,6 +2,17 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.11.0 — Reglas de alertas, modo oscuro fijo y línea de tiempo sincronizada (2026-10-06)
+
+Página de reglas con datos reales y análisis con el modelo, modo oscuro en todas las páginas, brillo que sigue al mouse y la lista de cada cámara sincronizada con su línea de tiempo.
+
+- **Alertas · Página /reglas**: Por cada tipo de alerta: definición, cómo se genera, cámaras donde aplica, alertas reales, porcentaje de ruido según 👍/👎 y botón para que el modelo proponga una definición mejor, líneas de ignorar/enfocar y filtros programables. Nada se aplica solo.
+- **Interfaz · Siempre oscuro**: Las páginas secundarias cambiaban a blanco con el modo claro del sistema; ahora son oscuras siempre.
+- **Interfaz · Iconos con etiqueta y brillo**: Los iconos de la segunda fila llevan su nombre y las tarjetas y paneles tienen un brillo que sigue al mouse.
+- **Cámaras · Lista sincronizada y Preguntar al agente**: Las alertas de la cámara siguen al rango y las categorías de su línea de tiempo (se retiran los controles duplicados); Preguntar al Vision Agent abre el panel principal con la pregunta.
+- **Panel · Menos ruido en el timeline de eventos**: Por defecto solo alertas de las categorías activas; las observaciones sin alerta se activan con una casilla.
+- **Vehículos · Polígono por área**: Un vehículo cuenta dentro del polígono si su base o al menos 35% de su área está dentro. Si no hay vehículos estacionados, la ventana muestra el historial.
+
 ## v2.10.1 — Barra superior, línea de tiempo por cámara y horario habitual (2026-10-06)
 
 Encabezado en dos filas, indicador de personas con la cámara que las ve o alerta, línea de tiempo completa dentro de cada cámara y horarios habituales aprendidos del historial.

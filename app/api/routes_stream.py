@@ -202,7 +202,7 @@ def snapshot(cam_id: str, request: Request, hd: int = 0):
                 full = cv2.resize(full, (1920, int(h * 1920 / w)), interpolation=cv2.INTER_AREA)
             if store is not None:
                 full = _draw_overlay(full, store.get(cam_id))
-            full = _stamp(full, next((c.name for c in request.app.state.config.cameras if c.id == cam_id), cam_id))
+
             return Response(content=_jpeg_encode(full, 85), media_type="image/jpeg", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     if frame is None:
         return Response(

@@ -1,5 +1,43 @@
 [
   {
+    "version": "2.11.0",
+    "date": "2026-10-06",
+    "name": "Reglas de alertas, modo oscuro fijo y línea de tiempo sincronizada",
+    "summary": "Página de reglas con datos reales y análisis con el modelo, modo oscuro en todas las páginas, brillo que sigue al mouse y la lista de cada cámara sincronizada con su línea de tiempo.",
+    "highlights": [
+      {
+        "area": "Alertas",
+        "title": "Página /reglas",
+        "text": "Por cada tipo de alerta: definición, cómo se genera, cámaras donde aplica, alertas reales, porcentaje de ruido según 👍/👎 y botón para que el modelo proponga una definición mejor, líneas de ignorar/enfocar y filtros programables. Nada se aplica solo."
+      },
+      {
+        "area": "Interfaz",
+        "title": "Siempre oscuro",
+        "text": "Las páginas secundarias cambiaban a blanco con el modo claro del sistema; ahora son oscuras siempre."
+      },
+      {
+        "area": "Interfaz",
+        "title": "Iconos con etiqueta y brillo",
+        "text": "Los iconos de la segunda fila llevan su nombre y las tarjetas y paneles tienen un brillo que sigue al mouse."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Lista sincronizada y Preguntar al agente",
+        "text": "Las alertas de la cámara siguen al rango y las categorías de su línea de tiempo (se retiran los controles duplicados); Preguntar al Vision Agent abre el panel principal con la pregunta."
+      },
+      {
+        "area": "Panel",
+        "title": "Menos ruido en el timeline de eventos",
+        "text": "Por defecto solo alertas de las categorías activas; las observaciones sin alerta se activan con una casilla."
+      },
+      {
+        "area": "Vehículos",
+        "title": "Polígono por área",
+        "text": "Un vehículo cuenta dentro del polígono si su base o al menos 35% de su área está dentro. Si no hay vehículos estacionados, la ventana muestra el historial."
+      }
+    ]
+  },
+  {
     "version": "2.10.1",
     "date": "2026-10-06",
     "name": "Barra superior, línea de tiempo por cámara y horario habitual",
