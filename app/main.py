@@ -346,6 +346,24 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="THOR Vision", lifespan=lifespan)
 
+
+class _QuietClosed:
+    """El navegador cancela peticiones de imagenes (pestanas, miniaturas perezosas): escribir a esa conexion ya cerrada no es un error de la aplicacion."""
+    def __init__(self, app_):
+        self.app = app_
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        try:
+            return await self.app(scope, receive, send)
+        except RuntimeError as exc:
+            if "handler is closed" not in str(exc):
+                raise
+
+
+app.add_middleware(_QuietClosed)
+
 app.include_router(stream_router)
 app.include_router(status_router)
 app.include_router(ws_router)

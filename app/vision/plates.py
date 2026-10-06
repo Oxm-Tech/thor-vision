@@ -75,9 +75,16 @@ def _load():
                     os.makedirs(os.path.dirname(home_dir), exist_ok=True)
                     os.symlink(target, home_dir)           # los modelos se descargan una vez y quedan en el volumen de datos
             from fast_alpr import ALPR
-            _alpr = ALPR(detector_model=DETECTOR, ocr_model=OCR, detector_conf_thresh=MIN_DET,
-                         detector_providers=["CPUExecutionProvider"], ocr_device="cpu")
-            logger.info("plates: lector cargado (%s + %s)", DETECTOR, OCR)
+            try:          # siempre la GPU de Thor; si no esta disponible para este modelo se cae a CPU
+                _alpr = ALPR(detector_model=DETECTOR, ocr_model=OCR, detector_conf_thresh=MIN_DET,
+                             detector_providers=["CUDAExecutionProvider", "CPUExecutionProvider"], ocr_device="cuda")
+                dev = "GPU"
+            except (RuntimeError, ValueError, OSError) as exc:
+                logger.warning("plates: GPU no disponible (%s); usando CPU", exc)
+                _alpr = ALPR(detector_model=DETECTOR, ocr_model=OCR, detector_conf_thresh=MIN_DET,
+                             detector_providers=["CPUExecutionProvider"], ocr_device="cpu")
+                dev = "CPU"
+            logger.info("plates: lector cargado (%s + %s) en %s", DETECTOR, OCR, dev)
         except (ImportError, OSError, RuntimeError, ValueError) as exc:
             _failed = True
             logger.warning("plates: lector no disponible (%s); correr scripts/install_alpr.sh", exc)
