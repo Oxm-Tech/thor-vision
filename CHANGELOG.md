@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.10.1 — Barra superior, línea de tiempo por cámara y horario habitual (2026-10-06)
+
+Encabezado en dos filas, indicador de personas con la cámara que las ve o alerta, línea de tiempo completa dentro de cada cámara y horarios habituales aprendidos del historial.
+
+- **Panel · Barra superior en dos filas**: Métricas, IA, personas y reloj (a la derecha) arriba; todos los iconos en una segunda fila.
+- **Panel · Indicador de personas con cámara**: Muestra en qué cámaras hay personas y, en rojo, cuál está generando una alerta.
+- **Cámaras · Línea de tiempo completa por cámara**: La vista de cámara incrusta la línea de tiempo del panel (zoom de 15 min a 7 d, selección de rango, categorías) filtrada a esa cámara. La captura HD lleva nombre y hora.
+- **Histórico · Capturas con visor**: En el histórico de eventos la captura se abre en el visor (con X) en vez de otra pestaña.
+- **Asistencia · Horario habitual aprendido**: Por empleado se calcula la hora a la que suele llegar y salir (mediana de 30 días, entre semana y fin de semana) y se marca si debería estar o se quedó tarde, sin capturar horarios a mano.
+
 ## v2.10.0 — Galería de miniaturas, sugerencias con selección y línea propia por cámara (2026-10-06)
 
 Se pueden validar y corregir las miniaturas de cada persona y mascota, las sugerencias de identidad se revisan y se unen por selección con opción de rechazo, y cada cámara tiene su propia línea de tiempo.
