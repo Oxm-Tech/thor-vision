@@ -157,6 +157,7 @@ cameras:
       - los LEDs de los equipos y el ruido por poca luz
     alert_types: [acceso_no_autorizado, persona_nocturna, puerta_abierta, objeto_abandonado, fuego_humo]
     night_person: alert
+    known_exempt: [acceso_no_autorizado, puerta_abierta]   # el personal identificado entra al site sin alerta; los desconocidos si
     vehicles: false
 
   cam-215:

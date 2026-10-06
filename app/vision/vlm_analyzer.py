@@ -145,6 +145,9 @@ class VLMAnalyzer:
         yolo = (context or {}).get("person_count")
         aspects = (context or {}).get("aspects")
         posture = {"max_aspect": max(aspects) if aspects else 0.0} if isinstance(aspects, list) else None
+        objs = (context or {}).get("objects")
+        if isinstance(result, dict) and isinstance(objs, dict) and objs:
+            result["yolo_objects"] = objs            # para auditar: lo que YOLO vio en el cuadro cuando el VLM escribio su alerta
         return normalize_result(result, scene, yolo if isinstance(yolo, int) else None, posture)
 
     def analyze(self, frame: np.ndarray, context: dict = None,

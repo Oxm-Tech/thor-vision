@@ -162,6 +162,12 @@ async function load(keep){
 }
 function bulk(){ $('#bulk').hidden = !sel.size; $('#bulk-n').textContent = sel.size + ' seleccionadas'; }
 document.addEventListener('click', async e => {
+  const nmb = e.target.closest('[data-nm]');
+  if (nmb){
+    const n = prompt('Nombre de esta persona (si ya existe otra con ese nombre, se unen):');
+    if (n && n.trim()){ await send(`/api/subjects/${nmb.dataset.nm}`, 'PATCH', {name: n.trim()}); counts(); attendance(); }
+    return;
+  }
   const bb = e.target.closest('[data-bulk]');
   if (bb){
     if (bb.dataset.bulk === 'clear'){ sel.clear(); bulk(); return load(true); }
@@ -179,6 +185,7 @@ document.addEventListener('click', async e => {
     if (n === null) return; await send(`/api/subjects/${id}`, 'PATCH', {name: n.trim()}); return load();
   }
   if (a === 'sim') return similar(id, c);
+  if (a === 'nopair'){ await send('/api/people/reject', 'POST', {a: +el.dataset.x, b: +el.dataset.y}); el.closest('.pair').remove(); return; }
   if (a === 'nomatch'){ await send('/api/people/reject', 'POST', {a: +el.dataset.from, b: +el.dataset.into}); return load(); }
   if (a === 'merge'){
     if (!confirm('¿Fusionar? Esto une todo el historial de ambas identidades y no se deshace.')) return;
@@ -244,7 +251,7 @@ async function dups(){
       return `<div class="pair"><img src="/api/subjects/${p.a}/face" onerror="this.src='/api/subjects/${p.a}/body'"><div><b>${esc(p.a_name)}</b><br><span class="meta">${p.a_cat}</span></div>
       <div style="font-size:20px;color:var(--accent)">${Math.round(p.similarity * 100)}%</div>
       <img src="/api/subjects/${p.b}/face" onerror="this.src='/api/subjects/${p.b}/body'"><div><b>${esc(p.b_name)}</b><br><span class="meta">${p.b_cat}</span></div>
-      <button class="btn pri sm" style="margin-left:auto" data-a="merge" data-from="${from}" data-into="${into}">Son la misma</button></div>`;
+      <span style="margin-left:auto;display:flex;gap:6px"><button class="btn pri sm" data-a="merge" data-from="${from}" data-into="${into}">Son la misma</button><button class="btn sm" data-a="nopair" data-x="${p.a}" data-y="${p.b}">No son la misma</button></span></div>`;
     }).join('') : '<div class="empty">No hay pares sospechosos.</div>';
   } catch (e) { v.innerHTML = '<div class="empty">Error cargando duplicados.</div>'; }
 }
@@ -257,7 +264,7 @@ async function attendance(date){
   try {
     const d = await J('/api/attendance?date=' + date);
     v.innerHTML = `<p class="help">Cámaras usadas: ${esc(d.internal_cams.join(', '))}${d.partial_day ? ' · día en curso' : ''}</p>`
-      + (d.employees.length ? `<table><tr><th>Empleado</th><th>Presente</th><th>Llegada</th><th>Última vez</th><th>Minutos en oficina</th><th>Suele llegar / salir</th><th>Cámaras</th></tr>${d.employees.map(e => `<tr><td>${esc(e.name)}</td><td class="${e.present ? 'ok' : 'no'}">${e.present ? 'Sí' : (e.left ? 'Salió ' + hm(e.exit_ts) : (e.attended ? 'Ya no está' : 'No'))}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${e.usual_in ? e.usual_in + ' – ' + e.usual_out + ' <span class="meta">(' + e.usual_days + ' días)</span>' : '<span class="meta">aprendiendo</span>'}${e.status === 'deberia estar' ? ' <b class="no">¿debería estar?</b>' : ''}${e.status === 'se quedo' ? ' <b class="no">se quedó tarde</b>' : ''}</td><td>${esc(e.cams.join(', '))}</td></tr>`).join('')}</table>` : '<div class="empty">Aún no hay empleados clasificados. Clasifícalos en “Por revisar”.</div>')
+      + (d.employees.length ? `<table><tr><th>Empleado</th><th>Presente</th><th>Llegada</th><th>Última vez</th><th>Minutos en oficina</th><th>Suele llegar / salir</th><th>Cámaras</th></tr>${d.employees.map(e => `<tr><td>${esc(e.name)}${/^Persona #/.test(e.name) ? ' <button class="btn sm" data-nm="' + e.id + '" title="Poner el nombre real; si ya existe esa persona, se unen">Nombrar / unir</button>' : ''}</td><td class="${e.present ? 'ok' : 'no'}">${e.present ? 'Sí' : (e.left ? 'Salió ' + hm(e.exit_ts) : (e.attended ? 'Ya no está' : 'No'))}</td><td>${hm(e.first_ts)}</td><td>${hm(e.last_ts)}</td><td>${e.minutes}</td><td>${e.usual_in ? e.usual_in + ' – ' + e.usual_out + ' <span class="meta">(' + e.usual_days + ' días)</span>' : '<span class="meta">aprendiendo</span>'}${e.status === 'deberia estar' ? ' <b class="no">¿debería estar?</b>' : ''}${e.status === 'se quedo' ? ' <b class="no">se quedó tarde</b>' : ''}</td><td>${esc(e.cams.join(', '))}</td></tr>`).join('')}</table>` : '<div class="empty">Aún no hay empleados clasificados. Clasifícalos en “Por revisar”.</div>')
       + `<h3 style="margin-top:20px">Invitados: ${d.guests.count} · por revisar hoy: ${d.pending_review}</h3><div class="row">${d.guests.people.map(g => `<div class="mini"><img src="${g.snapshot}" onerror="this.style.visibility='hidden'"><div>${esc(g.name)}<br>${hm(g.first_ts)}–${hm(g.last_ts)}</div></div>`).join('')}</div>`;
   } catch (e) { v.innerHTML = '<div class="empty">Error cargando asistencia.</div>'; }
 }

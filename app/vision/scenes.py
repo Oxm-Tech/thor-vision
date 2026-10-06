@@ -155,6 +155,7 @@ def _clip(s, n: int) -> str:
 
 # lo fija main.py: cam_id -> nombres de personas conocidas en cuadro ahora
 KNOWN_PRESENT = None
+PETS_KNOWN = None          # callable(cam_id) -> bool: los animales en cuadro son mascotas de la casa (clasificador de mascotas)
 
 
 def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[int] = None,
@@ -198,12 +199,27 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
         types = [t for t in types if t not in person_types]   # alerta de persona sin persona visible
         if not types:
             alerts = []
+    if "animal" in types and PETS_KNOWN is not None:
+        try:
+            if PETS_KNOWN(scene.cam_id):
+                types.remove("animal")
+                result["pet_known"] = True
+                if not types:
+                    alerts = []
+        except (TypeError, ValueError, KeyError):
+            pass
     if "animal" in types and scene.known_pets:
         blob = (act + " " + " ".join(alerts)).lower()
         if re.search(r"mascota|akamaru|mojo|gigi|shar|shiba|perro negro peque|perros? (de la casa|conocid)", blob):
             types.remove("animal")
             if not types:
                 alerts = []
+    objs = result.get("yolo_objects") if isinstance(result.get("yolo_objects"), dict) else {}
+    if (objs.get("bicicleta") or objs.get("moto")) and re.search(r"yace|tumbad|tirad|en el suelo|acostad", (act + " " + " ".join(alerts)).lower()):
+        types = [t for t in types if t not in ("persona_en_suelo", "merodeo")]       # una persona con bicicleta/moto vista desde arriba parece "tirada"
+        result["bike_in_scene"] = True
+        if not types:
+            alerts = []
     if "persona_en_suelo" in types:
         no_person = yolo_people == 0
         not_lying = posture is not None and posture.get("max_aspect", 1.0) < 0.8

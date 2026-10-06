@@ -92,6 +92,13 @@ def visit_face(vid: int, request: Request):
         JSONResponse(status_code=404, content={"error": "sin imagen"})
 
 
+@router.get("/api/person-visits/{vid}/scene")
+def visit_scene(vid: int, request: Request):
+    b = request.app.state.db.get_visit_blob(vid, "scene")
+    return Response(content=b, media_type="image/jpeg", headers=_JPEG) if b else \
+        JSONResponse(status_code=404, content={"error": "sin imagen"})
+
+
 @router.get("/api/person-visits/{vid}/body")
 def visit_body(vid: int, request: Request):
     b = request.app.state.db.get_visit_blob(vid, "body")

@@ -47,10 +47,10 @@ def jpeg():
 def test_visit_with_face_creates_an_alert_with_snapshot():
     db, sn = FakeDB(), FakeSnaps()
     d = doorbell.DoorAlerts(db, sn, {}, "cam-vto", "Videoportero")
-    d.visitor_alert({"visit_id": 7, "subject_id": 418, "name": None, "first_ts": 100.0, "last_ts": 105.0, "scene": None, "face": jpeg()})
+    d.visitor_alert({"visit_id": 7, "subject_id": 418, "name": None, "first_ts": 100.0, "last_ts": 112.0, "scene": None, "face": jpeg()})
     typ, cam, p, has_alert = db.events[0]
     assert typ == "nemotron" and cam == "cam-vto" and has_alert
-    assert p["alert_types"] == ["visita_videoportero"] and p["doorbell"]["visit_id"] == 7 and "5 s" in p["activity"]
+    assert p["alert_types"] == ["visita_videoportero"] and p["doorbell"]["visit_id"] == 7 and "12 s" in p["activity"]
     assert sn.saved == [("cam-vto", "visita", 1, True)]
 
 
@@ -115,3 +115,30 @@ def test_ring_alert_saves_snapshot_from_frame_entry():
     d = DoorAlerts(DB(), Snaps(), {"cam-vto": buf})
     d.ring_alert("CallNoAnswered", "Start", {})
     assert saved == [("cam-vto", "IMG", "timbre", 7)]
+
+
+def test_short_unknown_pass_is_traffic_not_a_visit_alert():
+    from app.vision.doorbell import DoorAlerts
+    ev = []
+
+    class DB:
+        def insert_event(self, *a, **k):
+            ev.append(a)
+            return 1
+
+    d = DoorAlerts(DB(), None, {})
+    d.visitor_alert({"visit_id": 1, "subject_id": None, "name": None, "first_ts": 100.0, "last_ts": 101.0, "scene": None, "face": b"x"})
+    assert ev == [] and d.transit == 1                                   # paso 1 s sin timbre ni nombre
+    d.visitor_alert({"visit_id": 2, "subject_id": 5, "name": "Neto", "first_ts": 100.0, "last_ts": 101.0, "scene": None, "face": b"x"})
+    assert len(ev) == 1                                                  # con nombre si es visita
+    d._last_ring["Invite"] = 150.0
+    d.visitor_alert({"visit_id": 3, "subject_id": None, "name": None, "first_ts": 140.0, "last_ts": 142.0, "scene": None, "face": b"x"})
+    assert len(ev) == 2                                                  # junto a un timbre tambien
+
+
+def test_timeline_effective_type_splits_sensor_and_transit():
+    from app.api.routes_timeline import _effective_type
+    assert _effective_type({"alert_types": ["puerta_abierta"], "source": "iot"}) == "sensor_puerta"
+    assert _effective_type({"alert_types": ["puerta_abierta"]}) == "puerta_abierta"
+    assert _effective_type({"alert_types": ["visita_videoportero"], "source": "doorbell", "doorbell": {"duration_s": 0}, "activity": "Visita frente al videoportero: 0 s"}) == "trafico_calle"
+    assert _effective_type({"alert_types": ["visita_videoportero"], "source": "doorbell", "doorbell": {"duration_s": 0}, "activity": "Visita frente al videoportero (Neto): 0 s"}) == "visita_videoportero"

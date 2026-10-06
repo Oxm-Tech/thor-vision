@@ -14,6 +14,8 @@ ENABLED = os.environ.get("PET_COLLECT", "true").lower() == "true"
 MIN_CONF = float(os.environ.get("PET_MIN_CONF", "0.45"))
 MIN_SIDE = int(os.environ.get("PET_MIN_SIDE", "36"))
 COOLDOWN_S = float(os.environ.get("PET_COOLDOWN_S", "40"))
+KNOWN_LABELS = {"akamaru", "mojo", "gigi"}
+KNOWN_MIN_P = float(os.environ.get("PET_KNOWN_MIN_P", "0.6"))
 MAX_TOTAL = int(os.environ.get("PET_MAX_TOTAL", "4000"))
 LABELS = ("akamaru", "mojo", "gigi", "otro", "descartar")
 NAMES = {"akamaru": "Akamaru", "mojo": "Mojo-jojo", "gigi": "Gigi"}
@@ -40,6 +42,9 @@ class PetCollector:
     def __init__(self, db):
         self.db = db
         self._last: dict = {}
+        self._seen: dict = {}            # cam_id -> (ts, [(etiqueta, prob)]) de los perros/gatos vistos por ultima vez
+        self._model = None
+        self._model_ts = 0.0
         self._lock = threading.Lock()
         os.makedirs(ROOT, exist_ok=True)
         with db._lock:
@@ -83,6 +88,21 @@ class PetCollector:
             self.db._conn.commit()
         logger.info("PetCollector: importados %d recortes semilla", k)
 
+    def known_now(self, cam_id: str, max_age_s: float = 150.0) -> bool:
+        """True si los perros/gatos vistos hace poco en la camara son mascotas de la casa segun el clasificador (sin desconocidos)."""
+        seen = self._seen.get(cam_id)
+        return bool(seen and time.time() - seen[0] <= max_age_s and seen[1] and all(l in KNOWN_LABELS and p >= KNOWN_MIN_P for l, p in seen[1]))
+
+    def _classify(self, crop):
+        try:
+            from app.vision import pet_model
+            if self._model is None or time.time() - self._model_ts > 300:
+                self._model, self._model_ts = pet_model.load_model(), time.time()
+            return pet_model.classify(crop, model=self._model) if self._model else (None, 0.0)
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            logger.debug("pets: sin clasificacion: %s", exc)
+            return None, 0.0
+
     def update(self, cam_id, result, frame, ts=None) -> None:
         if not ENABLED:
             return
@@ -96,6 +116,7 @@ class PetCollector:
         rw, rh = getattr(result, "frame_w", 0) or fw, getattr(result, "frame_h", 0) or fh
         sx, sy = fw / rw, fh / rh
         saved = 0
+        labs: list = []
         for o in sorted(objs, key=lambda o: -o["conf"])[:3]:
             x1, y1, x2, y2 = o["b"]
             x1, x2, y1, y2 = int(x1 * sx), int(x2 * sx), int(y1 * sy), int(y2 * sy)
@@ -115,6 +136,9 @@ class PetCollector:
                                       (rel, cam_id, now, o["c"], o["conf"], x2 - x1, y2 - y1))
                 self.db._conn.commit()
             saved += 1
+            labs.append(self._classify(crop))
+        if labs:
+            self._seen[cam_id] = (now, labs)
         if saved:
             self._last[cam_id] = now
             self._trim()

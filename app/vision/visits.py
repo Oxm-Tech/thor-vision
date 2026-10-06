@@ -38,6 +38,7 @@ MATCH_THR = _f("SUBJECT_MATCH_THRESHOLD", 0.45)
 KNOWN_MIN_CONF = _f("SUBJECT_KNOWN_MIN_CONF", 0.45)
 FLUSH_S = 10.0
 EMB_CAP_OLD, EMB_CAP_NEW = 30, 5
+STREET_EXTRA = {c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()}
 FACE_MAX_YAW = _f("FACE_MAX_YAW", 0.45)
 SNAP_ENABLED = os.environ.get("FACE_SNAPSHOT_ENABLED", "true").lower() == "true"
 SNAP_MIN_INTERVAL_S = _f("FACE_SNAPSHOT_INTERVAL_S", 1.5)
@@ -88,6 +89,20 @@ def face_yaw(kps) -> float:
         return float((nose[0] - (le[0] + re_[0]) / 2.0) / d)
     except Exception:
         return 1.0
+
+
+def _scene_with_box(frame: np.ndarray, box: tuple, width: int = 960) -> Optional[bytes]:
+    """Cuadro completo reducido con el recuadro de la persona dibujado (para ver donde estaba y no solo su miniatura)."""
+    try:
+        h, w = frame.shape[:2]
+        k = min(1.0, width / w)
+        small = cv2.resize(frame, (int(w * k), int(h * k)), interpolation=cv2.INTER_AREA) if k < 1.0 else frame.copy()
+        x1, y1, x2, y2 = (int(v * k) for v in box)
+        cv2.rectangle(small, (x1, y1), (x2, y2), (118, 185, 0), 2)
+        ok, buf = cv2.imencode(".jpg", small, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        return buf.tobytes() if ok else None
+    except cv2.error:
+        return None
 
 
 def _unit(v: np.ndarray) -> np.ndarray:
@@ -291,7 +306,7 @@ class VisitManager:
         jpg = _jpeg(crop, 288, 75)
         if jpg:
             tr.body, tr.body_q, tr.dirty = jpg, q, True
-            tr.scene = _jpeg(frame, 960, 70)
+            tr.scene = _scene_with_box(frame, (x1, y1, x2, y2))
 
     def _maybe_snapshot(self, cam_id, tr: Track, pb, frame, now: float) -> None:
         g = self._grabbers.get(cam_id)
@@ -452,8 +467,10 @@ class VisitManager:
         if tr.emb_sum is not None:
             emb = _unit(tr.emb_sum).astype(np.float32).tobytes()
         known, kconf = self._known_name(tr)
+        keep_scene = (status == "closed" and tr.scene is not None and (self.zones.get(tr.cam_id) == "exterior" or tr.cam_id in STREET_EXTRA)
+                      and ((tr.last_ts - tr.first_ts) >= 8 or tr.subject_id is not None))
         self.db.update_person_visit(
-            tr.visit_id, end_ts=tr.last_ts, hits=tr.hits, status=status,
+            tr.visit_id, scene=tr.scene if keep_scene else None, end_ts=tr.last_ts, hits=tr.hits, status=status,
             static=int(tr.static), face=tr.face, face_score=tr.face_q,
             body=tr.body, body_score=tr.body_q, embedding=emb, n_emb=tr.n_emb,
             known_name=known, known_conf=kconf, subject_id=tr.subject_id)

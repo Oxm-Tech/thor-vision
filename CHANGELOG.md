@@ -2,6 +2,18 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.13.0 — Alertas más limpias: timbre aparte, tránsito, mascotas conocidas y capturas con recuadro (2026-10-06)
+
+Se separan en la línea de tiempo el timbre, las cámaras Tuya y los sensores; el videoportero distingue visitas de simple tránsito; se dejan de alertar mascotas conocidas, personal identificado en el site y personas con bicicleta; y las capturas de calle muestran el cuadro completo con el recuadro de la persona.
+
+- **Línea de tiempo · Categorías separadas**: Timbre (propia), Cámaras Tuya (movimiento/ruido), Sensores (puertas, batería, consumo) y Tráfico calle y visitas. Las alertas de puerta de un sensor ya no se mezclan con las que ve la cámara.
+- **Videoportero · Visita real vs tránsito**: Solo es visita (alerta) si hubo timbre cerca, dura 8 s o más, o es alguien con nombre; el resto es tránsito y queda como tráfico. Las 656 alertas anteriores de 0 s se reclasifican como tráfico en la línea de tiempo.
+- **Alertas · Menos falsos positivos**: Mascotas reconocidas por el clasificador (Akamaru, Mojo, Gigi) ya no generan 'animal'; el personal identificado no dispara 'acceso no autorizado' en Acceso Site; una persona con bicicleta o moto vista desde arriba no se reporta como 'tirada en el suelo'. El evento guarda los objetos de YOLO (yolo_objects) para auditar.
+- **Tráfico · Capturas con recuadro**: Las visitas de calle (Exterior 1/2 y videoportero) de 8 s o más, o con identidad, guardan el cuadro completo con el recuadro de la persona; la línea de tiempo lo muestra en lugar de solo la miniatura.
+- **Identidades · Duplicados sin falsos pares**: Ya no se proponen como duplicados dos personas con nombres distintos, y 'No son la misma' descarta el par. En Asistencia, las personas sin nombre tienen 'Nombrar / unir'.
+- **Vehículos · Polígono por área**: Verificado con el auto azul de Exterior 2: antes quedaba fuera (base fuera del polígono), ahora entra (61% de su área dentro).
+- **Cámaras · Escaleras P2 a 1920x1080**: La cámara ya entrega H264 1920x1080 a 30 fps y la configuración declara esa resolución.
+
 ## v2.12.0 — Fase 1: identidad por cuerpo, color de ropa y validación por esqueleto (2026-10-06)
 
 Cada visita cierra con un embedding de cuerpo (GPU) y el color de su ropa, y las que no tienen rostro reciben una sugerencia de quién podrían ser; las personas dudosas de YOLO se validan con un esqueleto (YOLO26-pose).

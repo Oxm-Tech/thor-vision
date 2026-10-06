@@ -13,7 +13,8 @@ from app.onvif.dahua_events import DahuaError
 logger = logging.getLogger(__name__)
 
 RING_CODES = {c.strip() for c in os.environ.get("DOORBELL_CODES", "Invite,CallNoAnswered,BackKeyLight").split(",") if c.strip()}
-MIN_VISIT_S = float(os.environ.get("DOORBELL_MIN_VISIT_S", "2"))
+MIN_VISIT_S = float(os.environ.get("DOORBELL_MIN_VISIT_S", "8"))       # menos que esto sin timbre ni nombre = transito (trafico), no visita
+RING_WINDOW_S = float(os.environ.get("DOORBELL_RING_WINDOW_S", "90"))
 DEBOUNCE_S = float(os.environ.get("DOORBELL_DEBOUNCE_S", "10"))
 
 
@@ -21,6 +22,7 @@ class DoorAlerts:
     def __init__(self, db, snapshots, buffers: dict, cam_id: str = "cam-vto", cam_name: str = "Videoportero"):
         self.db, self.snapshots, self.buffers, self.cam_id, self.cam_name = db, snapshots, buffers, cam_id, cam_name
         self._last_ring: dict = {}
+        self.transit = 0            # visitas que solo pasaron (sin alerta)
         self.grab = None            # callable() -> bytes JPEG; lo fija main.py (snapshot.cgi del videoportero)
 
     def _save_snapshot(self, event_id: int, trigger: str, frame) -> None:
@@ -39,8 +41,10 @@ class DoorAlerts:
     def visitor_alert(self, v: dict) -> None:
         """Se llama al cerrarse una visita en el videoportero. v: visit_id, subject_id, name, first_ts, last_ts, scene, face."""
         dur = v["last_ts"] - v["first_ts"]
-        if dur < MIN_VISIT_S and not v.get("face"):
-            return
+        rang = any(v["first_ts"] - RING_WINDOW_S <= t <= v["last_ts"] + RING_WINDOW_S for t in self._last_ring.values())
+        if dur < MIN_VISIT_S and not v.get("name") and not rang:
+            self.transit += 1
+            return                    # alguien que paso frente al videoportero: queda como trafico (person_visits), sin alerta
         who = f" ({v['name']})" if v.get("name") else ""
         try:
             eid = self._insert(f"Visita frente al videoportero{who}: {int(dur)} s", f"Alguien se detuvo frente al videoportero{who}",

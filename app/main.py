@@ -236,6 +236,8 @@ async def lifespan(app: FastAPI):
     scenes = Scenes()
     if getattr(app.state, "visits", None) is not None:
         scenes_mod.KNOWN_PRESENT = app.state.visits.known_present
+    if getattr(app.state, "pets", None) is not None:
+        scenes_mod.PETS_KNOWN = app.state.pets.known_now
     require_person = os.environ.get("VLM_REQUIRE_PERSON", "true").lower() == "true"
     sustain_s      = float(os.environ.get("VLM_MOTION_SUSTAIN_S", "10"))
 

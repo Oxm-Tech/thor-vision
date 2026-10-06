@@ -248,9 +248,17 @@ def duplicates(request: Request, min_sim: float = 0.38, limit: int = 40):
     keep = keep[np.argsort(-vals[keep])][:limit]
     with db._lock:
         meta = {r[0]: r for r in db._conn.execute("SELECT id, COALESCE(name,'Persona #'||id), named, category FROM subjects").fetchall()}
-    return {"pairs": [{"a": ids[iu[0][k]], "b": ids[iu[1][k]], "similarity": round(float(vals[k]), 3),
-                       "a_name": meta[ids[iu[0][k]]][1], "b_name": meta[ids[iu[1][k]]][1],
-                       "a_cat": meta[ids[iu[0][k]]][3], "b_cat": meta[ids[iu[1][k]]][3]} for k in keep]}
+    rej = _rejected(db)
+    out = []
+    for k in keep:
+        a, b = ids[iu[0][k]], ids[iu[1][k]]
+        ma, mb = meta.get(a), meta.get(b)
+        if not ma or not mb or (a, b) in rej or (b, a) in rej:
+            continue
+        if ma[2] and mb[2] and ma[1].strip().lower() != mb[1].strip().lower():
+            continue                      # dos personas con nombre distinto son personas distintas: no se ofrece unirlas
+        out.append({"a": a, "b": b, "similarity": round(float(vals[k]), 3), "a_name": ma[1], "b_name": mb[1], "a_cat": ma[3], "b_cat": mb[3]})
+    return {"pairs": out}
 
 
 def _merge(intervals, gap=GAP_S):

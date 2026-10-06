@@ -1,5 +1,6 @@
 """Linea de tiempo de alertas: eventos con tipo y captura para el carril general y uno por camara."""
 import json
+import os
 import time
 from typing import Optional
 
@@ -35,7 +36,7 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
         except ValueError:
             d = {}
         events.append({"id": eid, "ts": ts, "cam": cam, "people": people or 0,
-                       "type": (d.get("alert_types") or ["sin_tipo"])[0],
+                       "type": _effective_type(d),
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],
                        "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
     events += _street_traffic(db, config, since, until)
@@ -49,18 +50,32 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
     return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated}
 
 
+def _effective_type(d: dict) -> str:
+    """Tipo para la linea de tiempo: separa el sensor de la deteccion por camara y el transito del videoportero de las visitas reales."""
+    t = (d.get("alert_types") or ["sin_tipo"])[0]
+    src = d.get("source")
+    if src == "iot" and t == "puerta_abierta":
+        return "sensor_puerta"
+    if src == "doorbell" and t == "visita_videoportero":
+        db_ = d.get("doorbell") or {}
+        if (db_.get("duration_s") or 0) < 8 and "(" not in (d.get("activity") or ""):
+            return "trafico_calle"
+    return t
+
+
 def _street_traffic(db, config, since, until) -> list:
     """Personas que pasan por las camaras de la calle (y el videoportero): quedan como registro en la linea de tiempo, no en la ocupacion interior."""
-    ext = [c.id for c in config.cameras if getattr(c, "zone", "") == "exterior"]
+    door = [c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()]
+    ext = [c.id for c in config.cameras if getattr(c, "zone", "") == "exterior"] + [c for c in door if any(x.id == c for x in config.cameras)]
     if not ext:
         return []
     with db._lock:
         rows = db._conn.execute(
-            "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc, v.attrs FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
+            "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc, v.attrs, v.scene IS NOT NULL FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
             f"WHERE v.fp=0 AND v.static=0 AND v.start_ts>=? AND v.start_ts<=? AND v.cam_id IN ({','.join('?' * len(ext))}) "
-            "AND (s.named=1 OR v.end_ts - v.start_ts >= 8) ORDER BY v.start_ts DESC LIMIT 600", (since, until, *ext)).fetchall()
+            "AND (s.named=1 OR v.end_ts - v.start_ts >= 8 OR v.cam_id IN ('cam-vto')) ORDER BY v.start_ts DESC LIMIT 600", (since, until, *ext)).fetchall()
     out = []
-    for vid, ts, cam, name, named, desc, at in rows:
+    for vid, ts, cam, name, named, desc, at, has_scene in rows:
         who = name if named else "Persona sin identificar"
         try:
             a = json.loads(at) if at else {}
@@ -71,7 +86,7 @@ def _street_traffic(db, config, since, until) -> list:
         extra = (f" · ropa: {cl}" if cl else "") + (f" · ¿{g['name']}? {round(g['sim'] * 100)}%" if g and not named else "")
         out.append({"id": f"v{vid}", "ts": ts, "cam": cam, "people": 1, "type": "trafico_calle", "sev": "none",
                     "text": (f"{who} en la calle" + (f": {desc}" if desc else "") + extra)[:220], "review": None,
-                    "img": f"/api/person-visits/{vid}/body"})
+                    "img": f"/api/person-visits/{vid}/{'scene' if has_scene else 'body'}"})
     return out
 
 
