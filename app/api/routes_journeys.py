@@ -78,6 +78,17 @@ def reject(jid: int, request: Request):
     return {"ok": True}
 
 
+@router.post("/api/journeys/backfill")
+def backfill(request: Request, hours: float = 24.0):
+    """Enlaza en orden cronologico las visitas de las ultimas horas que aun no tienen viaje (para medir el efecto con datos reales)."""
+    import threading
+    lk = getattr(request.app.state, "journeys", None)
+    if lk is None:
+        raise HTTPException(503, "viajes apagados")
+    threading.Thread(target=lambda: lk.run_once(window_s=min(hours, 168) * 3600), daemon=True, name="journeys-backfill").start()
+    return {"ok": True, "hours": hours}
+
+
 @router.get("/api/journeys/stats")
 def stats(request: Request, hours: float = 24.0):
     db = _db(request)

@@ -168,14 +168,14 @@ class JourneyLinker:
                 out.append({"id": jid, "last_ts": last_ts, "last_cam": last_cam, "subject_id": sid, "embs": embs, "attrs": attrs})
         return out
 
-    def run_once(self, now: Optional[float] = None) -> int:
+    def run_once(self, now: Optional[float] = None, window_s: float = 1800.0) -> int:
         now = now or time.time()
         self._resolve_tuya(now)
         with self.db._lock:
             rows = self.db._conn.execute(
                 "SELECT id, cam_id, start_ts, COALESCE(end_ts,start_ts), subject_id, body_emb, attrs FROM person_visits "
                 "WHERE journey_id IS NULL AND status='closed' AND fp=0 AND static=0 AND start_ts>=? AND COALESCE(end_ts,start_ts)<=? ORDER BY start_ts",
-                (now - 1800, now - 8)).fetchall()
+                (now - window_s, now - 8)).fetchall()
         n = 0
         for vid, cam, a, b, sid, emb, at in rows:
             try:
