@@ -1,5 +1,43 @@
 [
   {
+    "version": "2.14.0",
+    "date": "2026-10-06",
+    "name": "Vehículos en polígono con placa, capturas por vehículo, Umami con identidad y móvil",
+    "summary": "Los vehículos del polígono (los que importan) generan alertas y se leen con OCR y, de respaldo, con el VLM; los demás quedan como informativos; cada vehículo muestra sus capturas de llegada y salida. Umami identifica el dispositivo y registra eventos con propiedades, y el panel se adapta solo al tamaño y al tacto.",
+    "highlights": [
+      {
+        "area": "Vehículos",
+        "title": "En polígono vs informativos",
+        "text": "Todo vehículo quieto más de 3 min se registra; solo los dentro del polígono generan alertas (llegada, cada hora, salida) y lectura de placa. La tabla indica cuál es cuál."
+      },
+      {
+        "area": "Vehículos",
+        "title": "Placa con OCR y VLM",
+        "text": "Si el OCR no lee la placa del recorte nativo tras 3 intentos, el VLM la lee del recorte; se acepta con dos lecturas iguales y formato de placa (letras y números)."
+      },
+      {
+        "area": "Vehículos",
+        "title": "Capturas de llegada y salida",
+        "text": "Al pulsar la miniatura del vehículo se abre el visor con las capturas de la llegada, de cada hora y de la salida."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Vista nativa",
+        "text": "La vista de cada cámara usa por defecto la resolución nativa (2592x1944 en las exteriores) con su rótulo; el botón Nativa la cambia por una vista ligera."
+      },
+      {
+        "area": "Analítica",
+        "title": "Umami con identidad y eventos",
+        "text": "Cada dispositivo se identifica con un id estable y propiedades (nombre, sistema, navegador, formato, táctil); se registran eventos de uso con propiedades y el iframe de la línea de tiempo ya no cuenta como vista."
+      },
+      {
+        "area": "Interfaz",
+        "title": "Móvil automático e indicadores",
+        "text": "El panel detecta tamaño y tacto (celular, tablet, escritorio) y ajusta encabezado, iconos y cuadrícula; TEMP y DISCO muestran el valor con su unidad en una línea, sin deformar la tarjeta. El timeline de eventos muestra fecha y hora."
+      }
+    ]
+  },
+  {
     "version": "2.13.1",
     "date": "2026-10-06",
     "name": "Exteriores a 5 MP, YOLO de mayor tamaño y timbres con captura",

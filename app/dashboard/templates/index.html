@@ -119,7 +119,8 @@ header {
 .gauge-track { fill:none; stroke:rgba(255,255,255,.06); stroke-width:5; stroke-linecap:round; }
 .gauge-fill  { fill:none; stroke-width:5; stroke-linecap:round; transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1); }
 .gauge-value { font-size:.95rem; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1; }
-.gauge-unit  { font-size:.6rem; color:var(--text-muted); margin-top:-2px; }
+.gauge-vu { display:flex; align-items:baseline; justify-content:center; gap:3px; white-space:nowrap; min-height:1.1rem; }
+.gauge-unit  { font-size:.62rem; color:var(--text-muted); }
 .gauge-card.warn  .gauge-value { color:var(--yellow-warn); }
 .gauge-card.alert .gauge-value { color:var(--red-alert); }
 
@@ -976,8 +977,26 @@ header { padding-top:8px; }
 .hdr-icons .hdr-btn:hover { color:var(--oxm-blue); border-color:var(--oxm-blue-dark); }
 .hdr-icons .hdr-btn:hover::after { color:var(--text-primary); }
 .glow:hover { background-image:radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(118,185,0,.20), transparent 65%); }
+/* móvil / táctil: se adapta solo (html[data-vp] y .is-touch los fija el script) */
+html[data-vp="s"] header { padding:6px 10px 0; }
+html[data-vp="s"] .header-brand { padding:8px 0; margin-right:8px; }
+html[data-vp="s"] .brand-divider, html[data-vp="s"] .header-title { display:none; }
+html[data-vp="s"] .vlm-card { min-width:0; padding:6px 8px; }
+html[data-vp="s"] .persons-counter { min-width:60px; padding:6px 8px; }
+html[data-vp="s"] .header-clock { padding:8px 0 8px 10px; margin-left:auto; border-left:0; }
+html[data-vp="s"] .hdr-icons { flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto; gap:8px; padding:8px 2px 10px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
+html[data-vp="s"] .hdr-icons .hdr-btn { flex:0 0 auto; min-width:66px; padding:8px 8px 6px; scroll-snap-align:start; }
+html[data-vp="s"] main { padding:10px; }
+html[data-vp="s"] .cam-grid { grid-template-columns:1fr; gap:10px; }
+html[data-vp="s"] .tl { margin:0 4px 10px; }
+html[data-vp="m"] .cam-grid { grid-template-columns:repeat(2,1fr); }
+html.is-touch .hdr-btn, html.is-touch .tl-leg, html.is-touch .hev-btn, html.is-touch .cam-open { min-height:44px; min-width:44px; }
+html.is-touch .glow:hover { background-image:none; }
 </style>
-{% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
+{% if umami_src and umami_id %}<script>
+// Umami (analitica): no se mide el iframe de la linea de tiempo (?tl=) para no inflar las vistas
+if (!new URLSearchParams(location.search).get('tl')) { const s = document.createElement('script'); s.defer = true; s.src = "{{ umami_src }}"; s.dataset.websiteId = "{{ umami_id }}"; document.head.appendChild(s); }
+</script>{% endif %}
 </head>
 <body>
 
@@ -1181,8 +1200,7 @@ function createGaugeCard(id, label, stops) {
         stroke-dasharray="${CIRCUMF.toFixed(2)} ${CIRCUMF.toFixed(2)}"
         stroke-dashoffset="${CIRCUMF.toFixed(2)}"/>
     </svg>
-    <span class="gauge-value" id="gval-${id}">—</span>
-    <span class="gauge-unit"  id="gunit-${id}"></span>
+    <span class="gauge-vu"><span class="gauge-value" id="gval-${id}">—</span><span class="gauge-unit" id="gunit-${id}"></span></span>
   </div>`;
 }
 function updateGauge(id, pct, label, unit='', warnAt=70, alertAt=90) {
@@ -2114,7 +2132,7 @@ function renderHistEvents(events, snapMap, boxId = 'hist-events', camIndex = nul
     }
     const rl = e.review_label;
     return `<div class="hist-ev${e.has_alert ? ' alert' : ''}">
-      <span class="hist-ev-t">hace ${_fmtAgo(now - e.ts)}</span>
+      <span class="hist-ev-t" title="${new Date(e.ts * 1000).toLocaleString('es-MX')}">${new Date(e.ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false })} · hace ${_fmtAgo(now - e.ts)}</span>
       <span class="hist-ev-c">${_escapeHtml(_camName(e.cam_id))}</span>
       <span class="hist-ev-p">${e.people || 0}p</span>
       <span class="hist-ev-a">${_escapeHtml(d.activity || '—')}${n > 1 ? ` <i class="muted">(+${n - 1} similares)</i>` : ''}
@@ -2990,8 +3008,8 @@ function initVehicles(){
       }
       document.getElementById('veh-note').textContent = `Cámaras: ${d.tracked_cams.join(', ')} · se registra un vehículo quieto más de ${Math.round(d.min_parked_s / 60)} min · la placa se lee sola en los autos de la zona de estacionamiento y se puede corregir a mano`;
       document.getElementById('veh-body').innerHTML = d.vehicles.length ? d.vehicles.map(v => `<tr>
-        <td>${v.has_thumb ? `<img class="veh-img" src="/api/vehicles/${v.id}/image" loading="lazy" alt="">` : ''}</td>
-        <td>${_escapeHtml(v.cam)}</td><td>${_escapeHtml(v.cls)}</td>
+        <td>${v.has_thumb ? `<img class="veh-img" data-vid="${v.id}" style="cursor:zoom-in" title="Ver llegada y salida" src="/api/vehicles/${v.id}/image" loading="lazy" alt="">` : ''}</td>
+        <td>${_escapeHtml(v.cam)}</td><td>${_escapeHtml(v.cls)}${v.in_zone ? ' <small class="conn-ok" title="Dentro del polígono de estacionamiento: con alertas y lectura de placa">en polígono</small>' : ' <small class="muted" title="Fuera del polígono: solo informativo">informativo</small>'}</td>
         <td>${_escapeHtml(new Date(v.first_ts * 1000).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }))}</td>
         <td>${dur(v.duration_s)}</td>
         <td>${v.state === 'parked' ? '<span class="conn-ok">estacionado</span>' : '<span class="conn-warn">se fue</span>'}</td>
@@ -3002,6 +3020,17 @@ function initVehicles(){
   btn.addEventListener('click', () => { modal.hidden = false; load.auto = false; load(); timer = setInterval(load, 20000); });
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
   document.getElementById('veh-close')?.addEventListener('click', close);
+  document.getElementById('veh-body')?.addEventListener('click', async e => {
+    const im = e.target.closest('.veh-img'); if (!im) return;
+    const vid = im.dataset.vid;
+    let list = [];
+    try { list = (await (await fetch(`/api/vehicles/${vid}/snaps`)).json()).snaps || []; } catch (_) {}
+    const row = im.closest('tr'); const cap = row ? row.children[1].textContent + ' · ' + row.children[3].textContent : '';
+    if (!list.length){ _vaLightbox({ url: im.src, hora: '', cam: cap, texto: 'miniatura del vehículo (sin capturas de llegada/salida: informativo o anterior a las capturas)' }); return; }
+    const items = list.map(s => ({ ts: s.ts, cam: cap, url: s.url, text: s.kind }));
+    const show = i => _vaLightbox({ url: items[i].url, hora: _tlFmt(items[i].ts, true), cam: items[i].cam, texto: items[i].text }, { list: items, i });
+    window._vehShow = show; show(0);
+  });
   document.getElementById('veh-tabs')?.addEventListener('click', e => {
     const b = e.target.closest('[data-st]'); if (!b) return;
     state = b.dataset.st; document.querySelectorAll('#veh-tabs .hist-range').forEach(x => x.classList.toggle('on', x === b)); load();
@@ -3501,6 +3530,7 @@ function _vaLightbox(img, nav){
 // Navegacion del visor de la linea de tiempo: ←/→ alertas de la misma camara, ↑/↓ todas las camaras, en orden de tiempo.
 function _tlViewer(list, i){
   const e = list[i];
+  if (e.url){ _vaLightbox({ url: e.url, hora: _tlFmt(e.ts, true), cam: e.cam, texto: e.text }, { list, i }); return; }
   const cam = (TL.geom.cams.find(c => c.id === e.cam) || {}).name || e.cam;
   _vaLightbox({ url: e.img, hora: _tlFmt(e.ts, true), cam, texto: `${_tlTypeLabel(e.type)} — ${e.text}` }, { list, i });
 }
@@ -3781,6 +3811,29 @@ setTimeout(_loadChatHistory, 300);
     const r = t.getBoundingClientRect();
     t.style.setProperty('--mx', (ev.clientX - r.left) + 'px'); t.style.setProperty('--my', (ev.clientY - r.top) + 'px');
   }, { passive: true });
+})();
+</script>
+<script>
+// Identidad del dispositivo para Umami: id estable por navegador + nombre y propiedades (sin datos personales). Eventos con propiedades.
+(function(){
+  const g = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  const st = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+  let id = g('thor_device_id'); if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); st('thor_device_id', id); }
+  const ua = navigator.userAgent;
+  const os = /iPhone|iPad|iOS/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'otro';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : 'otro';
+  const form = () => innerWidth < 700 ? 'celular' : innerWidth < 1100 ? 'tablet' : 'escritorio';
+  const props = () => ({ nombre: g('thor_device_name') || (os + ' ' + br), os, navegador: br, formato: form(), tactil: navigator.maxTouchPoints > 0, pwa: matchMedia('(display-mode: standalone)').matches, rol: 'operador' });
+  window.thorTrack = (name, data) => { try { if (window.umami && window.umami.track) window.umami.track(name, data || {}); } catch (_) {} };
+  window.thorSetDeviceName = n => { st('thor_device_name', String(n || '').slice(0, 40)); try { window.umami && window.umami.identify(id, props()); } catch (_) {} };
+  let tries = 0; const t = setInterval(() => { if (window.umami && window.umami.identify) { window.umami.identify(id, props()); clearInterval(t); } else if (++tries > 40) clearInterval(t); }, 250);
+  // tipo de pantalla y toque: el CSS se adapta solo
+  const apply = () => { const r = document.documentElement; r.dataset.vp = innerWidth < 700 ? 's' : innerWidth < 1100 ? 'm' : 'l'; r.classList.toggle('is-touch', matchMedia('(pointer: coarse)').matches); };
+  apply(); addEventListener('resize', apply);
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest && ev.target.closest('.hdr-btn, .cam-open, .tl-leg, .hev-btn');
+    if (b) window.thorTrack('ui_click', { elemento: b.id || b.className.split(' ')[0], destino: b.getAttribute('href') || '' });
+  }, true);
 })();
 </script>
 </body>

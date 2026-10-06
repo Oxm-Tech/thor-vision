@@ -183,6 +183,8 @@ async def lifespan(app: FastAPI):
         max_height    = int(os.environ.get("VLM_MAX_HEIGHT", "720")),
     )
     app.state.vlm_analyzer = analyzer
+    if getattr(app.state, "parked", None) is not None:
+        app.state.parked.analyzer = analyzer          # respaldo del OCR de placas
     if visit_manager is not None and os.environ.get("VISIT_VLM_ENABLED", "true").lower() == "true":
         visit_manager.set_analyzer(analyzer)
 
@@ -410,7 +412,7 @@ async def zones_page(request: Request):
 
 @app.get("/camara/{cam_id}", response_class=HTMLResponse)
 async def camera_page(request: Request, cam_id: str):
-    return templates.TemplateResponse("camera.html", {"request": request})
+    return templates.TemplateResponse("camera.html", {"request": request, "umami_src": os.environ.get("UMAMI_SCRIPT_URL", ""), "umami_id": os.environ.get("UMAMI_WEBSITE_ID", "")})
 
 
 @app.get("/galeria", response_class=HTMLResponse)

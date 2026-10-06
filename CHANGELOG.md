@@ -2,6 +2,17 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.14.0 — Vehículos en polígono con placa, capturas por vehículo, Umami con identidad y móvil (2026-10-06)
+
+Los vehículos del polígono (los que importan) generan alertas y se leen con OCR y, de respaldo, con el VLM; los demás quedan como informativos; cada vehículo muestra sus capturas de llegada y salida. Umami identifica el dispositivo y registra eventos con propiedades, y el panel se adapta solo al tamaño y al tacto.
+
+- **Vehículos · En polígono vs informativos**: Todo vehículo quieto más de 3 min se registra; solo los dentro del polígono generan alertas (llegada, cada hora, salida) y lectura de placa. La tabla indica cuál es cuál.
+- **Vehículos · Placa con OCR y VLM**: Si el OCR no lee la placa del recorte nativo tras 3 intentos, el VLM la lee del recorte; se acepta con dos lecturas iguales y formato de placa (letras y números).
+- **Vehículos · Capturas de llegada y salida**: Al pulsar la miniatura del vehículo se abre el visor con las capturas de la llegada, de cada hora y de la salida.
+- **Cámaras · Vista nativa**: La vista de cada cámara usa por defecto la resolución nativa (2592x1944 en las exteriores) con su rótulo; el botón Nativa la cambia por una vista ligera.
+- **Analítica · Umami con identidad y eventos**: Cada dispositivo se identifica con un id estable y propiedades (nombre, sistema, navegador, formato, táctil); se registran eventos de uso con propiedades y el iframe de la línea de tiempo ya no cuenta como vista.
+- **Interfaz · Móvil automático e indicadores**: El panel detecta tamaño y tacto (celular, tablet, escritorio) y ajusta encabezado, iconos y cuadrícula; TEMP y DISCO muestran el valor con su unidad en una línea, sin deformar la tarjeta. El timeline de eventos muestra fecha y hora.
+
 ## v2.13.1 — Exteriores a 5 MP, YOLO de mayor tamaño y timbres con captura (2026-10-06)
 
 Exterior 2 pasa a 2592x1944 sin deformar la imagen, las cámaras exteriores detectan personas con YOLO a 1280 px, los timbres viejos muestran al visitante cercano y el encabezado queda centrado.

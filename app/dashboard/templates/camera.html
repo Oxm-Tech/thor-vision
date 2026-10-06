@@ -36,13 +36,14 @@ input[type=datetime-local]{background:var(--panel);color:var(--text);border:1px 
 #vw .nav button{background:#1c2130;color:#fff;border:1px solid #333c4f;border-radius:8px;padding:10px 18px;font-size:16px;cursor:pointer}
 #vw .x{position:absolute;top:10px;right:14px;background:none;border:0;color:#fff;font-size:26px;cursor:pointer}
 </style>
+{% if umami_src and umami_id %}<script defer src="{{ umami_src }}" data-website-id="{{ umami_id }}"></script>{% endif %}
 </head>
 <body>
 <header><a href="/">← Panel</a><h1 id="ttl">Cámara</h1><button class="btn" id="fs" title="Pantalla completa">⤢</button></header>
 <main>
   <section>
     <div class="stage"><img id="live" alt="en vivo"><span class="tag" id="tag">en vivo</span></div>
-    <div class="chips" id="chips"><button class="btn" id="hd" title="Captura a resolución completa de la cámara (más pesada)">HD</button></div>
+    <div class="chips" id="chips"><button class="btn on" id="hd" title="Resolución nativa de la cámara (más pesada); apágalo para una vista ligera">Nativa</button></div>
     <iframe id="tlf" class="tlf" title="Línea de tiempo de esta cámara" loading="lazy"></iframe></div>
   </section>
   <section>
@@ -67,8 +68,8 @@ const fmt = ts => { const d = new Date(ts * 1000); return d.toLocaleDateString('
 // vista en vivo: una captura nueva apenas llega la anterior
 const live = $('#live'); let alive = true;
 $('#tlf').src = '/?tl=' + encodeURIComponent(CAM);
-let hd = false;
-function tick(){ if (!alive) return; live.src = `/api/snapshot/${encodeURIComponent(CAM)}?${hd ? 'hd=1&' : ''}t=${Date.now()}`; }
+let hd = true;       // resolucion nativa de la camara (2592x1944 en las exteriores)
+function tick(){ if (!alive) return; live.src = `/api/snapshot/${encodeURIComponent(CAM)}?${hd ? 'native=1&' : ''}t=${Date.now()}`; }
 $('#hd').onclick = () => { hd = !hd; $('#hd').classList.toggle('on', hd); };
 live.onload = () => setTimeout(tick, hd ? 1200 : 600); live.onerror = () => setTimeout(tick, 3000); tick();
 document.addEventListener('visibilitychange', () => { alive = !document.hidden; if (alive) tick(); });
@@ -132,6 +133,10 @@ document.addEventListener('keydown', e => {
 let sx = null;
 $('#vw').addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive: true});
 $('#vw').addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) open(cur + (dx < 0 ? 1 : -1)); });
+(function(){   // misma identidad de dispositivo que el panel y evento de vista de camara
+  let id = null; try { id = localStorage.getItem('thor_device_id'); } catch (_) {}
+  let n = 0; const t = setInterval(() => { if (window.umami && window.umami.track) { if (id && window.umami.identify) window.umami.identify(id, {}); window.umami.track('camara_vista', { cam: CAM }); clearInterval(t); } else if (++n > 40) clearInterval(t); }, 250);
+})();
 load(); setInterval(() => { if (!$('#vw').classList.contains('on')) load(); }, 60000);
 </script>
 </body>

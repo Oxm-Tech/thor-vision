@@ -70,11 +70,12 @@ class ParkedTracker:
         self._cand: dict = {}
         self._last_gc = 0.0
         self.cam_names: dict = {}       # cam_id -> nombre (lo fija main.py)
+        self.analyzer = None            # VLMAnalyzer (lo fija main.py): lectura de placa de respaldo
         self.snapshots = None           # SnapshotManager (lo fija main.py): captura de cada alerta
         self._frames: dict = {}         # cam_id -> ultimo cuadro visto (para la alerta "se fue", que no llega con cuadro)
         with db._lock:
             db._conn.executescript(_SCHEMA)
-            for col, typ in (("plate_src", "TEXT"), ("plate_img", "BLOB")):
+            for col, typ in (("plate_src", "TEXT"), ("plate_img", "BLOB"), ("in_zone", "INTEGER NOT NULL DEFAULT 1")):
                 try:
                     db._conn.execute(f"ALTER TABLE parked_vehicles ADD COLUMN {col} {typ}")
                 except sqlite3.OperationalError:
@@ -120,13 +121,12 @@ class ParkedTracker:
                 x1, y1, x2, y2 = o["b"]
                 b = (int(x1 * sx), int(y1 * sy), int(x2 * sx), int(y2 * sy))
                 if (b[2] - b[0]) * (b[3] - b[1]) >= MIN_AREA_FRAC * fw * fh:
-                    if zones.has(cam_id, "estacionamiento") and not zones.contains(cam_id, ("estacionamiento",), b, fw, fh):
-                        continue        # fuera del area dibujada para estacionamiento
-                    dets.append((o["c"], b))
+                    inz = (not zones.has(cam_id, "estacionamiento")) or zones.contains(cam_id, ("estacionamiento",), b, fw, fh)
+                    dets.append((o["c"], b, inz))       # fuera del poligono: se registra como informativo (sin alertas ni placa)
         with self._lock:
             cands = self._cand.setdefault(cam_id, [])
             used = set()
-            for cls, b in dets:
+            for cls, b, inz in dets:
                 best, bi = 0.0, None
                 for i, c in enumerate(cands):
                     if i in used:
@@ -140,12 +140,13 @@ class ParkedTracker:
                     c["last"] = now
                     c["anchor"] = tuple(int(0.85 * p + 0.15 * q) for p, q in zip(c["anchor"], b))
                     c["hits"] += 1
+                    c["zin"] = c.get("zin", 0) + (1 if inz else 0)
                     c["cls"][cls] += 1
                     self._maybe_register(cam_id, c, frame, fw, fh, now)
                     self._maybe_read_plate(c, frame, fw, fh, now)
                 else:
                     cands.append({"cls": Counter({cls: 1}), "anchor": b, "first": now, "last": now,
-                                  "hits": 1, "rec": None, "saved": 0.0})
+                                  "hits": 1, "rec": None, "saved": 0.0, "zin": 1 if inz else 0})
             self._gc(cam_id, now)
 
     def _maybe_register(self, cam_id, c, frame, fw, fh, now) -> None:
@@ -161,25 +162,33 @@ class ParkedTracker:
                         return
                 with self.db._lock:
                     cur = self.db._conn.execute(
-                        "INSERT INTO parked_vehicles (cam_id, cls, first_ts, last_ts, state, box, frame_w, frame_h, thumb) "
-                        "VALUES (?, ?, ?, ?, 'parked', ?, ?, ?, ?)",
-                        (cam_id, cls, c["first"], now, ",".join(map(str, b)), fw, fh, self._thumb(frame, b)))
+                        "INSERT INTO parked_vehicles (cam_id, cls, first_ts, last_ts, state, box, frame_w, frame_h, thumb, in_zone) "
+                        "VALUES (?, ?, ?, ?, 'parked', ?, ?, ?, ?, ?)",
+                        (cam_id, cls, c["first"], now, ",".join(map(str, b)), fw, fh, self._thumb(frame, b), 1 if self._in_zone(c) else 0))
                     self.db._conn.commit()
                     c["rec"] = cur.lastrowid
                 c["saved"] = now
                 c["hours"] = 0
-                logger.info("ParkedTracker: %s estacionado en %s (id=%d)", cls, cam_id, c["rec"])
-                self._alert(cam_id, c["rec"], cls, "arrived", c["first"], now)
+                logger.info("ParkedTracker: %s estacionado en %s (id=%d, %s)", cls, cam_id, c["rec"], "en poligono" if self._in_zone(c) else "informativo")
+                if self._in_zone(c):
+                    self._alert(cam_id, c["rec"], cls, "arrived", c["first"], now)
         elif now - c["first"] >= (c.get("hours", 0) + 1) * ALERT_EVERY_S:
             c["hours"] = c.get("hours", 0) + 1
-            self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "hourly", c["first"], now)
+            if self._in_zone(c):
+                self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "hourly", c["first"], now)
             self._save_seen(c, now)
         elif now - c["saved"] >= 60:
             self._save_seen(c, now)
 
+    @staticmethod
+    def _in_zone(c) -> bool:
+        """Dentro del poligono de estacionamiento (mayoria de las detecciones); sin poligono dibujado todo cuenta como dentro."""
+        n = max(1, c.get("hits", 1))
+        return c.get("zin", n) / n >= 0.5
+
     def _maybe_read_plate(self, c, frame, fw, fh, now) -> None:
-        """Lee la placa del recorte nativo del vehiculo (solo vehiculos ya registrados, o sea dentro de la zona)."""
-        if c["rec"] is None or not plates.enabled() or now < c.get("plate_next", 0) or c.get("plate_n", 0) >= plates.MAX_READS:
+        """Lee la placa del recorte nativo del vehiculo (solo los registrados dentro del poligono). OCR primero; si no sale, el VLM lee el recorte."""
+        if c["rec"] is None or not self._in_zone(c) or not plates.enabled() or now < c.get("plate_next", 0) or c.get("plate_n", 0) >= plates.MAX_READS:
             return
         c["plate_next"] = now + plates.EVERY_S
         c["plate_n"] = c.get("plate_n", 0) + 1
@@ -193,6 +202,8 @@ class ParkedTracker:
         crop = frame[max(0, y1 - my):min(fh, y2 + my), max(0, x1 - mx):min(fw, x2 + mx)]
         r = plates.read(crop)
         if r is None:
+            if self.analyzer is not None and c["plate_n"] >= 3 and c.get("vlm_n", 0) < 4 and not c.get("vlm_busy"):
+                self._vlm_plate(c, crop)
             return
         c.setdefault("reads", []).append((r["text"], r["conf"] * r["det"]))
         if r["jpeg"] and (c.get("best_conf", 0) < r["conf"]):
@@ -204,6 +215,33 @@ class ParkedTracker:
                                       "WHERE id=? AND COALESCE(plate_src,'')<>'manual'", (win[0], win[1], c.get("best_img"), c["rec"]))
                 self.db._conn.commit()
             logger.info("plates: vehiculo %d placa %s (conf %.2f, %d lecturas)", c["rec"], win[0], win[1], win[2])
+
+    def _vlm_plate(self, c, crop) -> None:
+        """Respaldo del OCR: el VLM lee la placa del recorte nativo. Se acepta cuando dos lecturas seguidas coinciden (en hilo aparte)."""
+        c["vlm_busy"] = True
+        c["vlm_n"] = c.get("vlm_n", 0) + 1
+        ok, buf = cv2.imencode(".jpg", crop, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not ok:
+            c["vlm_busy"] = False
+            return
+
+        def run(jpeg=buf.tobytes(), rec=c["rec"]):
+            try:
+                txt = self.analyzer.read_plate(jpeg)
+                if txt:
+                    c.setdefault("vlm_reads", []).append(txt)
+                    reads = c["vlm_reads"]
+                    if len(reads) >= 2 and reads[-1] == reads[-2]:
+                        with self.db._lock:
+                            self.db._conn.execute("UPDATE parked_vehicles SET plate=?, plate_conf=0.6, plate_src='vlm' WHERE id=? AND plate IS NULL", (txt, rec))
+                            self.db._conn.commit()
+                        c["plate_n"] = plates.MAX_READS
+                        logger.info("plates: vehiculo %d placa %s leida por el VLM (2 lecturas iguales)", rec, txt)
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                logger.debug("plates VLM: %s", exc)
+            finally:
+                c["vlm_busy"] = False
+        threading.Thread(target=run, daemon=True, name="plate-vlm").start()
 
     def _save_seen(self, c, now) -> None:
         with self.db._lock:
@@ -255,7 +293,8 @@ class ParkedTracker:
                                           (c["last"], c["last"], c["rec"]))
                     self.db._conn.commit()
                 logger.info("ParkedTracker: vehiculo %d se fue de %s tras %.0f min", c["rec"], cam_id, (c["last"] - c["first"]) / 60)
-                self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "left", c["first"], c["last"])
+                if self._in_zone(c):
+                    self._alert(cam_id, c["rec"], c["cls"].most_common(1)[0][0], "left", c["first"], c["last"])
             elif c["rec"] is None and idle > 120:
                 pass
             else:
@@ -269,7 +308,7 @@ class ParkedTracker:
 
 
 def list_vehicles(db, state=None, cam=None, since=None, limit=100) -> list:
-    sql = ("SELECT id, cam_id, cls, first_ts, last_ts, left_ts, state, plate, plate_conf, note, (thumb IS NOT NULL), plate_src, (plate_img IS NOT NULL) "
+    sql = ("SELECT id, cam_id, cls, first_ts, last_ts, left_ts, state, plate, plate_conf, note, (thumb IS NOT NULL), plate_src, (plate_img IS NOT NULL), in_zone "
            "FROM parked_vehicles WHERE 1=1")
     args: list = []
     if state in ("parked", "left"):
@@ -287,9 +326,9 @@ def list_vehicles(db, state=None, cam=None, since=None, limit=100) -> list:
     with db._lock:
         rows = db._conn.execute(sql, args).fetchall()
     out = []
-    for rid, cam_id, cls, first, last, left, st, plate, pc, note, has, psrc, has_pimg in rows:
+    for rid, cam_id, cls, first, last, left, st, plate, pc, note, has, psrc, has_pimg, inz in rows:
         end = (left or last) if st == "left" else now
         out.append({"id": rid, "cam_id": cam_id, "cls": cls, "first_ts": first, "last_ts": last, "left_ts": left,
                     "state": st, "duration_s": max(0, round(end - first)), "plate": plate, "plate_conf": pc,
-                    "note": note, "has_thumb": bool(has), "plate_src": psrc, "has_plate_img": bool(has_pimg)})
+                    "note": note, "has_thumb": bool(has), "plate_src": psrc, "has_plate_img": bool(has_pimg), "in_zone": bool(inz)})
     return out

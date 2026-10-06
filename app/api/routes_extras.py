@@ -51,6 +51,18 @@ def vehicles(request: Request, state: Optional[str] = None, cam_id: Optional[str
     return {"vehicles": rows, "tracked_cams": sorted(parked_mod.CAMS), "min_parked_s": parked_mod.MIN_PARKED_S}
 
 
+@router.get("/api/vehicles/{vid}/snaps")
+def vehicle_snaps(vid: int, request: Request):
+    """Capturas de la llegada, de cada hora y de la salida del vehiculo (las alertas que generaron captura)."""
+    db = _db(request)
+    with db._lock:
+        rows = db._conn.execute(
+            "SELECT e.ts, json_extract(e.data,'$.parked.state'), (SELECT s.id FROM snapshots s WHERE s.event_id=e.id ORDER BY s.id DESC LIMIT 1) "
+            "FROM events e WHERE json_extract(e.data,'$.parked.vehicle_id')=? AND e.has_alert=1 ORDER BY e.ts", (vid,)).fetchall()
+    label = {"arrived": "Llegada", "hourly": "Sigue estacionado", "left": "Se fue"}
+    return {"snaps": [{"ts": t, "kind": label.get(st, st), "url": f"/api/snapshots/file/{sid}"} for t, st, sid in rows if sid]}
+
+
 @router.get("/api/vehicles/{vid}/image")
 def vehicle_image(vid: int, request: Request):
     db = _db(request)

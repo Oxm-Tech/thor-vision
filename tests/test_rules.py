@@ -47,3 +47,10 @@ def test_person_with_bike_is_not_lying_on_the_ground():
            "relevant": True, "yolo_objects": {"bicicleta": 1}}
     out = scenes.normalize_result(res, sc, 1)
     assert out["alert_types"] == [] and out["alerts"] == [] and out["bike_in_scene"] is True
+
+
+def test_parked_in_zone_majority_and_no_polygon():
+    from app.vision.parked import ParkedTracker
+    assert ParkedTracker._in_zone({"hits": 10, "zin": 6})
+    assert not ParkedTracker._in_zone({"hits": 10, "zin": 2})
+    assert ParkedTracker._in_zone({"hits": 10})            # sin dato de zona (sin poligono dibujado): cuenta como dentro

@@ -1,4 +1,5 @@
 import base64
+import re
 import json
 import logging
 import os
@@ -194,6 +195,20 @@ class VLMAnalyzer:
             '"confidence": "low|medium|high"}. No inventes: si algo no se distingue escribe '
             '"no distinguible".')
         return self._request(parts, text, self.timeout, debug_tag=f"visit-{cam_id}")
+
+    def read_plate(self, jpeg: bytes) -> Optional[str]:
+        """Lee la placa de un recorte de vehiculo (mexicana: letras y numeros). None si no se distingue; solo devuelve texto con formato de placa."""
+        b64 = base64.b64encode(jpeg).decode()
+        parts = [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]
+        text = ('La imagen es el recorte de un vehiculo estacionado visto desde atras o de frente. Si la PLACA es legible, responde SOLO este JSON: '
+                '{"plate": "<texto exacto, sin guiones ni espacios, 5 a 8 letras/numeros>", "confidence": "low|medium|high"}. '
+                'Si no se distingue con certeza responde {"plate": null}. No adivines caracteres.')
+        res = self._request(parts, text, self.timeout, debug_tag="plate")
+        raw = res.get("plate") if isinstance(res, dict) else None
+        if not isinstance(raw, str):
+            return None
+        t = re.sub(r"[^A-Z0-9]", "", raw.upper())
+        return t if re.fullmatch(r"[A-Z0-9]{5,8}", t) and re.search(r"\d", t) and re.search(r"[A-Z]", t) else None
 
     def analyze_video(self, frames: List[np.ndarray], fps: float,
                        context: dict = None, tag: str = "video", scene=None,
