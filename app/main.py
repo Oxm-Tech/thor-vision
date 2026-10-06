@@ -390,6 +390,11 @@ async def zones_page(request: Request):
     return templates.TemplateResponse("zones.html", {"request": request})
 
 
+@app.get("/camara/{cam_id}", response_class=HTMLResponse)
+async def camera_page(request: Request, cam_id: str):
+    return templates.TemplateResponse("camera.html", {"request": request})
+
+
 @app.get("/identidades", response_class=HTMLResponse)
 async def identities_page(request: Request):
     return templates.TemplateResponse("identities.html", {"request": request})

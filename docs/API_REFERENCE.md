@@ -55,6 +55,12 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/conocimiento` | Knowledge Page |  |  |
 
+## correlation
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/correlation` | Correlation | `ts`, `event_id`, `before`, `after` |  |
+
 ## cowork
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |

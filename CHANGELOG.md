@@ -2,6 +2,15 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.9.1 — Capturas del timbre, Tuya recuperado y vista por cámara (2026-10-06)
+
+Se corrige el fallo que dejaba sin captura al timbre y detuvo los eventos de Tuya, y se agrega una página por cámara con sus alertas navegables con el teclado.
+
+- **Corrección · Timbre sin captura y hilo MQTT caído**: peek_latest devuelve un FrameEntry y se trataba como imagen: el timbre quedaba sin captura y, al revisar una puerta abierta, el hilo MQTT de Tuya moría en silencio y dejaba de recibir eventos. Se corrige, y los errores al procesar un mensaje ya no matan el hilo.
+- **Línea de tiempo · Visor con navegación**: El visor de capturas avanza con ← → (todas las alertas visibles en orden de tiempo) y ↑ ↓ (solo la misma cámara), con botones y deslizando con el dedo. Las alertas sin captura se muestran con el aviso en lugar de no abrir.
+- **Cámaras · Vista de una sola cámara (/camara/<id>)**: Imagen en vivo grande y las alertas de esa cámara con filtro por rango y tipo y el mismo visor navegable. Se abre con doble clic en la tarjeta, con el botón ⤢ (para el móvil) o desde la cámara en Identidades.
+- **Identidades · Cámaras como enlace y últimas características**: Las cámaras de cada persona abren su vista, y la tarjeta muestra la última descripción del VLM (ropa y rasgos).
+
 ## v2.9.0 — Correlación de eventos, tráfico de calle y limpieza de ruido (2026-10-04)
 
 El timbre, las cámaras Tuya y los autos estacionados ahora dejan captura; el tráfico de la calle y el videoportero queda como registro separado de la ocupación interior, y las personas nuevas se sugieren contra las ya identificadas.

@@ -12,7 +12,7 @@ _MAX_SPAN_S = 8 * 86400
 
 
 @router.get("/api/timeline")
-def timeline(request: Request, since: Optional[float] = None, until: Optional[float] = None):
+def timeline(request: Request, since: Optional[float] = None, until: Optional[float] = None, cam_id: Optional[str] = None):
     until = until or time.time()
     since = since or until - 86400
     since = max(since, until - _MAX_SPAN_S)
@@ -39,6 +39,8 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],
                        "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
     events += _street_traffic(db, config, since, until)
+    if cam_id:
+        events = [e for e in events if e["cam"] == cam_id]
     events.sort(key=lambda e: e["ts"])
     iot = getattr(request.app.state, "iot", None)
     if iot is not None:

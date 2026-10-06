@@ -176,6 +176,7 @@ class IotListener:
     def _snapshot(self, event_id: int, cam_id, trigger: str) -> None:
         buf = self.buffers.get(cam_id) if cam_id else None
         frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
+        frame = getattr(frame, "frame", frame)          # peek_latest devuelve un FrameEntry
         if isinstance(frame, tuple):
             frame = frame[0]
         if self.snapshots is not None and frame is not None:
@@ -239,6 +240,13 @@ class IotListener:
                                          "puerta_abierta", "medium", {"device_id": dev_id, "name": dev["name"], "state": "open", "minutes": mins})
                 self._snapshot(eid, dev.get("cam"), "puerta")
 
+    def _safe(self, fn, *args) -> None:
+        """Un fallo al procesar un mensaje o al revisar puertas no debe matar el hilo MQTT (una vez dejo de recibir eventos por esto)."""
+        try:
+            fn(*args)
+        except (AttributeError, KeyError, TypeError, ValueError, OSError, sqlite3.Error):
+            logger.warning("iot: error procesando %s", getattr(fn, "__name__", "?"), exc_info=True)
+
     # ---- conexion MQTT
     def start(self) -> None:
         threading.Thread(target=self._run, daemon=True, name="iot-mqtt").start()
@@ -278,7 +286,7 @@ class IotListener:
 
             c.on_connect = on_connect
             c.on_disconnect = lambda cl, u, f, rc, p=None: self.status.update(connected=False)
-            c.on_message = lambda cl, u, m: self.handle(m.topic, m.payload, bool(m.retain))
+            c.on_message = lambda cl, u, m: self._safe(self.handle, m.topic, m.payload, bool(m.retain))
             try:
                 c.connect(cfg.get("host", "192.168.0.101"), int(cfg.get("port", 1883)), 30)
                 c.loop_start()
@@ -287,7 +295,7 @@ class IotListener:
                 while not self._stop.wait(5):
                     if self._retry.is_set():
                         break
-                    self.check_open_too_long()
+                    self._safe(self.check_open_too_long)
                 c.loop_stop()
                 c.disconnect()
                 if self._retry.is_set() and not self._stop.is_set():

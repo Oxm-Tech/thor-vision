@@ -13,6 +13,7 @@ header a.back{color:var(--muted);text-decoration:none;font-size:13px}header a.ba
 h1{font-size:18px;margin:0}.sum{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--muted)}.chip b{color:var(--text)}
 main{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+.camlink{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}.camlink:hover{text-decoration:underline}
 nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 nav.tabs button,.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer}
 nav.tabs button:hover,.btn:hover{border-color:var(--accent)}
@@ -124,7 +125,8 @@ function card(p){
     <div class="ph" data-a="sim" title="Ver parecidos">${photo(p)}</div>
     <div class="bd">
       <div class="nm">${esc(p.name)} <button data-a="name" title="Poner nombre">✎</button></div>
-      <div class="meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${esc(p.cams.join(', ') || '–')}</div>
+      <div class="meta">${p.visits} visitas · hace ${ago(p.last_ts)}<br>${(p.cam_ids || []).map((id, k) => `<a class="camlink" href="/camara/${encodeURIComponent(id)}" title="Abrir la vista de esta cámara y sus alertas">${esc(p.cams[k] || id)}</a>`).join(', ') || '–'}</div>
+      ${p.last_desc ? `<div class="meta" title="Lo último que el VLM vio de esta persona">${esc(p.last_desc)}</div>` : ''}
       <div class="acts">${p.match ? `<button class="btn pri sm wide" data-a="merge" data-from="${p.id}" data-into="${p.match.id}">Sí, es ${esc(p.match.name)}</button>` : ''}${other}<button class="btn sm wide" data-a="sim">Parecidos</button></div>
     </div></div>`;
 }

@@ -69,6 +69,7 @@ class DoorAlerts:
             return
         buf = self.buffers.get(self.cam_id)
         frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
+        frame = getattr(frame, "frame", frame)          # peek_latest devuelve un FrameEntry
         if isinstance(frame, tuple):
             frame = frame[0]
         if frame is None and self.grab is not None:

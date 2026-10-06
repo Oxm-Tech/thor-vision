@@ -135,3 +135,12 @@ def test_camera_message_is_decoded_deduped_and_alerts_once_per_cooldown(monkeypa
     assert len(db.events) == 1
     m.handle("t/C1/status", msg("C1", {"initiative_message": _im("ipc_bang")}, ts=t + 500))
     assert len(db.events) == 2 and db.events[1][2]["alert_types"] == ["ruido_tuya"]
+
+
+def test_snapshot_accepts_frame_entry_and_listener_survives_errors():
+    from types import SimpleNamespace
+    m, db, sn = make()
+    m.buffers = {"cam-113": SimpleNamespace(peek_latest=lambda: SimpleNamespace(frame="IMG", timestamp=1.0))}
+    m._snapshot(5, "cam-113", "puerta")
+    assert sn.saved == [("cam-113", "puerta", 5)]
+    m._safe(lambda: 1 / 0 if False else {}["x"])              # un KeyError no se propaga

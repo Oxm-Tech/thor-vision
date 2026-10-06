@@ -96,3 +96,22 @@ def test_stream_reads_byte_lines_and_reports_events(monkeypatch):
 def test_dahua_noise_codes_are_not_stored():
     from app.onvif.service import NOISE_CODES
     assert {"SIPRegisterResult", "NTPAdjustTime", "Heartbeat"} <= NOISE_CODES and "CallNoAnswered" not in NOISE_CODES
+
+
+def test_ring_alert_saves_snapshot_from_frame_entry():
+    from types import SimpleNamespace
+    from app.vision.doorbell import DoorAlerts
+    saved = []
+
+    class DB:
+        def insert_event(self, *a, **k):
+            return 7
+
+    class Snaps:
+        def save(self, cam, frame, trig, event_id=None):
+            saved.append((cam, frame, trig, event_id))
+
+    buf = SimpleNamespace(peek_latest=lambda: SimpleNamespace(frame="IMG"))
+    d = DoorAlerts(DB(), Snaps(), {"cam-vto": buf})
+    d.ring_alert("CallNoAnswered", "Start", {})
+    assert saved == [("cam-vto", "IMG", "timbre", 7)]

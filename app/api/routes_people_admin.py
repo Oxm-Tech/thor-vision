@@ -98,9 +98,18 @@ def people(request: Request, category: str = "revisar", q: Optional[str] = None,
         args.append(f"%{q.lower()}%")
     out = []
     sug = _suggestions(db) if category == "revisar" else {}
-    for sid, name, named, cat, created, last, visits, cams, faces in _subject_rows(db, where, tuple(args), limit):
+    rows = _subject_rows(db, where, tuple(args), limit)
+    desc: dict = {}
+    if rows:
+        with db._lock:
+            for sid, d in db._conn.execute(
+                    f"SELECT subject_id, vlm_desc FROM person_visits WHERE subject_id IN ({','.join('?' * len(rows))}) AND vlm_desc IS NOT NULL AND vlm_desc<>'' "
+                    "ORDER BY start_ts ASC", [r[0] for r in rows]):
+                desc[sid] = d                      # queda la mas reciente: ropa y rasgos que el VLM vio en su ultima visita
+    for sid, name, named, cat, created, last, visits, cams, faces in rows:
         out.append({"id": sid, "name": name, "named": bool(named), "category": cat, "created_ts": created, "last_ts": last,
                     "visits": visits, "cams": [names.get(c, c) for c in (cams or "").split(",") if c],
+                    "cam_ids": [c for c in (cams or "").split(",") if c], "last_desc": (desc.get(sid) or "")[:200],
                     "has_face": faces > 0, "suggested": "empleado" if (named and cat == "revisar") else None,
                     "match": sug.get(sid)})
     return {"category": category, "people": out}

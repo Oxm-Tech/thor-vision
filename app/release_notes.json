@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.9.1",
+    "date": "2026-10-06",
+    "name": "Capturas del timbre, Tuya recuperado y vista por cámara",
+    "summary": "Se corrige el fallo que dejaba sin captura al timbre y detuvo los eventos de Tuya, y se agrega una página por cámara con sus alertas navegables con el teclado.",
+    "highlights": [
+      {
+        "area": "Corrección",
+        "title": "Timbre sin captura y hilo MQTT caído",
+        "text": "peek_latest devuelve un FrameEntry y se trataba como imagen: el timbre quedaba sin captura y, al revisar una puerta abierta, el hilo MQTT de Tuya moría en silencio y dejaba de recibir eventos. Se corrige, y los errores al procesar un mensaje ya no matan el hilo."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Visor con navegación",
+        "text": "El visor de capturas avanza con ← → (todas las alertas visibles en orden de tiempo) y ↑ ↓ (solo la misma cámara), con botones y deslizando con el dedo. Las alertas sin captura se muestran con el aviso en lugar de no abrir."
+      },
+      {
+        "area": "Cámaras",
+        "title": "Vista de una sola cámara (/camara/<id>)",
+        "text": "Imagen en vivo grande y las alertas de esa cámara con filtro por rango y tipo y el mismo visor navegable. Se abre con doble clic en la tarjeta, con el botón ⤢ (para el móvil) o desde la cámara en Identidades."
+      },
+      {
+        "area": "Identidades",
+        "title": "Cámaras como enlace y últimas características",
+        "text": "Las cámaras de cada persona abren su vista, y la tarjeta muestra la última descripción del VLM (ropa y rasgos)."
+      }
+    ]
+  },
+  {
     "version": "2.9.0",
     "date": "2026-10-04",
     "name": "Correlación de eventos, tráfico de calle y limpieza de ruido",
