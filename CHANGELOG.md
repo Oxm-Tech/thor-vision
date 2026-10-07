@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.18.1 — TV en filas fijas sin parpadeo, miniaturas ligeras y sensores sin eventos falsos (2026-10-07)
+
+El muro /tv sigue el orden pedido y no parpadea; las listas cargan miniaturas reducidas (antes cientos de MB); la vista de cámara abre a 1920 px con 5 MP bajo demanda; y la sincronización de la nube ya no genera eventos ni alertas falsas de puertas.
+
+- **TV · Filas fijas y sin parpadeo**: 3 columnas: Exterior 1, Exterior 2 y Videoportero; Garage frontal, Escaleras entrada y Acceso Site; Garage posterior, Cowork y Sala de Juntas; Escaleras P2 y Cocina. Cada imagen se precarga y se cambia al terminar. Las alertas inferiores piden datos sin caché y muestran la hora de actualización.
+- **Rendimiento · Miniaturas ligeras**: Capturas y escenas aceptan ?w= (reducción al vuelo); la lista de la vista de cámara usa miniaturas de 160 px perezosas, 40 a la vez con Ver más. Antes cargaba todas las capturas completas (el inspector mostraba ~450 MB).
+- **Cámaras · HD de 1920 px y 5 MP bajo demanda**: Las exteriores entregan 2592x1944 (5 MP) y enviar eso cada segundo era lo lento; ahora la vista abre a 1920 px y el botón 5 MP pide la nativa completa.
+- **IoT · Sin eventos falsos ni cierres ocultos**: El estado de la nube que el puente publica cada 10 min se guarda como sincronización (no como evento ni alerta). Cerrar una puerta o ventana ahora deja una entrada informativa con cuánto estuvo abierta.
+- **Analítica · Eventos de Umami sin ráfagas**: Un mismo evento se envía a lo más cada 2 s y se descartan valores vacíos o largos.
+
 ## v2.18.0 — Modo TV para Fire TV / Silk y modo ligero (2026-10-07)
 
 Página /tv con un muro de cámaras ligero y navegable con el control remoto; el panel completo se abre solo en ese modo desde Silk o Fire TV, y los equipos con poca memoria usan 1 fps, miniaturas de 640 px y sin efectos.

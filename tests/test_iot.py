@@ -72,8 +72,9 @@ def test_opening_creates_alert_with_snapshot_and_closing_does_not():
     assert typ == "nemotron" and cam == "cam-113" and has_alert and p["source"] == "iot"
     assert p["alert_types"] == ["puerta_abierta"] and p["iot"]["state"] == "open" and p["iot"]["cam_confirmed"] is False
     assert sn.saved == [("cam-113", "puerta", 1)]
-    m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))                  # cerrarse no alerta
-    assert len(db.events) == 1 and m.state["D1"]["open"] is False
+    m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))                  # cerrarse deja una entrada informativa (severidad none), sin captura
+    assert len(db.events) == 2 and m.state["D1"]["open"] is False and db.events[1][2]["severity"] == "none" and db.events[1][2]["iot"]["state"] == "closed"
+    assert len(sn.saved) == 1
 
 
 def test_open_too_long_alerts_once_per_interval():
@@ -160,3 +161,12 @@ def test_door_open_notifies_journeys_and_state_exposes_related_and_online():
     assert s["role"] == "Inicia el viaje" and [r["id"] for r in s["related"]] == ["cam-113", "tuya-jardin"] and s["open"] is True
     m.handle("t/D1/last", json.dumps({"device_id": "D1", "ts": time.time(), "changes": {"battery_percentage": 80}, "online": False}).encode(), retained=True)
     assert {d["device_id"]: d for d in m.snapshot_state()}["D1"]["online"] is False
+
+
+def test_cloud_sync_messages_never_alert_or_count_as_events():
+    m, db, sn = make()
+    m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))
+    sync = json.dumps({"device_id": "D1", "ts": time.time(), "changes": {"doorcontact_state": True}, "online": True, "source": "cloud-sync"}).encode()
+    m.handle("t/D1/last", sync, retained=False)                       # llega en vivo (sin la marca de retenido) pero es una sincronizacion
+    assert db.events == [] and m.state["D1"]["open"] is True
+    assert m.recent("D1")[0]["source"] == "sync"

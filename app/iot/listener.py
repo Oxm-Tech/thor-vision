@@ -94,6 +94,7 @@ class IotListener:
         st["last_ts"] = ts
         if "online" in msg:
             st["online"] = bool(msg["online"])
+        retained = retained or msg.get("source") == "cloud-sync"      # el puente publica el estado de la nube cada 10 min: se registra como sincronizacion, nunca como evento ni alerta
         source = "sync" if retained else "event"
         for code, value in changes.items():
             if code == "initiative_message":
@@ -110,6 +111,7 @@ class IotListener:
         op = is_open(dev, changes)
         if op is None:
             return
+        opened_at = st.get("since") or ts
         changed = st["open"] is not None and st["open"] != op
         first = st["open"] is None
         if op != st["open"]:
@@ -120,6 +122,7 @@ class IotListener:
             self._alert_opened(dev_id, dev, ts)
         elif changed and not op:
             self._store(ts, dev_id, dev, "cerrada", "true", "derived")
+            self._alert_closed(dev_id, dev, ts, opened_at)
 
     @staticmethod
     def _decode_initiative(value):
@@ -213,6 +216,14 @@ class IotListener:
             except (TypeError, ValueError, KeyError, OSError, sqlite3.Error) as exc:
                 logger.warning("iot: on_motion: %s", exc)
         logger.info("iot: %s abierta -> alerta %d (cam %s)", dev["name"], eid, cam)
+
+    def _alert_closed(self, dev_id: str, dev: dict, ts: float, opened_at: float) -> None:
+        """Cierre de una puerta/ventana: queda en la linea de tiempo (sin severidad) para ver cuanto estuvo abierta."""
+        what = {"door": "puerta", "window": "ventana", "garage": "garage"}.get(dev.get("kind"), "dispositivo")
+        mins = max(0, int((ts - opened_at) // 60))
+        eid = self._insert_alert(dev.get("cam"), f"Se cerro {what}: {dev['name']} (estuvo abierta {mins} min)", f"{dev['name']} cerrada", "puerta_abierta", "none",
+                                 {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "closed", "minutes": mins})
+        self._alerted_open.pop(dev_id, None)
 
     def _usage_alert(self, msg: dict, retained: bool) -> None:
         """Aviso del servicio de video Tuya: se llego a un porcentaje de la cuota mensual de la nube."""

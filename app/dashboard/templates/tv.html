@@ -33,21 +33,28 @@ let cams = [], alive = true, W = 480;
 $('#full').onclick = () => { try { localStorage.setItem('thor_full', '1'); } catch (_) {} };
 const clock = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}); };
 setInterval(clock, 1000); clock();
-function cols(){ return Math.max(2, Math.min(5, Math.round(innerWidth / 330))); }
+const ORDER = ['cam-189', 'cam-191', 'cam-vto', 'cam-228', 'cam-113', 'cam-120', 'cam-118', 'cam-cowork', 'cam-sala-juntas', 'cam-236', 'cam-215'];   // filas de 3: calle y videoportero / entradas / garage, cowork, juntas / escaleras P2 y cocina
+function cols(){ return 3; }
 function layout(){ $('#grid').style.gridTemplateColumns = `repeat(${cols()}, 1fr)`; }
 addEventListener('resize', layout);
 
 async function init(){
   const r = await (await fetch('/api/cameras')).json();
   cams = (Array.isArray(r) ? r : (r.cameras || [])).filter(c => c.id);
+  cams.sort((a, b) => { const x = ORDER.indexOf(a.id), y = ORDER.indexOf(b.id); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); });
   $('#grid').innerHTML = cams.map(c => `<div class="t" tabindex="0" role="link" data-id="${esc(c.id)}"><img alt="" decoding="async"><div class="n"><span>${esc(c.name || c.id)}</span><span class="pc"></span></div></div>`).join('');
   layout();
   document.querySelectorAll('.t').forEach((t, i) => {
     const img = t.querySelector('img'), id = t.dataset.id;
     const go = () => { location.href = '/camara/' + encodeURIComponent(id); };
     t.addEventListener('click', go); t.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-    const tick = () => { if (!alive) return; img.src = `/api/snapshot/${encodeURIComponent(id)}?w=${W}&t=${Date.now()}`; };
-    img.onload = () => setTimeout(tick, 1400); img.onerror = () => setTimeout(tick, 5000);
+    const tick = () => {                              // se precarga la siguiente y se cambia al terminar: sin parpadeo
+      if (!alive) return setTimeout(tick, 2000);
+      const nx = new Image();
+      nx.onload = () => { img.src = nx.src; setTimeout(tick, 1400); };
+      nx.onerror = () => setTimeout(tick, 5000);
+      nx.src = `/api/snapshot/${encodeURIComponent(id)}?w=${W}&t=${Date.now()}`;
+    };
     setTimeout(tick, i * 250);                       // escalonado: no se piden las 11 a la vez
   });
   document.querySelector('.t')?.focus();
@@ -68,14 +75,15 @@ async function status(){
 }
 async function alerts(){
   try {
-    const until = Date.now() / 1000, d = await (await fetch(`/api/timeline?since=${until - 3600}&until=${until}`)).json();
+    const until = Date.now() / 1000, d = await (await fetch(`/api/timeline?since=${until - 3600}&until=${until}&_=${Date.now()}`, {cache: 'no-store'})).json();
     const ev = d.events.filter(e => e.type !== 'trafico_calle').slice(-6).reverse();
     $('#tick').innerHTML = ev.length ? ev.map(e => { const c = (d.cams.find(x => x.id === e.cam) || {}).name || e.cam;
       return `<div class="al"><small>${new Date(e.ts * 1000).toLocaleTimeString('es-MX', {hour: '2-digit', minute: '2-digit', hour12: false})}</small><b>${esc(c)}</b><span>${esc((e.type || '').replace(/_/g, ' '))} — ${esc(e.text)}</span></div>`; }).join('')
       : '<div class="al"><small>—</small><span>Sin alertas en la última hora</span></div>';
+    $('#tick').insertAdjacentHTML('beforeend', `<div class="al"><small>actualizado ${new Date().toLocaleTimeString('es-MX', {hour12: false})}</small></div>`);
   } catch (_) {}
 }
-document.addEventListener('visibilitychange', () => { alive = !document.hidden; if (alive) document.querySelectorAll('.t img').forEach(i => i.onerror && i.onerror()); });
+document.addEventListener('visibilitychange', () => { alive = !document.hidden; });
 setTimeout(() => location.reload(), 6 * 3600 * 1000);          // libera memoria del navegador de la TV
 init(); status(); alerts(); setInterval(status, 3000); setInterval(alerts, 20000);
 (function(){ let id = null; try { id = localStorage.getItem('thor_device_id'); } catch (_) {}

@@ -1,5 +1,38 @@
 [
   {
+    "version": "2.18.1",
+    "date": "2026-10-07",
+    "name": "TV en filas fijas sin parpadeo, miniaturas ligeras y sensores sin eventos falsos",
+    "summary": "El muro /tv sigue el orden pedido y no parpadea; las listas cargan miniaturas reducidas (antes cientos de MB); la vista de cámara abre a 1920 px con 5 MP bajo demanda; y la sincronización de la nube ya no genera eventos ni alertas falsas de puertas.",
+    "highlights": [
+      {
+        "area": "TV",
+        "title": "Filas fijas y sin parpadeo",
+        "text": "3 columnas: Exterior 1, Exterior 2 y Videoportero; Garage frontal, Escaleras entrada y Acceso Site; Garage posterior, Cowork y Sala de Juntas; Escaleras P2 y Cocina. Cada imagen se precarga y se cambia al terminar. Las alertas inferiores piden datos sin caché y muestran la hora de actualización."
+      },
+      {
+        "area": "Rendimiento",
+        "title": "Miniaturas ligeras",
+        "text": "Capturas y escenas aceptan ?w= (reducción al vuelo); la lista de la vista de cámara usa miniaturas de 160 px perezosas, 40 a la vez con Ver más. Antes cargaba todas las capturas completas (el inspector mostraba ~450 MB)."
+      },
+      {
+        "area": "Cámaras",
+        "title": "HD de 1920 px y 5 MP bajo demanda",
+        "text": "Las exteriores entregan 2592x1944 (5 MP) y enviar eso cada segundo era lo lento; ahora la vista abre a 1920 px y el botón 5 MP pide la nativa completa."
+      },
+      {
+        "area": "IoT",
+        "title": "Sin eventos falsos ni cierres ocultos",
+        "text": "El estado de la nube que el puente publica cada 10 min se guarda como sincronización (no como evento ni alerta). Cerrar una puerta o ventana ahora deja una entrada informativa con cuánto estuvo abierta."
+      },
+      {
+        "area": "Analítica",
+        "title": "Eventos de Umami sin ráfagas",
+        "text": "Un mismo evento se envía a lo más cada 2 s y se descartan valores vacíos o largos."
+      }
+    ]
+  },
+  {
     "version": "2.18.0",
     "date": "2026-10-07",
     "name": "Modo TV para Fire TV / Silk y modo ligero",

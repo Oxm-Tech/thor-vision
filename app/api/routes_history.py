@@ -103,7 +103,7 @@ def list_snapshots(
 
 
 @router.get("/api/snapshots/file/{snapshot_id}")
-def serve_snapshot(snapshot_id: int, request: Request):
+def serve_snapshot(snapshot_id: int, request: Request, w: int = 0):
     db = _db(request)
     sm = _snapshots(request)
 
@@ -120,6 +120,9 @@ def serve_snapshot(snapshot_id: int, request: Request):
     except OSError as e:
         raise HTTPException(500, f"Read error: {e}")
 
+    if w:
+        from app.utils.thumb import shrink
+        data = shrink(data, w)
     return Response(
         content=data,
         media_type="image/jpeg",

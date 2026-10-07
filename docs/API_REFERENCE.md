@@ -296,7 +296,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
-| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`*, `hd`, `native` |  |
+| GET | `/api/snapshot/{cam_id}` | Snapshot | `cam_id`*, `hd`, `native`, `w` |  |
 
 ## snapshots
 
@@ -353,6 +353,12 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | GET | `/api/timeline` | Timeline | `since`, `until`, `cam_id` |  |
+
+## tv
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/tv` | Tv Page |  |  |
 
 ## vehicles
 
