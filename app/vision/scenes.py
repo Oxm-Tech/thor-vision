@@ -164,6 +164,9 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
     if not isinstance(result, dict) or result.get("activity") == "error":
         return result
 
+    for k in ("activity", "scene"):
+        if isinstance(result.get(k), str):
+            result[k] = re.sub(r"\?{2,}", "…", result[k]).strip()
     people = result.get("people")
     people = people if isinstance(people, int) and 0 <= people <= 99 else 0
     result["people"] = people

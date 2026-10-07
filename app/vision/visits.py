@@ -174,6 +174,7 @@ class Track:
 
 
 STILL_FRAC = float(os.environ.get("STILL_FRAC", "0.6"))           # recorrido < 60% del tamano de la caja = no se movio
+TINY_H_FRAC = float(os.environ.get("TINY_H_FRAC", "0.07"))              # alto de caja < 7% del cuadro en exteriores = demasiado pequena
 GHOST_MIN = int(os.environ.get("GHOST_MIN", "3"))                 # tantos tracks inmoviles sin cara en el mismo punto = objeto fijo (arbol)
 GHOST_WINDOW_S = float(os.environ.get("GHOST_WINDOW_S", "21600"))
 
@@ -457,6 +458,8 @@ class VisitManager:
             return False
         if tr.hits <= 3 and tr.last_ts - tr.first_ts < 3.0:
             return True                  # parpadeo de YOLO de 1-3 cuadros: no es alguien que paso
+        if tr.dims[1] and (tr.bbox[3] - tr.bbox[1]) < TINY_H_FRAC * tr.dims[1]:
+            return True                  # caja minuscula al fondo de la escena (poste, reflejo, auto lejano): no hay forma de verificarla
         spot = tr.still_spot()
         if spot is None:
             return False

@@ -69,9 +69,9 @@ def _fact_chunks(f: dict, label: str) -> list:
         f"Alertas {t['alertas']} (periodo anterior {pv['alertas']}).",
         f"Revisión: {t['alertas_importantes']} importantes, {t['alertas_ruido']} ruido, {t['alertas_sin_revisar']} sin revisar.",
         f"Máximo de personas simultáneas en una cámara: {t['max_personas']}.",
-        f"Cámaras del sistema: {', '.join(c['nombre'] for c in f['cams'])}." if f["cams"] else "",
+        f"Cámaras del sistema: {', '.join(str(c.get('nombre') or c.get('id') or '?') for c in f['cams'])}." if f["cams"] else "",
     ]))]
-    cam_lines = [f"{c['nombre']}: {c['alertas']} alertas ({', '.join(f'{k} {n}' for k, n in c['alertas_por_tipo'].items()) or 'ninguna'}); "
+    cam_lines = [f"{c.get('nombre') or c.get('id')}: {c['alertas']} alertas ({', '.join(f'{k} {n}' for k, n in c['alertas_por_tipo'].items()) or 'ninguna'}); "
                  f"{c['observaciones']} obs; máx {c['max_personas']} pers." for c in f["cams"]]
     i = 0
     while i < len(cam_lines):

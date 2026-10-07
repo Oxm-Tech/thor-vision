@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.18.4 — Buscador del Vision Agent reparado y selector de identidades (2026-10-07)
+
+El buscador devolvía error 500 por una cámara sin nombre; mover capturas ahora ofrece solo personas con nombre; el contador aparece sin duplicar la cámara; objetos diminutos lejanos ya no cuentan como personas en exteriores.
+
+- **Vision Agent · Error 500 corregido**: Una cámara sin nombre rompía los hechos de búsqueda.
+- **Identidades · Selector con nombres**: Al mover capturas se elige de una lista filtrable de personas con nombre.
+- **Panel · Alerta sin duplicar**: El contador marca ⚠ junto a la cámara en vez de repetirla.
+- **Personas · Cajas diminutas**: En exteriores, cajas de menos del 7% del alto del cuadro se descartan.
+- **VLM · Textos limpios**: Las series de signos de interrogación en las descripciones se reducen a '…'.
+
 ## v2.18.3 — Cowork sin sillas como personas y sin alertas de batería (2026-10-07)
 
 Cowork valida personas con esqueleto (una silla cercana a la planta contaba como persona), se quita la línea de pantallas, y la batería baja de los sensores ya no es una alerta.

@@ -92,13 +92,19 @@ async function gallery(off){
 async function chooser(){
   const all = [];
   for (const c of ['empleado', 'invitado', 'revisar']) all.push(...(await J(`/api/people?category=${c}&limit=300&scope=all`)).people);
-  const q = prompt('Escribe parte del nombre o el número de la identidad destino (ej. Neto, o 568):');
-  if (!q) return null;
-  const m = all.filter(p => String(p.id) === q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()) && p.id !== cur);
-  if (!m.length){ alert('No encontré esa identidad.'); return null; }
-  if (m.length === 1) return m[0].id;
-  const i = prompt('Varias coincidencias, escribe el número:\n' + m.slice(0, 15).map(p => `${p.id} · ${p.name} (${p.visits} visitas, ${p.category})`).join('\n'));
-  const p = m.find(x => String(x.id) === (i || '').trim()); return p ? p.id : null;
+  const named = all.filter(p => p.id !== cur && p.name && !/^Persona #\d+$/.test(p.name)).sort((a, b) => (a.category === 'empleado' ? 0 : 1) - (b.category === 'empleado' ? 0 : 1) || a.name.localeCompare(b.name));
+  return new Promise(res => {
+    const bg = document.createElement('div');
+    bg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;display:flex;align-items:center;justify-content:center';
+    bg.innerHTML = `<div style="background:#1c2130;border:1px solid #333;border-radius:12px;padding:16px;width:min(420px,92vw);max-height:80vh;display:flex;flex-direction:column;gap:10px">
+      <b>Mover a una persona con nombre</b><input id="chq" placeholder="Filtrar por nombre" style="padding:8px;border-radius:8px;border:1px solid #444;background:#111;color:#eee">
+      <div id="chl" style="overflow:auto;display:flex;flex-direction:column;gap:4px"></div><button id="chx" class="btn">Cancelar</button></div>`;
+    document.body.appendChild(bg);
+    const draw = () => { const q = bg.querySelector('#chq').value.trim().toLowerCase();
+      bg.querySelector('#chl').innerHTML = named.filter(p => p.name.toLowerCase().includes(q)).map(p => `<button class="btn" data-id="${p.id}" style="text-align:left">${p.name.replace(/</g, '&lt;')} <span style="opacity:.6">· ${p.category} · ${p.visits} visitas</span></button>`).join('') || '<span style="opacity:.6">Sin coincidencias</span>'; };
+    draw(); bg.querySelector('#chq').oninput = draw; bg.querySelector('#chq').focus();
+    bg.onclick = e => { const b = e.target.closest('[data-id]'); if (b){ bg.remove(); res(+b.dataset.id); } else if (e.target === bg || e.target.id === 'chx'){ bg.remove(); res(null); } };
+  });
 }
 
 // ---------- mascotas
