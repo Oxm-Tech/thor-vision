@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.19.0 — Cámara Tuya de Escaleras P2 y sección de luces (2026-10-07)
+
+La nueva cámara Tuya de las escaleras del segundo piso queda integrada (alertas de movimiento con captura de Escaleras P2 y aviso de viaje), y la página IoT agrupa cámaras, sensores y una nueva sección con el estado de las luces.
+
+- **Tuya · Cámara Escaleras P2 (Tuya)**: Movimiento y ruido generan alerta con la captura de Escaleras P2; su aviso anticipa a esa cámara en los viajes.
+- **IoT · Sección de luces**: Estado encendida/apagada de 9 luces e interruptores (solo lectura). No generan alertas; los cambios quedan en la lista de eventos.
+- **IoT · Página agrupada**: Cámaras Tuya, puertas/ventanas/garage y luces en secciones separadas.
+
 ## v2.18.4 — Buscador del Vision Agent reparado y selector de identidades (2026-10-07)
 
 El buscador devolvía error 500 por una cámara sin nombre; mover capturas ahora ofrece solo personas con nombre; el contador aparece sin duplicar la cámara; objetos diminutos lejanos ya no cuentan como personas en exteriores.

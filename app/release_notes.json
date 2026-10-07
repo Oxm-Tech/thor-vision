@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.19.0",
+    "date": "2026-10-07",
+    "name": "Cámara Tuya de Escaleras P2 y sección de luces",
+    "summary": "La nueva cámara Tuya de las escaleras del segundo piso queda integrada (alertas de movimiento con captura de Escaleras P2 y aviso de viaje), y la página IoT agrupa cámaras, sensores y una nueva sección con el estado de las luces.",
+    "highlights": [
+      {
+        "area": "Tuya",
+        "title": "Cámara Escaleras P2 (Tuya)",
+        "text": "Movimiento y ruido generan alerta con la captura de Escaleras P2; su aviso anticipa a esa cámara en los viajes."
+      },
+      {
+        "area": "IoT",
+        "title": "Sección de luces",
+        "text": "Estado encendida/apagada de 9 luces e interruptores (solo lectura). No generan alertas; los cambios quedan en la lista de eventos."
+      },
+      {
+        "area": "IoT",
+        "title": "Página agrupada",
+        "text": "Cámaras Tuya, puertas/ventanas/garage y luces en secciones separadas."
+      }
+    ]
+  },
+  {
     "version": "2.18.4",
     "date": "2026-10-07",
     "name": "Buscador del Vision Agent reparado y selector de identidades",

@@ -170,3 +170,14 @@ def test_cloud_sync_messages_never_alert_or_count_as_events():
     m.handle("t/D1/last", sync, retained=False)                       # llega en vivo (sin la marca de retenido) pero es una sincronizacion
     assert db.events == [] and m.state["D1"]["open"] is True
     assert m.recent("D1")[0]["source"] == "sync"
+
+
+def test_lights_track_state_without_alerts():
+    m, db, _ = make()
+    m.devices["L1"] = {"name": "Taller", "kind": "light", "cam": None}
+    m.handle("t/L1/status", msg("L1", {"switch_1": False, "switch_2": False}), retained=True)
+    m.handle("t/L1/status", msg("L1", {"switch_2": True}))
+    assert m.state["L1"]["open"] is True
+    m.handle("t/L1/status", msg("L1", {"switch_2": False}))
+    assert m.state["L1"]["open"] is False
+    assert db.events == []                    # encender o apagar no es alerta

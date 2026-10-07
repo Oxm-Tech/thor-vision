@@ -36,9 +36,11 @@ h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px soli
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const KIND = {door: 'Puerta', window: 'Ventana', garage: 'Garage', camera: 'Cámara'};
+const KIND = {door: 'Puerta', window: 'Ventana', garage: 'Garage', camera: 'Cámara', light: 'Luz'};
 const when = ts => ts ? new Date(ts * 1000).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}) : '—';
 const ICON = {
+  light: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+  light_open: '<svg class="ic" viewBox="0 0 24 24" style="color:var(--warn)"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" fill="currentColor" fill-opacity=".35"/><path d="M12 0v1M3 4l1 1M21 4l-1 1"/></svg>',
   door: '<svg class="ic" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1.5"/><circle cx="14.5" cy="12" r="1"/></svg>',
   door_open: '<svg class="ic" viewBox="0 0 24 24"><path d="M6 21V4l8-1.5v17"/><path d="M14 8h4v13h-4"/><circle cx="11.5" cy="12" r="1"/></svg>',
   window: '<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg>',
@@ -50,14 +52,15 @@ const ICON = {
 const ago = ts => { if (!ts) return '—'; const s = Date.now() / 1000 - ts; return s < 90 ? 'ahora' : s < 3600 ? 'hace ' + Math.round(s / 60) + ' min' : s < 86400 ? 'hace ' + Math.round(s / 3600) + ' h' : 'hace ' + Math.round(s / 86400) + ' d'; };
 function card(x){
   const cam = x.kind === 'camera';
+  const light = x.kind === 'light';
   const known = x.open !== null && x.open !== undefined;
   const state = cam ? (x.last_ts ? 'closed' : 'nodata') : (x.online === false ? 'off' : (known ? (x.open ? 'open' : 'closed') : 'nodata'));
-  const label = cam ? (x.last_ts ? 'Activa' : 'Sin datos') : (x.online === false ? 'Sin conexión' : (known ? (x.open ? 'ABIERTA' : 'Cerrada') : 'Sin datos'));
+  const label = cam ? (x.last_ts ? 'Activa' : 'Sin datos') : (x.online === false ? 'Sin conexión' : (known ? (light ? (x.open ? 'ENCENDIDA' : 'Apagada') : (x.open ? 'ABIERTA' : 'Cerrada')) : 'Sin datos'));
   const icon = ICON[cam ? 'camera' : (x.kind + (state === 'open' ? '_open' : ''))] || ICON.door;
   const bat = x.battery != null ? `<span class="bat" style="color:${x.battery <= 15 ? 'var(--bad)' : x.battery <= 30 ? 'var(--warn)' : 'var(--muted)'}"><i style="--p:${Math.max(4, Math.min(100, x.battery)) * 0.18}px"></i>${x.battery}%</span>` : '';
   const rel = (x.related || []).map(r => /^(cam-)/.test(r.id) ? `<a class="chip" href="/camara/${esc(r.id)}" title="Abrir la vista de esta cámara">${esc(r.name)}</a>` : `<span class="chip">${esc(r.name)}</span>`).join('');
   return `<div class="sc ${state}"><div class="top">${icon}<div><div class="nm">${esc(x.name)}</div><div class="stt">${label}</div></div></div>
-    <div class="muted" style="font-size:12.5px">${known && !cam ? (x.open ? 'abierta ' : 'cerrada ') + ago(x.since) + ' · ' : ''}último mensaje ${ago(x.last_ts)} ${bat ? '· ' : ''}${bat}</div>
+    <div class="muted" style="font-size:12.5px">${known && !cam ? (light ? (x.open ? 'encendida ' : 'apagada ') : (x.open ? 'abierta ' : 'cerrada ')) + ago(x.since) + ' · ' : ''}último mensaje ${ago(x.last_ts)} ${bat ? '· ' : ''}${bat}</div>
   </div>`;
 }
 async function tick(){
@@ -65,7 +68,8 @@ async function tick(){
     const d = await (await fetch('/api/iot/devices')).json();
     const s = d.status || {};
     $('#st').className = 'b ' + (s.connected ? 'ok' : 'bad'); $('#st').textContent = s.connected ? 'MQTT conectado' : ('MQTT: ' + (s.error || 'sin conexión'));
-    $('#sensors').innerHTML = d.devices.map(card).join('');
+    const sec = (t, f) => { const l = d.devices.filter(f); return l.length ? `<h3 style="grid-column:1/-1;margin:10px 0 0">${t}</h3>` + l.map(card).join('') : ''; };
+    $('#sensors').innerHTML = sec('Cámaras Tuya', x => x.kind === 'camera') + sec('Puertas, ventanas y garage', x => !['camera', 'light'].includes(x.kind)) + sec('Luces', x => x.kind === 'light');
     const e = (await (await fetch('/api/iot/events?limit=40')).json()).events;
     $('#ev').innerHTML = e.length ? e.map(r => `<div class="ev"><span class="muted">${when(r.ts)}</span> · <b>${esc(r.name)}</b> · ${esc(LABEL[r.code] || r.code)}${r.value && typeof r.value === 'object' ? '' : ' = ' + esc(JSON.stringify(r.value))} <span class="muted">(${esc(r.source)})</span></div>`).join('') : 'Sin eventos todavía.';
   } catch (er) { $('#st').className = 'b bad'; $('#st').textContent = 'sin respuesta'; }

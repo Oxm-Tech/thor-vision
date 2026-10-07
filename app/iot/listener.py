@@ -10,6 +10,7 @@ import base64
 import json
 import logging
 import os
+import re
 import sqlite3
 import sys
 import threading
@@ -108,7 +109,14 @@ class IotListener:
         if "battery_percentage" in changes:
             st["battery"] = changes["battery_percentage"]
             self._check_battery(dev_id, dev, st["battery"])
-        op = is_open(dev, changes)
+        if dev.get("kind") == "light":
+            sw = st.setdefault("sw", {})
+            sw.update({c: bool(v) for c, v in changes.items() if re.fullmatch(r"switch(_\d+|_led)?", c)})
+            if not any(re.fullmatch(r"switch(_\d+|_led)?", c) for c in changes):
+                return
+            op = any(sw.values())
+        else:
+            op = is_open(dev, changes)
         if op is None:
             return
         opened_at = st.get("since") or ts
@@ -118,6 +126,10 @@ class IotListener:
             st["open"], st["since"] = op, ts
         if retained or first:
             return                       # estado al arrancar: solo se registra, no alerta
+        if dev.get("kind") == "light":
+            if changed:
+                self._store(ts, dev_id, dev, "encendida" if op else "apagada", "true", "derived")
+            return                       # las luces no generan alertas
         if changed and op:
             self._alert_opened(dev_id, dev, ts)
         elif changed and not op:
