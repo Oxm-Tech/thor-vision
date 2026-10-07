@@ -429,6 +429,11 @@ async def zones_page(request: Request):
     return templates.TemplateResponse("zones.html", {"request": request})
 
 
+@app.get("/tv", response_class=HTMLResponse)
+async def tv_page(request: Request):
+    return templates.TemplateResponse("tv.html", {"request": request, "umami_src": os.environ.get("UMAMI_SCRIPT_URL", ""), "umami_id": os.environ.get("UMAMI_WEBSITE_ID", "")})
+
+
 @app.get("/camara/{cam_id}", response_class=HTMLResponse)
 async def camera_page(request: Request, cam_id: str):
     return templates.TemplateResponse("camera.html", {"request": request, "umami_src": os.environ.get("UMAMI_SCRIPT_URL", ""), "umami_id": os.environ.get("UMAMI_WEBSITE_ID", "")})

@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.18.0",
+    "date": "2026-10-07",
+    "name": "Modo TV para Fire TV / Silk y modo ligero",
+    "summary": "Página /tv con un muro de cámaras ligero y navegable con el control remoto; el panel completo se abre solo en ese modo desde Silk o Fire TV, y los equipos con poca memoria usan 1 fps, miniaturas de 640 px y sin efectos.",
+    "highlights": [
+      {
+        "area": "TV",
+        "title": "/tv: muro de cámaras para pantallas con control remoto",
+        "text": "Todas las cámaras en una cuadrícula (columnas según el ancho), miniaturas de 480 px a ~0.7 fps escalonadas, borde amarillo cuando hay personas y rojo si hay alerta, barra con estado, personas y reloj, y las últimas alertas abajo. Cada mosaico se enfoca con el D-pad y Enter abre la vista de esa cámara. Se recarga solo cada 6 h para liberar memoria."
+      },
+      {
+        "area": "TV",
+        "title": "Detección automática",
+        "text": "Desde Silk, Fire TV y navegadores de TV el panel redirige a /tv (el botón Panel completo o ?full=1 lo evita). Hay también un icono Modo TV en el encabezado."
+      },
+      {
+        "area": "Rendimiento",
+        "title": "Modo ligero",
+        "text": "Con poca memoria (deviceMemory ≤ 2), Silk o ?lite=1: sin desenfoques ni animaciones, snapshots a 1 fps y 640 px, encabezado sin posición fija e iconos en una sola fila. Los snapshots aceptan ?w= para miniaturas."
+      }
+    ]
+  },
+  {
     "version": "2.17.0",
     "date": "2026-10-07",
     "name": "Sensores Tuya con estado en vivo e integración con viajes",

@@ -179,7 +179,7 @@ def _stamp(frame: np.ndarray, name: str) -> np.ndarray:
 
 
 @router.get("/api/snapshot/{cam_id}")
-def snapshot(cam_id: str, request: Request, hd: int = 0, native: int = 0):
+def snapshot(cam_id: str, request: Request, hd: int = 0, native: int = 0, w: int = 0):
     """
     Snapshot JPEG estático. Usado por el dashboard como polling
     (evita límite de 6 conexiones HTTP/1.1 concurrentes del navegador).
@@ -191,6 +191,8 @@ def snapshot(cam_id: str, request: Request, hd: int = 0, native: int = 0):
     big       = bool(hd or native)
     max_w     = 2800 if big else cfg.frame_width       # nativa/HD: sin reducir (hasta 2800 px de ancho; las de 5 MP traen 2592)
     quality   = 85 if big else min(cfg.jpeg_quality, 70)
+    if 160 <= w < max_w:                                 # miniatura ligera (modo TV)
+        max_w, quality = w, min(quality, 60)
 
     frame = manager.get_frame(cam_id)
     if hd and not native:                           # captura a resolucion completa de la propia camara (SUNAPI), si la soporta

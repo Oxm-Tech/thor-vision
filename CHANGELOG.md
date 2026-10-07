@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.18.0 — Modo TV para Fire TV / Silk y modo ligero (2026-10-07)
+
+Página /tv con un muro de cámaras ligero y navegable con el control remoto; el panel completo se abre solo en ese modo desde Silk o Fire TV, y los equipos con poca memoria usan 1 fps, miniaturas de 640 px y sin efectos.
+
+- **TV · /tv: muro de cámaras para pantallas con control remoto**: Todas las cámaras en una cuadrícula (columnas según el ancho), miniaturas de 480 px a ~0.7 fps escalonadas, borde amarillo cuando hay personas y rojo si hay alerta, barra con estado, personas y reloj, y las últimas alertas abajo. Cada mosaico se enfoca con el D-pad y Enter abre la vista de esa cámara. Se recarga solo cada 6 h para liberar memoria.
+- **TV · Detección automática**: Desde Silk, Fire TV y navegadores de TV el panel redirige a /tv (el botón Panel completo o ?full=1 lo evita). Hay también un icono Modo TV en el encabezado.
+- **Rendimiento · Modo ligero**: Con poca memoria (deviceMemory ≤ 2), Silk o ?lite=1: sin desenfoques ni animaciones, snapshots a 1 fps y 640 px, encabezado sin posición fija e iconos en una sola fila. Los snapshots aceptan ?w= para miniaturas.
+
 ## v2.17.0 — Sensores Tuya con estado en vivo e integración con viajes (2026-10-07)
 
 La página de IoT muestra cada sensor como tarjeta con icono y estado actual (abierta, cerrada, sin conexión), batería, función y cámaras relacionadas; las puertas y el garage anticipan entradas para los viajes.
