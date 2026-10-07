@@ -29,6 +29,11 @@
         "area": "VLM",
         "title": "Textos limpios",
         "text": "Las series de signos de interrogación en las descripciones se reducen a '…'."
+      },
+      {
+        "area": "Umami",
+        "title": "400 de sesión duplicada",
+        "text": "El identify y la vista de página creaban la misma sesión a la vez; ahora los eventos esperan 3 s a que la primera vista cree la sesión."
       }
     ]
   },

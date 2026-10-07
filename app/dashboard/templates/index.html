@@ -3846,15 +3846,17 @@ setTimeout(_loadChatHistory, 300);
   const form = () => innerWidth < 700 ? 'celular' : innerWidth < 1100 ? 'tablet' : 'escritorio';
   const props = () => ({ nombre: g('thor_device_name') || (os + ' ' + br), os, navegador: br, formato: form(), tactil: navigator.maxTouchPoints > 0, pwa: matchMedia('(display-mode: standalone)').matches, rol: 'operador' });
   const lastT = {};                                           // evita rafagas: un mismo evento a lo mas cada 2 s; solo textos no vacios y cortos
+  const t0 = Date.now();                                      // Umami v2.15 falla (400, clave duplicada de sesion) si dos envios salen antes de que el primero cree la sesion
   window.thorTrack = (name, data) => {
     try {
+      if (Date.now() - t0 < 3500) return;
       const k = name + JSON.stringify(data || {}); const now = Date.now(); if (now - (lastT[k] || 0) < 2000) return; lastT[k] = now;
       const clean = {}; for (const [a, b] of Object.entries(data || {})) { if (b === '' || b === null || b === undefined) continue; clean[String(a).slice(0, 40)] = typeof b === 'string' ? b.slice(0, 80) : b; }
       if (window.umami && window.umami.track) window.umami.track(String(name).slice(0, 40), clean);
     } catch (_) {}
   };
   window.thorSetDeviceName = n => { st('thor_device_name', String(n || '').slice(0, 40)); try { window.umami && window.umami.identify(Object.assign({ device_id: id }, props())); } catch (_) {} };
-  let tries = 0; const t = setInterval(() => { if (window.umami && window.umami.identify) { window.umami.identify(Object.assign({ device_id: id }, props())); clearInterval(t); } else if (++tries > 40) clearInterval(t); }, 250);
+  let tries = 0; const t = setInterval(() => { if (Date.now() - t0 > 3000 && window.umami && window.umami.identify) { window.umami.identify(Object.assign({ device_id: id }, props())); clearInterval(t); } else if (++tries > 80) clearInterval(t); }, 250);
   // tipo de pantalla y toque: el CSS se adapta solo
   const apply = () => { const r = document.documentElement; r.dataset.vp = innerWidth < 700 ? 's' : innerWidth < 1100 ? 'm' : 'l'; r.classList.toggle('is-touch', matchMedia('(pointer: coarse)').matches); };
   apply(); addEventListener('resize', apply);

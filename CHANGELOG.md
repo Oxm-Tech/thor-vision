@@ -11,6 +11,7 @@ El buscador devolvía error 500 por una cámara sin nombre; mover capturas ahora
 - **Panel · Alerta sin duplicar**: El contador marca ⚠ junto a la cámara en vez de repetirla.
 - **Personas · Cajas diminutas**: En exteriores, cajas de menos del 7% del alto del cuadro se descartan.
 - **VLM · Textos limpios**: Las series de signos de interrogación en las descripciones se reducen a '…'.
+- **Umami · 400 de sesión duplicada**: El identify y la vista de página creaban la misma sesión a la vez; ahora los eventos esperan 3 s a que la primera vista cree la sesión.
 
 ## v2.18.3 — Cowork sin sillas como personas y sin alertas de batería (2026-10-07)
 
