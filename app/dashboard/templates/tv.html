@@ -56,7 +56,7 @@ async function status(){
   try {
     const h = await (await fetch('/api/health')).json();
     $('#live').textContent = `${h.live}/${h.total} en vivo`; $('#live').className = 'pill ' + (h.live === h.total ? 'ok' : h.live ? 'warn' : 'bad');
-    const d = await (await fetch('/api/detections')).json();
+    const d = (await (await fetch('/api/detections')).json()).cameras || {};
     let n = 0; const now = Date.now() / 1000;
     document.querySelectorAll('.t').forEach(t => {
       const x = d[t.dataset.id] || {}, p = x.person_count || 0; n += p;
