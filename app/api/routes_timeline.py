@@ -30,11 +30,15 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
             "ORDER BY e.ts DESC LIMIT ?", (since, until, _MAX_EVENTS + 1)).fetchall()
     truncated = len(rows) > _MAX_EVENTS
     events = []
+    _iot = getattr(request.app.state, "iot", None)
+    iot_alias = {i: d.get("alias") for i, d in (_iot.devices.items() if _iot is not None else []) if d.get("alias")}
     for eid, ts, cam, people, data, label, sid in rows[:_MAX_EVENTS]:
         try:
             d = json.loads(data or "{}")
         except ValueError:
             d = {}
+        if d.get("source") == "iot":                  # las alertas de sensores y camaras Tuya van a su propio carril, no al de la camara de captura
+            cam = (iot_alias.get((d.get("device_id") or (d.get("iot") or {}).get("device_id"))) or cam)
         events.append({"id": eid, "ts": ts, "cam": cam, "people": people or 0,
                        "type": _effective_type(d),
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],

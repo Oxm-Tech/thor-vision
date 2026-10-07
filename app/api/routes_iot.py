@@ -26,4 +26,4 @@ def config(request: Request):
 
 @router.get("/api/iot/events")
 def events(request: Request, device_id: str = "", limit: int = 100):
-    return {"events": _l(request).recent(device_id, limit)}
+    return {"events": _l(request).recent(device_id, limit, sync=False)}

@@ -352,11 +352,12 @@ class IotListener:
                         "related": [{"id": c, "name": self.cam_names.get(c) or (self.devices_by_alias.get(c) or c)} for c in (dev.get("related") or [])]})
         return out
 
-    def recent(self, device_id: str = "", limit: int = 100) -> list:
-        sql, args = "SELECT id, ts, device_id, name, kind, code, value, source FROM iot_events", []
+    def recent(self, device_id: str = "", limit: int = 100, sync: bool = True) -> list:
+        sql, args = "SELECT id, ts, device_id, name, kind, code, value, source FROM iot_events WHERE 1=1" + ("" if sync else " AND source!='sync'"), []
         if device_id:
-            sql += " WHERE device_id=?"
+            sql += " AND device_id=?"
             args.append(device_id)
+        sql += "" if sync else " AND code NOT LIKE 'switch%' AND code NOT IN ('countdown_1','relay_status','light_mode','random_time','cycle_time','child_lock')"
         sql += " ORDER BY id DESC LIMIT ?"
         args.append(min(limit, 500))
         with self.db._lock:

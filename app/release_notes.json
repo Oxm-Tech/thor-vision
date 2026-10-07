@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.19.1",
+    "date": "2026-10-07",
+    "name": "Línea de tiempo con carriles Tuya y eventos IoT sin ruido",
+    "summary": "Las alertas de puertas, garage y cámaras Tuya aparecen en su propio carril de la línea de tiempo, y la lista de eventos de IoT ya no muestra sincronizaciones ni interruptores internos.",
+    "highlights": [
+      {
+        "area": "Línea de tiempo",
+        "title": "Carril por dispositivo Tuya",
+        "text": "Las alertas de sensores y cámaras Tuya van al carril del dispositivo, no al de la cámara de captura."
+      },
+      {
+        "area": "IoT",
+        "title": "Eventos sin ruido",
+        "text": "Se ocultan las sincronizaciones y los códigos internos de luces; quedan los eventos reales y encendidos/apagados."
+      }
+    ]
+  },
+  {
     "version": "2.19.0",
     "date": "2026-10-07",
     "name": "Cámara Tuya de Escaleras P2 y sección de luces",

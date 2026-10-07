@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.19.1 — Línea de tiempo con carriles Tuya y eventos IoT sin ruido (2026-10-07)
+
+Las alertas de puertas, garage y cámaras Tuya aparecen en su propio carril de la línea de tiempo, y la lista de eventos de IoT ya no muestra sincronizaciones ni interruptores internos.
+
+- **Línea de tiempo · Carril por dispositivo Tuya**: Las alertas de sensores y cámaras Tuya van al carril del dispositivo, no al de la cámara de captura.
+- **IoT · Eventos sin ruido**: Se ocultan las sincronizaciones y los códigos internos de luces; quedan los eventos reales y encendidos/apagados.
+
 ## v2.19.0 — Cámara Tuya de Escaleras P2 y sección de luces (2026-10-07)
 
 La nueva cámara Tuya de las escaleras del segundo piso queda integrada (alertas de movimiento con captura de Escaleras P2 y aviso de viaje), y la página IoT agrupa cámaras, sensores y una nueva sección con el estado de las luces.
