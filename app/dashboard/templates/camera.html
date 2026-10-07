@@ -80,7 +80,7 @@ live.ondblclick = $('#fs').onclick;
 async function info(){
   try {
     const d = await (await fetch(`/api/detections/${encodeURIComponent(CAM)}`)).json();
-    const n = d.nemotron || {};
+    const n = d.vlm || {};
     $('#chips').innerHTML = `<span>Personas (YOLO): <b>${d.yolo_persons ?? d.person_count ?? 0}</b></span>`
       + (n.activity ? `<span style="flex-basis:100%">Último análisis: <b>${esc(n.activity)}</b></span>` : '');
   } catch (e) {}

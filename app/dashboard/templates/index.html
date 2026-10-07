@@ -1372,6 +1372,8 @@ const LITE = (navigator.deviceMemory && navigator.deviceMemory <= 2) || /Silk|AF
 if (LITE) document.documentElement.classList.add('lite');
 const POLL_INTERVAL_MS = LITE ? 1000 : 200;   // 5 fps por cámara — suficiente para vigilancia
 const _pollers = {};            // cam_id → { running, errors }
+const _offscreen = new Set();   // tarjetas fuera de la ventana visible (no se les pide imagen)
+const _visObs = ('IntersectionObserver' in window) ? new IntersectionObserver(es => es.forEach(e => { const id = e.target.dataset.camId; if (!id) return; e.isIntersecting ? _offscreen.delete(id) : _offscreen.add(id); }), { rootMargin: '150px' }) : null;
 
 function startSnapshotPolling(camId) {
   if (_pollers[camId]) _pollers[camId].running = false;
@@ -1380,9 +1382,13 @@ function startSnapshotPolling(camId) {
 
   const visible = document.getElementById(`img-${camId}`);
   if (!visible) return;
+  const card = visible.closest('.cam-card');
+  if (card && _visObs) { card.dataset.camId = camId; _visObs.observe(card); }
 
   function fetchNext() {
     if (!state.running) return;
+    // sin pedir imagenes si la pestana esta oculta o la tarjeta fuera de pantalla: evita llenar el navegador de trafico inutil
+    if (document.hidden || _offscreen.has(camId)) { setTimeout(fetchNext, 1000); return; }
     const next = new Image();
     next.onload = () => {
       if (!state.running) return;
@@ -1403,7 +1409,7 @@ function startSnapshotPolling(camId) {
       const delay = Math.min(1000 * Math.pow(2, state.errors - 1), 8000);
       setTimeout(fetchNext, delay);
     };
-    next.src = `/api/snapshot/${camId}?${LITE ? 'w=640&' : ''}t=${Date.now()}`;
+    next.src = `/api/snapshot/${camId}?w=${LITE ? 640 : 800}&t=${Date.now()}`;
   }
   fetchNext();
 }
@@ -1429,8 +1435,8 @@ function updateDetections(detections, totalPersons) {
     for (const [camId, d] of Object.entries(detections || {})) {
       const n = d.person_count || 0;
       if (n > 0) withP.push(`${_camName(camId)}${n > 1 ? ' ×' + n : ''}`);
-      const al = ((d.nemotron || {}).alerts || []).filter(a => !['error','empty response','bad json','encode failed','unreachable',''].includes(String(a).trim()));
-      if (al.length && Date.now() / 1000 - ((d.nemotron || {})._ts || 0) < 120) withAlert.push(_camName(camId));
+      const al = ((d.vlm || {}).alerts || []).filter(a => !['error','empty response','bad json','encode failed','unreachable',''].includes(String(a).trim()));
+      if (al.length && Date.now() / 1000 - ((d.vlm || {})._ts || 0) < 120) withAlert.push(_camName(camId));
     }
     unitEl.textContent = withP.length ? 'en ' + withP.join(', ') : 'en cámaras';
     unitEl.title = withAlert.length ? 'Alerta activa en: ' + withAlert.join(', ') : 'Sin alertas activas';
@@ -1453,9 +1459,9 @@ function updateDetections(detections, totalPersons) {
     }
     // Actividad VLM
     const actEl = document.getElementById(`nem-act-${camId}`);
-    if (actEl && d.nemotron && d.nemotron.activity !== 'error') {
-      const activity = (d.nemotron.activity || '').trim();
-      const alerts   = (d.nemotron.alerts || []).filter(a => !_SKIP_ALERTS.has(String(a).trim()));
+    if (actEl && d.vlm && d.vlm.activity !== 'error') {
+      const activity = (d.vlm.activity || '').trim();
+      const alerts   = (d.vlm.alerts || []).filter(a => !_SKIP_ALERTS.has(String(a).trim()));
       let html = '';
       if (alerts.length > 0) {
         html += `<span class="act-alert">⚠ ${alerts[0]}</span>`;
@@ -3846,8 +3852,8 @@ setTimeout(_loadChatHistory, 300);
       if (window.umami && window.umami.track) window.umami.track(String(name).slice(0, 40), clean);
     } catch (_) {}
   };
-  window.thorSetDeviceName = n => { st('thor_device_name', String(n || '').slice(0, 40)); try { window.umami && window.umami.identify(id, props()); } catch (_) {} };
-  let tries = 0; const t = setInterval(() => { if (window.umami && window.umami.identify) { window.umami.identify(id, props()); clearInterval(t); } else if (++tries > 40) clearInterval(t); }, 250);
+  window.thorSetDeviceName = n => { st('thor_device_name', String(n || '').slice(0, 40)); try { window.umami && window.umami.identify(Object.assign({ device_id: id }, props())); } catch (_) {} };
+  let tries = 0; const t = setInterval(() => { if (window.umami && window.umami.identify) { window.umami.identify(Object.assign({ device_id: id }, props())); clearInterval(t); } else if (++tries > 40) clearInterval(t); }, 250);
   // tipo de pantalla y toque: el CSS se adapta solo
   const apply = () => { const r = document.documentElement; r.dataset.vp = innerWidth < 700 ? 's' : innerWidth < 1100 ? 'm' : 'l'; r.classList.toggle('is-touch', matchMedia('(pointer: coarse)').matches); };
   apply(); addEventListener('resize', apply);

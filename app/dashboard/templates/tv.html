@@ -68,7 +68,7 @@ async function status(){
     document.querySelectorAll('.t').forEach(t => {
       const x = d[t.dataset.id] || {}, p = x.person_count || 0; n += p;
       t.classList.toggle('p', p > 0); t.querySelector('.pc').textContent = p ? '👤 ' + p : '';
-      const al = ((x.nemotron || {}).alerts || []).filter(a => String(a).trim()); t.classList.toggle('a', al.length > 0 && now - ((x.nemotron || {})._ts || 0) < 120);
+      const al = ((x.vlm || {}).alerts || []).filter(a => String(a).trim()); t.classList.toggle('a', al.length > 0 && now - ((x.vlm || {})._ts || 0) < 120);
     });
     $('#pers').textContent = 'Personas ' + n;
   } catch (_) {}

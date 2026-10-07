@@ -231,9 +231,9 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | GET | `/api/person-visits` | List Visits | `cam_id`, `subject_id`, `since`, `until`, `limit`, `include_hidden`, `unassigned` |  |
 | POST | `/api/person-visits/delete` | Delete Visits |  | MoveBody |
 | POST | `/api/person-visits/move` | Move Visits |  | MoveBody |
-| GET | `/api/person-visits/{vid}/body` | Visit Body | `vid`* |  |
-| GET | `/api/person-visits/{vid}/face` | Visit Face | `vid`* |  |
-| GET | `/api/person-visits/{vid}/scene` | Visit Scene | `vid`* |  |
+| GET | `/api/person-visits/{vid}/body` | Visit Body | `vid`*, `w` |  |
+| GET | `/api/person-visits/{vid}/face` | Visit Face | `vid`*, `w` |  |
+| GET | `/api/person-visits/{vid}/scene` | Visit Scene | `vid`*, `w` |  |
 
 ## pets
 
@@ -303,7 +303,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | GET | `/api/snapshots` | List Snapshots | `cam_id`, `since`, `until`, `trigger`, `limit` |  |
-| GET | `/api/snapshots/file/{snapshot_id}` | Serve Snapshot | `snapshot_id`* |  |
+| GET | `/api/snapshots/file/{snapshot_id}` | Serve Snapshot | `snapshot_id`*, `w` |  |
 | POST | `/api/snapshots/{cam_id}` | Trigger Snapshot | `cam_id`* |  |
 
 ## spot

@@ -1,5 +1,38 @@
 [
   {
+    "version": "2.18.2",
+    "date": "2026-10-07",
+    "name": "Sin falsos positivos de árbol, Umami corregido y menos tráfico",
+    "summary": "Objetos fijos que YOLO toma por persona (un árbol en Exterior 2) ya no generan visitas; el error 400 de Umami se debía a una llamada mal formada; las cámaras fuera de pantalla no piden imágenes; la API ya no muestra 'nemotron' y las tarjetas IoT no muestran notas de viajes.",
+    "highlights": [
+      {
+        "area": "Personas",
+        "title": "Objetos fijos descartados",
+        "text": "Si 3 o más tracks sin cara e inmóviles caen en el mismo punto de una cámara exterior en 6 h, se marcan como falsos (fp) y no generan alerta de tráfico ni consulta al VLM."
+      },
+      {
+        "area": "Umami",
+        "title": "Error 400 resuelto",
+        "text": "identify() en Umami v2.15 recibe solo un objeto; se enviaba (id, datos). Ahora va un objeto con device_id."
+      },
+      {
+        "area": "Panel",
+        "title": "Menos tráfico del navegador",
+        "text": "Las tarjetas fuera de pantalla o con la pestaña oculta no piden imagen; las del panel usan 800 px en vez de 1280."
+      },
+      {
+        "area": "API",
+        "title": "Clave vlm",
+        "text": "/api/detections y el WebSocket exponen 'vlm' en lugar de 'nemotron'."
+      },
+      {
+        "area": "IoT",
+        "title": "Tarjetas más limpias",
+        "text": "Se quitan las notas de topología y 'por confirmar'; los viajes siguen usando esos datos internamente."
+      }
+    ]
+  },
+  {
     "version": "2.18.1",
     "date": "2026-10-07",
     "name": "TV en filas fijas sin parpadeo, miniaturas ligeras y sensores sin eventos falsos",

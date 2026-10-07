@@ -115,7 +115,7 @@ class DetectionStore:
                          "thumb": f.thumb_b64}
                         for f in d.faces
                     ],
-                    "nemotron": d.nemotron,
+                    "vlm": d.nemotron,
                     "yolo_persons": d.yolo_persons,
                     "objects": _count_objects(d.objects),
                     "yolo_ts": d.yolo_ts,

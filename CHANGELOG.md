@@ -2,6 +2,16 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.18.2 — Sin falsos positivos de árbol, Umami corregido y menos tráfico (2026-10-07)
+
+Objetos fijos que YOLO toma por persona (un árbol en Exterior 2) ya no generan visitas; el error 400 de Umami se debía a una llamada mal formada; las cámaras fuera de pantalla no piden imágenes; la API ya no muestra 'nemotron' y las tarjetas IoT no muestran notas de viajes.
+
+- **Personas · Objetos fijos descartados**: Si 3 o más tracks sin cara e inmóviles caen en el mismo punto de una cámara exterior en 6 h, se marcan como falsos (fp) y no generan alerta de tráfico ni consulta al VLM.
+- **Umami · Error 400 resuelto**: identify() en Umami v2.15 recibe solo un objeto; se enviaba (id, datos). Ahora va un objeto con device_id.
+- **Panel · Menos tráfico del navegador**: Las tarjetas fuera de pantalla o con la pestaña oculta no piden imagen; las del panel usan 800 px en vez de 1280.
+- **API · Clave vlm**: /api/detections y el WebSocket exponen 'vlm' en lugar de 'nemotron'.
+- **IoT · Tarjetas más limpias**: Se quitan las notas de topología y 'por confirmar'; los viajes siguen usando esos datos internamente.
+
 ## v2.18.1 — TV en filas fijas sin parpadeo, miniaturas ligeras y sensores sin eventos falsos (2026-10-07)
 
 El muro /tv sigue el orden pedido y no parpadea; las listas cargan miniaturas reducidas (antes cientos de MB); la vista de cámara abre a 1920 px con 5 MP bajo demanda; y la sincronización de la nube ya no genera eventos ni alertas falsas de puertas.

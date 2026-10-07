@@ -57,10 +57,8 @@ function card(x){
   const bat = x.battery != null ? `<span class="bat" style="color:${x.battery <= 15 ? 'var(--bad)' : x.battery <= 30 ? 'var(--warn)' : 'var(--muted)'}"><i style="--p:${Math.max(4, Math.min(100, x.battery)) * 0.18}px"></i>${x.battery}%</span>` : '';
   const rel = (x.related || []).map(r => /^(cam-)/.test(r.id) ? `<a class="chip" href="/camara/${esc(r.id)}" title="Abrir la vista de esta cámara">${esc(r.name)}</a>` : `<span class="chip">${esc(r.name)}</span>`).join('');
   return `<div class="sc ${state}"><div class="top">${icon}<div><div class="nm">${esc(x.name)}</div><div class="stt">${label}</div></div></div>
-    ${x.role ? `<div class="role">${esc(x.role)}</div>` : ''}
     <div class="muted" style="font-size:12.5px">${known && !cam ? (x.open ? 'abierta ' : 'cerrada ') + ago(x.since) + ' · ' : ''}último mensaje ${ago(x.last_ts)} ${bat ? '· ' : ''}${bat}</div>
-    ${rel ? `<div class="chips">${rel}</div>` : ''}
-    ${x.cam && !x.confirmed ? '<div class="muted" style="font-size:12px">cámara de captura por confirmar</div>' : ''}</div>`;
+  </div>`;
 }
 async function tick(){
   try {

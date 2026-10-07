@@ -126,6 +126,8 @@ class Track:
         self.dims: tuple = (0, 0)
         self.gait_done = False
         self.first_bbox: tuple = bbox
+        self.cx_rng = [(bbox[0] + bbox[2]) / 2, (bbox[0] + bbox[2]) / 2]
+        self.cy_rng = [(bbox[1] + bbox[3]) / 2, (bbox[1] + bbox[3]) / 2]
         self.body: Optional[bytes] = None
         self.body_q = 0.0
         self.scene: Optional[bytes] = None
@@ -143,12 +145,25 @@ class Track:
         self.live_bbox = bbox
         self.pre_n = 0
         self.face_src = None
+        self.ghost = False
+
+    def still_spot(self):
+        """(cx, cy, tam) si el track casi no se movio en toda su vida (arbol, poste, sombra); si no, None."""
+        w, h = self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1]
+        size = max(w, h, 1.0)
+        extent = max(self.cx_rng[1] - self.cx_rng[0], self.cy_rng[1] - self.cy_rng[0])
+        if extent < STILL_FRAC * size:
+            return ((self.cx_rng[0] + self.cx_rng[1]) / 2, (self.cy_rng[0] + self.cy_rng[1]) / 2, size)
+        return None
 
     def observe(self, bbox: tuple, now: float) -> None:
         self.bbox = bbox
         self.last_ts = max(self.last_ts, now)
         self.first_ts = min(self.first_ts, now)
         self.hits += 1
+        cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+        self.cx_rng = [min(self.cx_rng[0], cx), max(self.cx_rng[1], cx)]
+        self.cy_rng = [min(self.cy_rng[0], cy), max(self.cy_rng[1], cy)]
         if _iou(bbox, self.anchor) > STATIC_IOU:
             if now - self.anchor_ts >= STATIC_S and not self.static:
                 self.static, self.dirty = True, True
@@ -156,6 +171,11 @@ class Track:
             self.anchor, self.anchor_ts = bbox, now
             if self.static:
                 self.static, self.dirty = False, True
+
+
+STILL_FRAC = float(os.environ.get("STILL_FRAC", "0.6"))           # recorrido < 60% del tamano de la caja = no se movio
+GHOST_MIN = int(os.environ.get("GHOST_MIN", "3"))                 # tantos tracks inmoviles sin cara en el mismo punto = objeto fijo (arbol)
+GHOST_WINDOW_S = float(os.environ.get("GHOST_WINDOW_S", "21600"))
 
 
 class VisitManager:
@@ -172,6 +192,7 @@ class VisitManager:
         self._analyzer = None
         self._vlm_q: queue.Queue = queue.Queue(maxsize=30)
         self._vlm_last: dict = {}
+        self._ghosts: dict = {}
         self.stats = {"visits_opened": 0, "visits_closed": 0, "subjects_created": 0,
                       "subject_matches": 0, "vlm_described": 0, "vlm_false_positive": 0,
                       "snap_requests": 0, "snap_faces": 0, "snap_wins": 0,
@@ -430,7 +451,24 @@ class VisitManager:
         self.stats["visits_opened"] += 1
         self._flush(tr, time.time(), "open")
 
+    def _is_ghost(self, cam_id, tr: Track) -> bool:
+        """Objeto fijo que YOLO toma por persona (arbol, poste): varios tracks sin cara, inmoviles, en el mismo punto."""
+        if self.zones.get(cam_id) != "exterior" or tr.face is not None:
+            return False
+        spot = tr.still_spot()
+        if spot is None:
+            return False
+        now = tr.last_ts
+        lst = [g for g in self._ghosts.get(cam_id, []) if now - g[0] < GHOST_WINDOW_S]
+        near = sum(1 for g in lst if abs(g[1] - spot[0]) < 0.5 * spot[2] and abs(g[2] - spot[1]) < 0.5 * spot[2])
+        lst.append((now, spot[0], spot[1]))
+        self._ghosts[cam_id] = lst[-200:]
+        return near + 1 >= GHOST_MIN
+
     def _close_visit(self, cam_id, tr: Track) -> None:
+        tr.ghost = self._is_ghost(cam_id, tr)
+        if tr.ghost:
+            self.stats["ghost_visits"] = self.stats.get("ghost_visits", 0) + 1
         if tr.face_src:
             self.stats["best_" + tr.face_src] = self.stats.get("best_" + tr.face_src, 0) + 1
         if tr.snap_n or tr.pre_n:
@@ -440,16 +478,16 @@ class VisitManager:
                         cam_id, tr.visit_id, qs, qn, qp, tr.snap_n, tr.pre_n, tr.face_src)
         self._flush(tr, time.time(), "closed")
         self.stats["visits_closed"] += 1
-        if self.bodyid is not None and tr.body and not tr.static and tr.visit_id is not None:
+        if self.bodyid is not None and tr.body and not tr.static and not tr.ghost and tr.visit_id is not None:
             self.bodyid.submit(tr.visit_id, tr.body)
         cb = self.visit_cb.get(cam_id)
-        if cb is not None and tr.visit_id is not None and not tr.static:
+        if cb is not None and tr.visit_id is not None and not tr.static and not tr.ghost:
             try:
                 cb({"visit_id": tr.visit_id, "subject_id": tr.subject_id, "name": self._known_name(tr)[0], "first_ts": tr.first_ts,
                     "last_ts": tr.last_ts, "scene": tr.scene, "face": tr.face})
             except (KeyError, TypeError, ValueError, OSError) as exc:      # un fallo de alerta no debe romper el cierre de la visita
                 logger.warning("visit_cb: %s", exc)
-        if tr.body and not tr.static and self._analyzer is not None and self._vlm_worth(cam_id, tr):
+        if tr.body and not tr.static and not tr.ghost and self._analyzer is not None and self._vlm_worth(cam_id, tr):
             try:
                 self._vlm_q.put_nowait((cam_id, tr.visit_id, tr.body, tr.face, tr.scene))
             except queue.Full:
@@ -488,7 +526,7 @@ class VisitManager:
             tr.visit_id, scene=tr.scene if keep_scene else None, end_ts=tr.last_ts, hits=tr.hits, status=status,
             static=int(tr.static), face=tr.face, face_score=tr.face_q, face_xy=tr.face_xy,
             body=tr.body, body_score=tr.body_q, embedding=emb, n_emb=tr.n_emb,
-            known_name=known, known_conf=kconf, subject_id=tr.subject_id)
+            known_name=known, known_conf=kconf, subject_id=tr.subject_id, **({"fp": 1} if tr.ghost else {}))
         if tr.subject_id is not None:
             self.db.touch_subject(tr.subject_id, tr.last_ts)
         tr.dirty, tr.last_flush = False, now
