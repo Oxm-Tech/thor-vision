@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.18.3",
+    "date": "2026-10-07",
+    "name": "Cowork sin sillas como personas y sin alertas de batería",
+    "summary": "Cowork valida personas con esqueleto (una silla cercana a la planta contaba como persona), se quita la línea de pantallas, y la batería baja de los sensores ya no es una alerta.",
+    "highlights": [
+      {
+        "area": "Personas",
+        "title": "Cowork con esqueleto",
+        "text": "Las detecciones de YOLO sin esqueleto en Cowork se descartan (como Cocina y Sala de Juntas)."
+      },
+      {
+        "area": "IoT",
+        "title": "Batería baja ya no alerta",
+        "text": "Se ve en la tarjeta del sensor; deja de aparecer en la lista de alertas."
+      },
+      {
+        "area": "Panel",
+        "title": "Sin línea de pantallas",
+        "text": "Se quita el análisis de monitores de Cowork del panel y se apaga en el servidor."
+      },
+      {
+        "area": "Personas",
+        "title": "Parpadeos de YOLO",
+        "text": "Visitas de 1-3 cuadros en cámaras exteriores se descartan al cerrarse."
+      }
+    ]
+  },
+  {
     "version": "2.18.2",
     "date": "2026-10-07",
     "name": "Sin falsos positivos de árbol, Umami corregido y menos tráfico",

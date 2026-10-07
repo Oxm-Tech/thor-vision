@@ -247,8 +247,7 @@ class IotListener:
         if pct > int(self.cfg.get("low_battery_pct", 15)) or time.time() - self._low_batt.get(dev_id, 0) < 86400:
             return
         self._low_batt[dev_id] = time.time()
-        self._insert_alert(dev.get("cam"), f"Bateria baja ({pct}%) del sensor {dev['name']}", f"Cambiar la pila del sensor {dev['name']} ({pct}%)",
-                           "sensor_bateria_baja", "low", {"device_id": dev_id, "name": dev["name"], "battery": pct})
+        logger.info("iot: bateria baja (%s%%) del sensor %s (se muestra en su tarjeta, no es alerta)", pct, dev["name"])
 
     def check_open_too_long(self, now: float | None = None) -> None:
         """Llamar periodicamente: alerta de nuevo si una puerta o ventana sigue abierta mas de alert_open_minutes."""

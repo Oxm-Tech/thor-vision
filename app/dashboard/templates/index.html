@@ -1308,7 +1308,6 @@ function initGrid(cameras) {
   cameras.forEach(cam => startSnapshotPolling(cam.id));
   // Pipeline de detalle de pantallas (experimento, opt-in en el backend
   // vía COWORK_DETAIL_ENABLED) — solo si la cámara existe en este grid.
-  if (cameras.some(c => c.id === 'cam-cowork')) startCoworkDetailPolling();
   initialized = true;
 }
 

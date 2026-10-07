@@ -2,6 +2,15 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.18.3 — Cowork sin sillas como personas y sin alertas de batería (2026-10-07)
+
+Cowork valida personas con esqueleto (una silla cercana a la planta contaba como persona), se quita la línea de pantallas, y la batería baja de los sensores ya no es una alerta.
+
+- **Personas · Cowork con esqueleto**: Las detecciones de YOLO sin esqueleto en Cowork se descartan (como Cocina y Sala de Juntas).
+- **IoT · Batería baja ya no alerta**: Se ve en la tarjeta del sensor; deja de aparecer en la lista de alertas.
+- **Panel · Sin línea de pantallas**: Se quita el análisis de monitores de Cowork del panel y se apaga en el servidor.
+- **Personas · Parpadeos de YOLO**: Visitas de 1-3 cuadros en cámaras exteriores se descartan al cerrarse.
+
 ## v2.18.2 — Sin falsos positivos de árbol, Umami corregido y menos tráfico (2026-10-07)
 
 Objetos fijos que YOLO toma por persona (un árbol en Exterior 2) ya no generan visitas; el error 400 de Umami se debía a una llamada mal formada; las cámaras fuera de pantalla no piden imágenes; la API ya no muestra 'nemotron' y las tarjetas IoT no muestran notas de viajes.

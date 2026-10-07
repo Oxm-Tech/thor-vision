@@ -91,13 +91,13 @@ def test_open_too_long_alerts_once_per_interval():
     assert len(db.events) == n + 1
 
 
-def test_low_battery_alerts_once_a_day_and_unknown_devices_are_ignored():
+def test_low_battery_is_not_an_alert_and_unknown_devices_are_ignored():
     m, db, sn = make()
     m.handle("t/D1/status", msg("D1", {"battery_percentage": 1}))
     m.handle("t/D1/status", msg("D1", {"battery_percentage": 1}))
-    assert [e[2]["alert_types"] for e in db.events] == [["sensor_bateria_baja"]]
+    assert db.events == []                    # la bateria se ve en la tarjeta del sensor, no como alerta
     m.handle("t/XX/status", msg("XX", {"doorcontact_state": True}))
-    assert len(db.events) == 1 and "XX" not in m.state
+    assert "XX" not in m.state
 
 
 def test_garbage_messages_are_ignored():
