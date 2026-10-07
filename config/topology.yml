@@ -14,8 +14,11 @@ street:              # calle y videoportero (conectadas con las de entrada)
   - cam-189
   - cam-191
 entry_cams: [cam-228, cam-vto]         # un viaje nuevo que empieza aqui es una entrada
-tuya_entries:                          # camara Tuya -> camara de thor-vision a la que anticipa
+tuya_entries:                          # aviso (camara Tuya o sensor) -> camara de thor-vision a la que anticipa
   tuya-garaje: cam-228
+  door-recepcion: cam-113              # puerta de cristal de la recepcion: inicia el viaje de Escaleras entrada
+  door-comedor: cam-215                # puerta del comedor: entrada a la Cocina (pasa antes por la Tuya del jardin)
+  garage-abre: cam-228                 # abre-puertas del garage
 max_gap_s: 180                         # tiempo maximo entre una camara y la siguiente
 fragment_gap_s: 30                     # misma camara: visitas partidas de la misma persona
 tuya_window_s: 60                      # tras un movimiento de la Tuya se espera una visita en la camara de entrada

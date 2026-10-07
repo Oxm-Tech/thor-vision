@@ -133,6 +133,12 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | DELETE | `/api/faces/{face_id}` | Delete Face | `face_id`* |  |
 | GET | `/api/faces/{face_id}/image` | Face Image | `face_id`* |  |
 
+## gait
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/gait/eval` | Gait Eval | `min_per_id` |  |
+
 ## galeria
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
@@ -159,6 +165,16 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | GET | `/api/iot/devices` | Devices |  |  |
 | GET | `/api/iot/events` | Events | `device_id`, `limit` |  |
 | GET | `/iot` | Iot Page |  |  |
+
+## journeys
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/journeys` | Journeys | `hours`, `pending`, `limit` |  |
+| POST | `/api/journeys/backfill` | Backfill | `hours` |  |
+| GET | `/api/journeys/stats` | Stats | `hours` |  |
+| POST | `/api/journeys/{jid}/accept` | Accept | `jid`* |  |
+| POST | `/api/journeys/{jid}/reject` | Reject | `jid`* |  |
 
 ## knowledge
 

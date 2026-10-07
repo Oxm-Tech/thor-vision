@@ -60,6 +60,7 @@ class IotListener:
         self.db, self.snapshots, self.buffers, self.cam_names = db, snapshots, buffers, cam_names
         self.cfg = load_map()
         self.devices: dict = self.cfg.get("devices", {})
+        self.devices_by_alias: dict = {d["alias"]: d.get("name", "").replace(" (Tuya)", "") for d in self.devices.values() if d.get("alias")}
         self.state: dict = {}            # device_id -> {"open": bool|None, "since": ts, "battery": int|None, "last_ts": ts}
         self._alerted_open: dict = {}    # device_id -> ts de la ultima alerta de "sigue abierto"
         self._low_batt: dict = {}
@@ -91,6 +92,8 @@ class IotListener:
         ts = float(msg.get("ts") or time.time())
         st = self.state.setdefault(dev_id, {"open": None, "since": ts, "battery": None, "last_ts": ts})
         st["last_ts"] = ts
+        if "online" in msg:
+            st["online"] = bool(msg["online"])
         source = "sync" if retained else "event"
         for code, value in changes.items():
             if code == "initiative_message":
@@ -204,6 +207,11 @@ class IotListener:
                                                           "cam_confirmed": bool(dev.get("confirmed"))})
         self._alerted_open[dev_id] = ts
         self._snapshot(eid, cam, "puerta")
+        if self.on_motion is not None and dev.get("alias"):
+            try:
+                self.on_motion(dev["alias"], ts)         # la apertura anticipa una entrada en la camara asociada (viajes)
+            except (TypeError, ValueError, KeyError, OSError, sqlite3.Error) as exc:
+                logger.warning("iot: on_motion: %s", exc)
         logger.info("iot: %s abierta -> alerta %d (cam %s)", dev["name"], eid, cam)
 
     def _usage_alert(self, msg: dict, retained: bool) -> None:
@@ -317,7 +325,9 @@ class IotListener:
             st = self.state.get(dev_id, {})
             out.append({"device_id": dev_id, "name": dev.get("name"), "kind": dev.get("kind"), "cam": dev.get("cam"),
                         "cam_name": self.cam_names.get(dev.get("cam") or "", None), "confirmed": bool(dev.get("confirmed")),
-                        "open": st.get("open"), "since": st.get("since"), "battery": st.get("battery"), "last_ts": st.get("last_ts")})
+                        "open": st.get("open"), "since": st.get("since"), "battery": st.get("battery"), "last_ts": st.get("last_ts"), "online": st.get("online"),
+                        "alias": dev.get("alias"), "role": dev.get("role"),
+                        "related": [{"id": c, "name": self.cam_names.get(c) or (self.devices_by_alias.get(c) or c)} for c in (dev.get("related") or [])]})
         return out
 
     def recent(self, device_id: str = "", limit: int = 100) -> list:

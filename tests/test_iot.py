@@ -144,3 +144,19 @@ def test_snapshot_accepts_frame_entry_and_listener_survives_errors():
     m._snapshot(5, "cam-113", "puerta")
     assert sn.saved == [("cam-113", "puerta", 5)]
     m._safe(lambda: 1 / 0 if False else {}["x"])              # un KeyError no se propaga
+
+
+def test_door_open_notifies_journeys_and_state_exposes_related_and_online():
+    m, db, sn = make()
+    m.devices["D1"].update(alias="door-recepcion", related=["cam-113", "tuya-jardin"], role="Inicia el viaje")
+    m.devices["C1"]["alias"] = "tuya-jardin"
+    m.devices_by_alias = {"tuya-jardin": "Jardin camara"}
+    got = []
+    m.on_motion = lambda alias, ts: got.append(alias)
+    m.handle("t/D1/last", msg("D1", {"doorcontact_state": False}), retained=True)       # estado actual de la nube: no alerta
+    m.handle("t/D1/status", msg("D1", {"doorcontact_state": True}))
+    assert got == ["door-recepcion"]
+    s = {d["device_id"]: d for d in m.snapshot_state()}["D1"]
+    assert s["role"] == "Inicia el viaje" and [r["id"] for r in s["related"]] == ["cam-113", "tuya-jardin"] and s["open"] is True
+    m.handle("t/D1/last", json.dumps({"device_id": "D1", "ts": time.time(), "changes": {"battery_percentage": 80}, "online": False}).encode(), retained=True)
+    assert {d["device_id"]: d for d in m.snapshot_state()}["D1"]["online"] is False

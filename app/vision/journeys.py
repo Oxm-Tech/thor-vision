@@ -123,8 +123,8 @@ class JourneyLinker:
     def _resolve_tuya(self, now: float) -> None:
         win = float(self.topo.get("tuya_window_s", 60))
         with self.db._lock:
-            waiting = self.db._conn.execute("SELECT id, ts, cam_id FROM tuya_entries WHERE state='waiting'").fetchall()
-        for tid, ts, cam in waiting:
+            waiting = self.db._conn.execute("SELECT id, ts, cam_id, alias FROM tuya_entries WHERE state='waiting'").fetchall()
+        for tid, ts, cam, alias in waiting:
             with self.db._lock:
                 v = self.db._conn.execute("SELECT id FROM person_visits WHERE cam_id=? AND fp=0 AND static=0 AND start_ts BETWEEN ? AND ? ORDER BY start_ts LIMIT 1",
                                           (cam, ts - 5, ts + win)).fetchone()
@@ -139,8 +139,8 @@ class JourneyLinker:
                     self.db._conn.commit()
                 self.stats["tuya_orphan"] += 1
                 payload = {"schema": 2, "source": "journeys", "people": 0, "persons": [], "vehicles": 0,
-                           "activity": "Movimiento en la camara Tuya del garage sin persona en Garage frontal: entrada probable sin captura",
-                           "scene": "", "relevant": True, "alerts": ["Entrada probable sin captura (garage)"], "alert_types": ["entrada_sin_captura"],
+                           "activity": f"Aviso de {alias} sin persona en la camara de entrada ({cam}): entrada probable sin captura",
+                           "scene": "", "relevant": True, "alerts": [f"Entrada probable sin captura ({alias})"], "alert_types": ["entrada_sin_captura"],
                            "severity": "low", "confidence": "low", "tuya_entry_ts": ts}
                 try:
                     self.db.insert_event("nemotron", cam, payload, people=0, has_alert=True)

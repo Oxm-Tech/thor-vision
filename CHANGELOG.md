@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.17.0 — Sensores Tuya con estado en vivo e integración con viajes (2026-10-07)
+
+La página de IoT muestra cada sensor como tarjeta con icono y estado actual (abierta, cerrada, sin conexión), batería, función y cámaras relacionadas; las puertas y el garage anticipan entradas para los viajes.
+
+- **IoT · Tarjetas con icono y estado**: Cada puerta, ventana, garage y cámara Tuya se ve con su icono (cambia a 'abierta'), estado en grande, hace cuánto cambió, batería y enlaces a las cámaras relacionadas. Recepción: inicia el viaje de Escaleras entrada; Puerta Comedor: conecta la Cocina con la Tuya del jardín; Garage: la Tuya del garage, Garage frontal y posterior, y Exterior 1 y 2.
+- **IoT · Estado actual desde la nube**: El puente consulta a la nube de Tuya el estado de puertas y ventanas al arrancar y cada 10 min y lo publica como retenido (sin generar alertas), para que no queden en 'sin datos' hasta su siguiente cambio.
+- **Viajes · Aperturas como aviso de entrada**: Abrir la puerta de recepción, la del comedor o el garage abre una ventana de 60 s esperando una visita en la cámara asociada; si no llega, queda 'entrada probable sin captura'.
+
 ## v2.16.0 — Viajes entre cámaras, Tuya del garage como aviso de entrada y recolección de marcha (2026-10-06)
 
 Las visitas de una misma persona se enlazan entre cámaras en un viaje; si en algún punto se ve su rostro, las demás visitas quedan como sugerencia con confirmación en bloque. La cámara Tuya del garage anticipa la entrada y se recolecta, sin usarla aún, el vector de marcha a partir de la postura.
