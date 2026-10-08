@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.22.1 — Plantas ya no cuentan como visitas y grabadora de cajas (2026-10-08)
+
+En interiores, una detección breve (menos de 15 s) e inmóvil que se repite 3 veces en el mismo punto sin cara (una planta o un bulto) se marca falsa; y se guardan las cajas de persona de cada cámara por 7 días para repetir otros trackers sobre los mismos datos.
+
+- **Personas · Fantasmas en interiores**: Escaleras entrada generaba una 'visita' de 4 s cada pocos minutos sobre una palma, y Garage frontal sobre un bulto en el piso.
+- **Calidad · Grabadora de cajas**: data/eval/tracks-AAAAMMDD.jsonl con tiempo, cámara y cajas; sirve para comparar ByteTrack y BoT-SORT con los recorridos de prueba. EVAL_TRACK_LOG=false lo apaga.
+
 ## v2.22.0 — Conjunto de evaluación de personas (2026-10-08)
 
 Nueva página /evaluacion: cada 20 minutos se guarda un cuadro por cámara con las cajas de persona de YOLO; tú marcas las falsas y las personas que faltaron, y el informe calcula precisión y recall por cámara. Sirve de base para comparar trackers y decidir si hace falta reentrenar.

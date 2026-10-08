@@ -198,6 +198,7 @@ class Track:
 
 STILL_FRAC = float(os.environ.get("STILL_FRAC", "0.6"))           # recorrido < 60% del tamano de la caja = no se movio
 TINY_H_FRAC = float(os.environ.get("TINY_H_FRAC", "0.07"))              # alto de caja < 7% del cuadro en exteriores = demasiado pequena
+INDOOR_GHOST_S = float(os.environ.get("INDOOR_GHOST_S", "15"))        # en interiores solo se descartan quietos de menos de esto
 GHOST_MIN = int(os.environ.get("GHOST_MIN", "3"))                 # tantos tracks inmoviles sin cara en el mismo punto = objeto fijo (arbol)
 GHOST_WINDOW_S = float(os.environ.get("GHOST_WINDOW_S", "21600"))
 
@@ -487,12 +488,28 @@ class VisitManager:
 
     def _is_ghost(self, cam_id, tr: Track) -> bool:
         """Objeto fijo que YOLO toma por persona (arbol, poste): varios tracks sin cara, inmoviles, en el mismo punto."""
-        if self.zones.get(cam_id) != "exterior" or tr.face is not None:
+        exterior = self.zones.get(cam_id) == "exterior"
+        if tr.face is not None or cam_id == "cam-vto":
             return False
+        if not exterior and (tr.last_ts - tr.first_ts > INDOOR_GHOST_S or tr.hits <= 3):
+            return self._still_ghost(cam_id, tr)          # interior: solo detecciones breves e inmoviles (una planta, una bolsa); una persona sentada dura mas
         if tr.hits <= 3:
             return True                  # 1-3 detecciones sueltas (aunque duren segundos): parpadeo de YOLO, no alguien que paso
         if tr.dims[1] and (tr.bbox[3] - tr.bbox[1]) < TINY_H_FRAC * tr.dims[1]:
             return True                  # caja minuscula al fondo de la escena (poste, reflejo, auto lejano): no hay forma de verificarla
+        spot = tr.still_spot()
+        if spot is None:
+            return False
+        now = tr.last_ts
+        lst = [g for g in self._ghosts.get(cam_id, []) if now - g[0] < GHOST_WINDOW_S]
+        near = sum(1 for g in lst if abs(g[1] - spot[0]) < 0.5 * spot[2] and abs(g[2] - spot[1]) < 0.5 * spot[2])
+        lst.append((now, spot[0], spot[1]))
+        self._ghosts[cam_id] = lst[-200:]
+        return near + 1 >= GHOST_MIN
+
+    def _still_ghost(self, cam_id, tr: Track) -> bool:
+        if tr.last_ts - tr.first_ts > INDOOR_GHOST_S:
+            return False
         spot = tr.still_spot()
         if spot is None:
             return False

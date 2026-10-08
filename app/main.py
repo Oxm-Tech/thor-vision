@@ -111,6 +111,9 @@ async def lifespan(app: FastAPI):
     app.state.parked.cam_names = {c.id: c.name for c in config.cameras}
     app.state.pets = PetCollector(db)
     vision_queue.hooks = [app.state.parked.update, app.state.pets.update]
+    if os.environ.get("EVAL_TRACK_LOG", "true").lower() == "true":
+        from app.api.routes_eval import make_track_recorder
+        vision_queue.hooks.append(make_track_recorder())          # cajas de persona con su tiempo, para comparar trackers fuera de linea
     vision_queue.start()
     if visit_manager is not None:
         from app.vision.gait import GaitCollector

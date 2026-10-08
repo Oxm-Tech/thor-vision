@@ -36,3 +36,13 @@ def test_skipped_frames_do_not_count_and_bad_ids_are_rejected(tmp_path, monkeypa
     assert c.get("/api/eval/report").json()["total"]["frames"] == 0
     assert c.get("/api/eval/image/..%2Fetc").status_code in (400, 404)
     assert c.post("/api/eval/label", json={"id": "zzz"}).status_code == 404
+
+
+def test_track_recorder_writes_only_frames_with_people(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(ev, "DIR", str(tmp_path))
+    hook = ev.make_track_recorder()
+    hook("cam-1", SimpleNamespace(person_bboxes=[], frame_w=1, frame_h=1), None)
+    hook("cam-1", SimpleNamespace(person_bboxes=[(1.0, 2.0, 3.0, 4.0)], frame_w=640, frame_h=360), None)
+    lines = [json.loads(x) for f in tmp_path.glob("tracks-*.jsonl") for x in f.read_text().splitlines()]
+    assert len(lines) == 1 and lines[0]["c"] == "cam-1" and lines[0]["b"] == [[1.0, 2.0, 3.0, 4.0]] and lines[0]["w"] == 640

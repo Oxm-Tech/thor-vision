@@ -164,3 +164,30 @@ def report():
         r = tp / (tp + d["missed"]) if (tp + d["missed"]) else None
         return {**d, "precision": round(p, 3) if p is not None else None, "recall": round(r, 3) if r is not None else None}
     return {"total": met(tot), "per_cam": {c: met(d) for c, d in sorted(out.items())}, "pool": len(_read(POOL))}
+
+
+TRACK_KEEP_DAYS = int(os.environ.get("EVAL_TRACKS_KEEP_DAYS", "7"))
+
+
+def make_track_recorder():
+    """Hook por cuadro en vivo: guarda las cajas de persona (con su tiempo) para repetir otros trackers fuera de linea con los mismos datos."""
+    state = {"day": "", "f": None}
+
+    def hook(cam_id, result, frame):
+        boxes = getattr(result, "person_bboxes", None)
+        if not boxes:
+            return
+        day = time.strftime("%Y%m%d")
+        if day != state["day"]:
+            if state["f"]:
+                state["f"].close()
+            os.makedirs(DIR, exist_ok=True)
+            state["f"], state["day"] = open(os.path.join(DIR, f"tracks-{day}.jsonl"), "a", encoding="utf-8"), day
+            old = time.time() - TRACK_KEEP_DAYS * 86400
+            for n in os.listdir(DIR):
+                if n.startswith("tracks-") and os.path.getmtime(os.path.join(DIR, n)) < old:
+                    os.remove(os.path.join(DIR, n))
+        state["f"].write(json.dumps({"t": round(time.time(), 2), "c": cam_id, "w": getattr(result, "frame_w", 0), "h": getattr(result, "frame_h", 0),
+                                      "b": [[round(float(v), 1) for v in b] for b in boxes]}) + "\n")
+        state["f"].flush()
+    return hook
