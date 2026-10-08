@@ -456,8 +456,8 @@ class VisitManager:
         """Objeto fijo que YOLO toma por persona (arbol, poste): varios tracks sin cara, inmoviles, en el mismo punto."""
         if self.zones.get(cam_id) != "exterior" or tr.face is not None:
             return False
-        if tr.hits <= 3 and tr.last_ts - tr.first_ts < 3.0:
-            return True                  # parpadeo de YOLO de 1-3 cuadros: no es alguien que paso
+        if tr.hits <= 3:
+            return True                  # 1-3 detecciones sueltas (aunque duren segundos): parpadeo de YOLO, no alguien que paso
         if tr.dims[1] and (tr.bbox[3] - tr.bbox[1]) < TINY_H_FRAC * tr.dims[1]:
             return True                  # caja minuscula al fondo de la escena (poste, reflejo, auto lejano): no hay forma de verificarla
         spot = tr.still_spot()

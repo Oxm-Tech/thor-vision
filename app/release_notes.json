@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.20.6",
+    "date": "2026-10-08",
+    "name": "Menos visitas fantasma en la calle",
+    "summary": "Una detección de 1 a 3 cuadros en Exterior 1 o 2 ya no cuenta como visita aunque dure segundos, y la línea de tiempo exige al menos 4 detecciones para mostrar tráfico de calle (esas visitas salían sin captura).",
+    "highlights": [
+      {
+        "area": "Personas",
+        "title": "Detecciones sueltas descartadas",
+        "text": "En exteriores, tracks con 3 detecciones o menos se marcan falsos; también se ocultan del histórico."
+      }
+    ]
+  },
+  {
     "version": "2.20.5",
     "date": "2026-10-08",
     "name": "Sensores de puertas: solo cambios de estado",

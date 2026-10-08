@@ -2,6 +2,12 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.6 — Menos visitas fantasma en la calle (2026-10-08)
+
+Una detección de 1 a 3 cuadros en Exterior 1 o 2 ya no cuenta como visita aunque dure segundos, y la línea de tiempo exige al menos 4 detecciones para mostrar tráfico de calle (esas visitas salían sin captura).
+
+- **Personas · Detecciones sueltas descartadas**: En exteriores, tracks con 3 detecciones o menos se marcan falsos; también se ocultan del histórico.
+
 ## v2.20.5 — Sensores de puertas: solo cambios de estado (2026-10-08)
 
 Se acabaron los avisos repetidos 'lleva N min abierta'; cada puerta o ventana avisa al abrirse y al cerrarse, y el cierre anota cuánto duró abierta (en horas y minutos).
