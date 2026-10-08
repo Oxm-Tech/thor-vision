@@ -47,10 +47,10 @@ def jpeg():
 def test_visit_with_face_creates_an_alert_with_snapshot():
     db, sn = FakeDB(), FakeSnaps()
     d = doorbell.DoorAlerts(db, sn, {}, "cam-vto", "Videoportero")
-    d.visitor_alert({"visit_id": 7, "subject_id": 418, "name": None, "first_ts": 100.0, "last_ts": 112.0, "scene": None, "face": jpeg()})
+    d.visitor_alert({"visit_id": 7, "subject_id": 418, "name": None, "first_ts": 100.0, "last_ts": 118.0, "scene": None, "face": jpeg()})
     typ, cam, p, has_alert = db.events[0]
     assert typ == "nemotron" and cam == "cam-vto" and has_alert
-    assert p["alert_types"] == ["visita_videoportero"] and p["doorbell"]["visit_id"] == 7 and "12 s" in p["activity"]
+    assert p["alert_types"] == ["visita_videoportero"] and p["doorbell"]["visit_id"] == 7 and "18 s" in p["activity"]
     assert sn.saved == [("cam-vto", "visita", 1, True)]
 
 
