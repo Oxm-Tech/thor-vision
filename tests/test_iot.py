@@ -194,3 +194,23 @@ def test_best_cam_prefers_the_related_camera_that_sees_a_person():
     assert m._best_cam(dev) == "cam-118"
     det["cam-118"].yolo_persons = det["cam-118"].person_count = 0
     assert m._best_cam(dev) == "cam-228"                         # nadie a la vista: la camara asignada
+
+
+def test_zone_with_several_cameras_saves_one_mosaic():
+    import numpy as np
+    from types import SimpleNamespace
+
+    class Buf:
+        def __init__(self, w, h):
+            self.f = np.full((h, w, 3), 90, np.uint8)
+
+        def peek_latest(self):
+            return SimpleNamespace(frame=self.f)
+    m, db, sn = make()
+    m.buffers = {"cam-228": Buf(1280, 720), "cam-118": Buf(1280, 720), "cam-113": Buf(1080, 1920)}
+    m.cam_names = {"cam-228": "Garage frontal", "cam-118": "Garage posterior", "cam-113": "Escaleras entrada"}
+    shots = []
+    sn.save = lambda cam, frame, trig, event_id=None: shots.append((cam, frame.shape, trig, event_id))
+    dev = {"name": "Garage", "kind": "garage", "cam": "cam-228", "related": ["cam-228", "cam-118", "cam-113", "tuya-garaje"]}
+    m._snapshot_zone(7, dev, "puerta")
+    assert len(shots) == 1 and shots[0][0] == "cam-228" and shots[0][1] == (720, 1280, 3) and shots[0][3] == 7        # 2x2 de 640x360

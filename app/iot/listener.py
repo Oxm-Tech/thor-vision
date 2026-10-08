@@ -224,6 +224,55 @@ class IotListener:
                     best = (n, c)
         return best[1] if best else base
 
+    def _zone_cams(self, dev: dict) -> list:
+        cams = [c for c in ([dev.get("cam")] + list(dev.get("related") or [])) if c and str(c).startswith("cam-")]
+        return list(dict.fromkeys(cams))
+
+    def _frame_of(self, cam_id):
+        buf = self.buffers.get(cam_id)
+        frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
+        frame = getattr(frame, "frame", frame)
+        return frame[0] if isinstance(frame, tuple) else frame
+
+    def _mosaic(self, cams: list):
+        """Una sola imagen con la vista actual de todas las camaras de la zona (borde verde = ven a una persona), para ver donde paso algo."""
+        import cv2
+        import numpy as np
+        tw, th = 640, 360
+        tiles = []
+        for c in cams[:4]:
+            fr = self._frame_of(c)
+            tile = np.zeros((th, tw, 3), np.uint8)
+            if fr is not None:
+                h, w = fr.shape[:2]
+                k = min(tw / w, th / h)
+                small = cv2.resize(fr, (max(1, int(w * k)), max(1, int(h * k))), interpolation=cv2.INTER_AREA)
+                y0, x0 = (th - small.shape[0]) // 2, (tw - small.shape[1]) // 2
+                tile[y0:y0 + small.shape[0], x0:x0 + small.shape[1]] = small
+            d = self.detections.get(c) if self.detections is not None else None
+            seen = d is not None and time.time() - (getattr(d, "yolo_ts", 0) or 0) < 5 and (getattr(d, "yolo_persons", 0) or 0) > 0
+            if seen:
+                cv2.rectangle(tile, (0, 0), (tw - 1, th - 1), (0, 220, 0), 6)
+            label = self.cam_names.get(c) or c
+            cv2.rectangle(tile, (0, th - 30), (tw, th), (0, 0, 0), -1)
+            cv2.putText(tile, label, (8, th - 9), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
+            tiles.append(tile)
+        while len(tiles) < 2 or len(tiles) % 2:
+            tiles.append(np.zeros((th, tw, 3), np.uint8))
+        rows = [np.hstack(tiles[i:i + 2]) for i in range(0, len(tiles), 2)]
+        return np.vstack(rows)
+
+    def _snapshot_zone(self, event_id: int, dev: dict, trigger: str) -> None:
+        """Con varias camaras en la zona (garage: frontal, posterior y exteriores) guarda un mosaico de todas; con una sola, la camara que ve a la persona."""
+        cams = self._zone_cams(dev)
+        if len(cams) >= 2 and self.snapshots is not None:
+            try:
+                self.snapshots.save(dev.get("cam") or cams[0], self._mosaic(cams), trigger, event_id=event_id)
+                return
+            except (OSError, ValueError, TypeError, AttributeError) as exc:
+                logger.warning("iot: mosaico: %s", exc)
+        self._snapshot(event_id, self._best_cam(dev), trigger)
+
     def _snapshot(self, event_id: int, cam_id, trigger: str) -> None:
         buf = self.buffers.get(cam_id) if cam_id else None
         frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
@@ -248,7 +297,7 @@ class IotListener:
                                  "puerta_abierta", sev, {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "open",
                                                           "cam_confirmed": bool(dev.get("confirmed"))})
         self._alerted_open[dev_id] = ts
-        self._snapshot(eid, self._best_cam(dev), "puerta")
+        self._snapshot_zone(eid, dev, "puerta")
         if self.on_motion is not None and dev.get("alias"):
             try:
                 self.on_motion(dev["alias"], ts)         # la apertura anticipa una entrada en la camara asociada (viajes)
@@ -264,7 +313,7 @@ class IotListener:
         dur = f"{mins // 60} h {mins % 60} min" if mins >= 60 else (f"{mins} min {secs % 60} s" if mins >= 1 else f"{secs} s")
         eid = self._insert_alert(dev.get("cam"), f"Se cerro {what}: {dev['name']} (estuvo abierta {dur})", f"{dev['name']} cerrada", "puerta_abierta", "none",
                                  {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "closed", "minutes": mins})
-        self._snapshot(eid, self._best_cam(dev), "puerta_cierre")
+        self._snapshot_zone(eid, dev, "puerta_cierre")
         self._alerted_open.pop(dev_id, None)
 
     def _usage_alert(self, msg: dict, retained: bool) -> None:

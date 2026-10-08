@@ -2,6 +2,12 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.22.3 — Mosaico de todas las cámaras en la alerta del garage (2026-10-08)
+
+La alerta de apertura y cierre de una zona con varias cámaras (garage: frontal, posterior y exteriores) guarda un mosaico 2x2 con la vista de todas, con borde verde en las que ven una persona.
+
+- **IoT · Mosaico de zona**: Un dispositivo con 2 o más cámaras en 'related' guarda una sola captura con todas; con una sola, se elige la que ve a la persona.
+
 ## v2.22.2 — Capturas de puertas desde la cámara que ve a la persona (2026-10-08)
 
 Las alertas de apertura y cierre de puertas, ventanas y garage eligen, entre las cámaras de la zona, la que ve a una persona en ese instante (la puerta del garage no está en el campo de Garage frontal); el cierre también lleva captura y la duración sale en segundos cuando es menor a un minuto; y el tráfico de calle exige 6 detecciones.

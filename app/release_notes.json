@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.22.3",
+    "date": "2026-10-08",
+    "name": "Mosaico de todas las cámaras en la alerta del garage",
+    "summary": "La alerta de apertura y cierre de una zona con varias cámaras (garage: frontal, posterior y exteriores) guarda un mosaico 2x2 con la vista de todas, con borde verde en las que ven una persona.",
+    "highlights": [
+      {
+        "area": "IoT",
+        "title": "Mosaico de zona",
+        "text": "Un dispositivo con 2 o más cámaras en 'related' guarda una sola captura con todas; con una sola, se elige la que ve a la persona."
+      }
+    ]
+  },
+  {
     "version": "2.22.2",
     "date": "2026-10-08",
     "name": "Capturas de puertas desde la cámara que ve a la persona",
