@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.20.3",
+    "date": "2026-10-08",
+    "name": "Reglas con nombres y definiciones completas",
+    "summary": "La página de reglas muestra nombres de dispositivos Tuya en vez de ids, nombra el grupo de sensores sin cámara y define los tipos que no genera el modelo.",
+    "highlights": [
+      {
+        "area": "Reglas",
+        "title": "Nombres y definiciones",
+        "text": "Visita y timbre del videoportero, entrada sin captura, movimiento y ruido Tuya y sin tipo ya tienen definición y origen correctos; los dispositivos Tuya salen por su nombre."
+      }
+    ]
+  },
+  {
     "version": "2.20.2",
     "date": "2026-10-08",
     "name": "Dispositivos Tuya en la línea de tiempo de cada cámara",

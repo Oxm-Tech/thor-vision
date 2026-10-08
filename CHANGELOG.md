@@ -2,6 +2,12 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.3 — Reglas con nombres y definiciones completas (2026-10-08)
+
+La página de reglas muestra nombres de dispositivos Tuya en vez de ids, nombra el grupo de sensores sin cámara y define los tipos que no genera el modelo.
+
+- **Reglas · Nombres y definiciones**: Visita y timbre del videoportero, entrada sin captura, movimiento y ruido Tuya y sin tipo ya tienen definición y origen correctos; los dispositivos Tuya salen por su nombre.
+
 ## v2.20.2 — Dispositivos Tuya en la línea de tiempo de cada cámara (2026-10-08)
 
 La vista de una cámara muestra también los sensores y cámaras Tuya de su zona; los tres sensores sin carril ya tienen el suyo; y los filtros de la línea de tiempo vuelven a empezar con todo visible.

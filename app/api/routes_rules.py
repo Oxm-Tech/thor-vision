@@ -16,11 +16,12 @@ SOURCES = {
     "persona_en_suelo": "VLM; se descarta si YOLO no vio personas o ninguna con forma horizontal (ancho/alto >= 0.8).",
     "persona_nocturna": "VLM; la regla de horario y de fin de semana sale de scenes.yml (night_person, night_hours).",
     "vehiculo_detenido": "VLM y ParkedTracker: un vehiculo quieto dentro del poligono de estacionamiento (llegada, cada hora, salida).",
-    "visita_videoportero": "DoorAlerts: alguien con rostro frente al videoportero.",
+    "visita_videoportero": "DoorAlerts: persona frente al videoportero 15 s o mas (o con timbre, o ya identificada); menos tiempo cuenta como transito de calle.",
     "timbre_videoportero": "Evento nativo de Dahua (CallNoAnswered/Invite) con captura del videoportero.",
     "puerta_abierta": "Sensor Tuya (MQTT): puerta/ventana/garage abierto, y de nuevo si sigue abierto 10 min.",
     "movimiento_tuya": "Camara Tuya: ipc_motion, una alerta por camara cada 120 s con captura.",
     "ruido_tuya": "Camara Tuya: ipc_bang (ruido fuerte).",
+    "entrada_sin_captura": "Viajes: aviso de una camara Tuya o sensor de entrada sin que aparezca una persona en la camara correspondiente en 60 s.",
     "trafico_calle": "Visitas de personas en Exterior 1/2 (registro, no alerta del VLM).",
 }
 
@@ -32,6 +33,17 @@ def _ensure(db) -> None:
     with db._lock:
         db._conn.execute(_DDL)
         db._conn.execute("CREATE INDEX IF NOT EXISTS idx_rule_an ON rule_analyses(type, ts)")
+
+
+# definiciones de los tipos que no genera el VLM (no estan en scenes.yml)
+DEFS = {
+    "visita_videoportero": "persona que se detiene frente al videoportero 15 s o mas, o con timbre, o ya identificada",
+    "timbre_videoportero": "alguien tocó el timbre del videoportero (con captura del visitante cercano)",
+    "entrada_sin_captura": "un aviso de entrada (Tuya o sensor) sin persona vista en la cámara que debía verla",
+    "movimiento_tuya": "movimiento detectado por una cámara Tuya (una alerta por cámara cada 120 s)",
+    "ruido_tuya": "ruido fuerte detectado por una cámara Tuya",
+    "sin_tipo": "alerta del modelo sin tipo reconocido; candidata a descartarse o reclasificarse",
+}
 
 
 def _scenes() -> dict:
@@ -62,6 +74,11 @@ def rules(request: Request, days: int = 7):
     raw = _scenes()
     catalog = raw.get("alert_catalog") or {}
     names = {c.id: c.name for c in request.app.state.config.cameras}
+    _iot = getattr(request.app.state, "iot", None)
+    for d in (_iot.devices.values() if _iot is not None else []):
+        if d.get("alias"):
+            names[d["alias"]] = d["name"]
+    names[None] = "Sensor sin camara"
     db = getattr(request.app.state, "db", None)
     st = _stats(db, min(max(days, 1), 30)) if db is not None else {}
     cams_by_type: dict = {}
@@ -73,7 +90,7 @@ def rules(request: Request, days: int = 7):
     for t in types:
         s = st.get(t) or {"total": 0, "important": 0, "noise": 0, "sin": 0, "cams": {}}
         rev = s["important"] + s["noise"]
-        out.append({"type": t, "definition": catalog.get(t, ""), "source": SOURCES.get(t, "VLM (Qwen) con el prompt de la camara"),
+        out.append({"type": t, "definition": catalog.get(t) or DEFS.get(t, ""), "source": SOURCES.get(t, "VLM (Qwen) con el prompt de la camara"),
                     "cams": [{"id": c, "name": names.get(c, c), "alerts": s["cams"].get(c, 0)} for c in cams_by_type.get(t, [])],
                     "other_cams": [{"id": c, "name": names.get(c, c), "alerts": n} for c, n in s["cams"].items() if c not in cams_by_type.get(t, [])],
                     "stats": {k: s[k] for k in ("total", "important", "noise", "sin")}, "noise_rate": round(s["noise"] / rev, 2) if rev else None})
