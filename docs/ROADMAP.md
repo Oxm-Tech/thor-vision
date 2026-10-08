@@ -90,3 +90,11 @@ Orden propuesto:
 7. **Placas** en Garage frontal: función nueva (hoy solo exteriores 1 y 2).
 
 Pendiente de decisión: retención de recortes de personas para entrenar (hoy 30 días sin nombre), cuota de nube Tuya para evidencia al abrir Recepción, alerta de movimiento en Garage frontal.
+
+### Revisión de repositorios externos (2026-10-08, solo lectura)
+- **Advanced-YOLO-Tracker, yolov8-person-tracking-trails:** nada que Ultralytics no tenga. Ideas útiles: tabla de remapeo "ID del tracker → ID real" y estelas de trayectoria por track. No adoptar.
+- **face-recognition_yolo_insightface:** mismo esquema que el nuestro, sin calidad de rostro ni seguimiento. Descartar.
+- **yolov5-face:** licencia **GPL-3.0**; evitar. SCRFD de InsightFace rinde igual o mejor y no es GPL. El cuello de botella no es detectar la cara sino su calidad y ángulo.
+- **arcface_torch:** base de nuestro embedding. Vía futura: afinar un modelo propio con caras de nuestras cámaras y licencia limpia.
+- **Automatic-License-Plate-Recognition-using-YOLOv8:** tutorial offline, valida formato de 7 caracteres (UK/EU) y usa EasyOCR en CPU; peor que fast-alpr. Solo copiar la idea de votar la mejor lectura por track con validación de formato mexicano.
+- **Licencias a revisar (pendiente de verificar con la fuente):** los pesos buffalo_* de InsightFace se declaran solo para investigación no comercial; y `ultralytics` es AGPL-3.0. Conviene validarlo antes de cualquier uso comercial por OXM.
