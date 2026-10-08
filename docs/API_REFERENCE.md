@@ -284,6 +284,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |
 |---|---|---|---|---|
 | GET | `/api/rules` | Rules | `days` |  |
+| GET | `/api/rules/analyses` | Analyses | `type`, `limit` |  |
 | POST | `/api/rules/analyze` | Analyze |  | AnalyzeBody |
 
 ## searxng

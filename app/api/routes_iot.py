@@ -25,5 +25,6 @@ def config(request: Request):
 
 
 @router.get("/api/iot/events")
-def events(request: Request, device_id: str = "", limit: int = 100):
-    return {"events": _l(request).recent(device_id, limit, sync=False)}
+def events(request: Request, device_id: str = "", limit: int = 100, sync: bool = False):
+    """Registro de eventos de los dispositivos Tuya. sync=true incluye las sincronizaciones de la nube y todos los codigos internos."""
+    return {"events": _l(request).recent(device_id, limit, sync=sync)}

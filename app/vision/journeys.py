@@ -23,6 +23,7 @@ from app.vision import bodyid
 logger = logging.getLogger(__name__)
 
 TOPOLOGY = os.environ.get("TOPOLOGY_CONFIG", "/app/config/topology.yml")
+PRE_S = float(os.environ.get("TUYA_PRE_S", "20"))       # un aviso de entrada puede llegar despues de que la camara ya vio a la persona
 ENABLED = os.environ.get("JOURNEYS_ENABLED", "true").lower() == "true"
 LINK_MIN = float(os.environ.get("JOURNEY_LINK_MIN", "0.6"))
 EVERY_S = 20.0
@@ -110,7 +111,8 @@ class JourneyLinker:
 
     # ---- Tuya: aviso de entrada
     def tuya_event(self, alias: str, ts: float) -> None:
-        cam = (self.topo.get("tuya_entries") or {}).get(alias)
+        cam = self._entry_cams(alias)[:1]
+        cam = cam[0] if cam else None
         if not cam or not ENABLED:
             return
         with self.db._lock:
@@ -120,14 +122,20 @@ class JourneyLinker:
             self.db._conn.execute("INSERT INTO tuya_entries (ts, alias, cam_id) VALUES (?,?,?)", (ts, alias, cam))
             self.db._conn.commit()
 
+    def _entry_cams(self, alias: str) -> list:
+        v = (self.topo.get("tuya_entries") or {}).get(alias)
+        return [v] if isinstance(v, str) else list(v or [])
+
     def _resolve_tuya(self, now: float) -> None:
         win = float(self.topo.get("tuya_window_s", 60))
         with self.db._lock:
             waiting = self.db._conn.execute("SELECT id, ts, cam_id, alias FROM tuya_entries WHERE state='waiting'").fetchall()
         for tid, ts, cam, alias in waiting:
-            with self.db._lock:
-                v = self.db._conn.execute("SELECT id FROM person_visits WHERE cam_id=? AND fp=0 AND static=0 AND start_ts BETWEEN ? AND ? ORDER BY start_ts LIMIT 1",
-                                          (cam, ts - 5, ts + win)).fetchone()
+            cams = self._entry_cams(alias) or [cam]
+            with self.db._lock:       # visitas que empiezan hasta `win` s despues del aviso, o que ya estaban en cuadro hasta 20 s antes
+                v = self.db._conn.execute(
+                    f"SELECT id FROM person_visits WHERE cam_id IN ({','.join('?' * len(cams))}) AND fp=0 AND static=0 AND start_ts<=? AND end_ts>=? ORDER BY start_ts LIMIT 1",
+                    (*cams, ts + win, ts - PRE_S)).fetchone()
             if v:
                 with self.db._lock:
                     self.db._conn.execute("UPDATE tuya_entries SET state='matched', visit_id=? WHERE id=?", (v[0], tid))

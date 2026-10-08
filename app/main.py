@@ -235,9 +235,8 @@ async def lifespan(app: FastAPI):
 
         def _tuya_motion(alias, ts, _j=app.state.journeys, _vq=vision_queue):
             _j.tuya_event(alias, ts)
-            cam = (_j.topo.get("tuya_entries") or {}).get(alias)
-            if cam:
-                _vq.submit_burst(cam, "tuya")          # reanaliza el pre-roll de la camara de entrada: la persona puede estar entrando
+            for cam in _j._entry_cams(alias):
+                _vq.submit_burst(cam, "tuya")          # reanaliza el pre-roll de las camaras de entrada: la persona puede estar entrando
         app.state.iot.on_motion = _tuya_motion
     from app.devices.manager import DeviceManager
     app.state.devices = DeviceManager(db, config)

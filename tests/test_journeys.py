@@ -62,3 +62,28 @@ def test_gait_features_find_cadence_and_reject_short_sequences():
 def test_auc_orders_distances():
     assert gait.auc([0.1, 0.2], [0.8, 0.9]) == 1.0
     assert gait.auc([0.8, 0.9], [0.1, 0.2]) == 0.0
+
+
+def test_tuya_entry_matches_visit_already_in_view_and_accepts_several_cams():
+    import sqlite3
+    import threading
+    from types import SimpleNamespace
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.executescript("CREATE TABLE person_visits (id INTEGER PRIMARY KEY, cam_id TEXT, start_ts REAL, end_ts REAL, fp INT DEFAULT 0, static INT DEFAULT 0, journey_id INT);")
+    db = SimpleNamespace(_conn=conn, _lock=threading.RLock(), insert_event=lambda *a, **k: 1)
+    lk = jy.JourneyLinker(db)
+    lk.topo = {"tuya_entries": {"tuya-garaje": ["cam-236", "cam-113", "cam-228"], "door-recepcion": "cam-113"}, "tuya_window_s": 60}
+    assert lk._entry_cams("tuya-garaje") == ["cam-236", "cam-113", "cam-228"] and lk._entry_cams("door-recepcion") == ["cam-113"] and lk._entry_cams("x") == []
+    conn.execute("INSERT INTO person_visits (id, cam_id, start_ts, end_ts) VALUES (1,'cam-113',1000,1040)")          # ya estaba en cuadro cuando abrio la puerta
+    lk.tuya_event("door-recepcion", 1008.0)
+    lk._resolve_tuya(1100.0)
+    assert conn.execute("SELECT state, visit_id FROM tuya_entries").fetchone() == ("matched", 1)
+    lk.tuya_event("tuya-garaje", 2000.0)                                                                       # nadie en ninguna de las 3 camaras
+    lk._resolve_tuya(2100.0)
+    assert conn.execute("SELECT state FROM tuya_entries WHERE alias='tuya-garaje'").fetchone() == ("orphan",)
+
+
+def test_dedupe_drops_boxes_contained_in_a_bigger_one():
+    from app.vision.visits import _dedupe
+    big, inner, other = (100, 100, 200, 300), (110, 110, 190, 200), (400, 100, 480, 300)
+    assert _dedupe([big, inner, other]) == [big, other]

@@ -25,7 +25,9 @@ def _f(name: str, default: float) -> float:
     return float(os.environ.get(name, default))
 
 
-MIN_HITS = int(_f("TRACK_MIN_HITS", 2))
+MIN_HITS = int(_f("TRACK_MIN_HITS", 4))          # 4 detecciones para abrir visita (con cara basta 1): menos visitas fantasma de 1-3 cuadros
+RELINK_S = _f("TRACK_RELINK_S", 4.0)               # una deteccion sin pareja se une al track visto hace menos de esto si esta cerca (misma persona partida)
+DUP_CONTAIN = _f("TRACK_DUP_CONTAIN", 0.8)         # caja casi contenida en otra del mismo cuadro = deteccion duplicada
 VLM_MIN_S = float(os.environ.get("VISIT_VLM_MIN_S", "10"))
 VLM_COOLDOWN_S = float(os.environ.get("VISIT_VLM_COOLDOWN_S", "30"))
 MAX_GAP_S = _f("TRACK_MAX_GAP_S", 20.0)
@@ -45,6 +47,27 @@ SNAP_MIN_INTERVAL_S = _f("FACE_SNAPSHOT_INTERVAL_S", 1.5)
 SNAP_MAX_PER_VISIT = int(_f("FACE_SNAPSHOT_MAX", 6))
 SNAP_MIN_BODY_H = _f("FACE_SNAPSHOT_MIN_BODY_H", 120.0)
 HUNT_MAX_S = _f("FACE_HUNT_MAX_S", 30.0)
+
+
+def _dedupe(persons: list) -> list:
+    """Quita cajas de persona casi contenidas en otra mas grande (YOLO a veces da cuerpo y torso de la misma persona)."""
+    keep = []
+    for i, a in enumerate(persons):
+        area_a = max(1.0, (a[2] - a[0]) * (a[3] - a[1]))
+        dup = False
+        for j, b in enumerate(persons):
+            if i == j:
+                continue
+            area_b = max(1.0, (b[2] - b[0]) * (b[3] - b[1]))
+            if area_b < area_a or (area_b == area_a and j > i):
+                continue
+            iw, ih = min(a[2], b[2]) - max(a[0], b[0]), min(a[3], b[3]) - max(a[1], b[1])
+            if iw > 0 and ih > 0 and iw * ih / area_a >= DUP_CONTAIN:
+                dup = True
+                break
+        if not dup:
+            keep.append(a)
+    return keep
 
 
 def _iou(a, b) -> float:
@@ -239,7 +262,7 @@ class VisitManager:
     def update(self, cam_id: str, result, frame, ts=None, src: str = "stream") -> None:
         now = time.time()
         ots = now if ts is None else ts
-        persons = [tuple(p) for p in (getattr(result, "person_bboxes", None) or [])]
+        persons = _dedupe([tuple(p) for p in (getattr(result, "person_bboxes", None) or [])])
         new_track = False
         with self._lock:
             tracks = self._tracks.setdefault(cam_id, [])
@@ -299,6 +322,16 @@ class VisitManager:
             used.add(ti)
         for di, d in enumerate(persons):
             if out[di] is None:
+                dscale = max(d[2] - d[0], d[3] - d[1], 1)
+                dcx, dcy = (d[0] + d[2]) / 2, (d[1] + d[3]) / 2
+                near = [(math.hypot((t.bbox[0] + t.bbox[2]) / 2 - dcx, (t.bbox[1] + t.bbox[3]) / 2 - dcy), ti) for ti, t in enumerate(tracks)
+                        if ti not in used and 0 <= now - t.last_ts <= RELINK_S]
+                near = [x for x in near if x[0] <= 3 * dscale]
+                if near:                                       # misma persona que se movio rapido o se ocluyo un instante: no se abre otro track
+                    ti = min(near)[1]
+                    out[di] = tracks[ti]
+                    used.add(ti)
+                    continue
                 tid = self._next_tid[cam_id] = self._next_tid.get(cam_id, 0) + 1
                 out[di] = Track(tid, d, now)
                 tracks.append(out[di])

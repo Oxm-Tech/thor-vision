@@ -2,6 +2,15 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.21.0 — Enlace Tuya con ventana previa y menos visitas partidas (2026-10-08)
+
+Un aviso de entrada Tuya ahora también cuenta una visita que ya estaba en cuadro hasta 20 s antes; la Tuya del garage (que apunta a las escaleras) se enlaza con Escaleras P2, Escaleras entrada y Garage frontal; y una persona ya no se parte en varias visitas por detecciones duplicadas o saltos del seguimiento.
+
+- **Viajes · Ventana previa de 20 s**: Resuelve los falsos 'entrada sin captura' cuando la persona ya estaba en cámara al llegar el aviso (Recepción, garage).
+- **Viajes · Varias cámaras por aviso**: config/topology.yml admite una lista; tuya-garaje y tuya-escaleras-p2 usan las cámaras de las escaleras.
+- **Personas · Menos fragmentación**: Una visita necesita 4 detecciones (o una cara); se eliminan cajas duplicadas contenidas en otra y una detección sin pareja se une al track cercano visto hace menos de 4 s.
+- **IoT · Registro completo**: /api/iot/events?sync=true&limit=500 devuelve todo, incluidas sincronizaciones.
+
 ## v2.20.6 — Menos visitas fantasma en la calle (2026-10-08)
 
 Una detección de 1 a 3 cuadros en Exterior 1 o 2 ya no cuenta como visita aunque dure segundos, y la línea de tiempo exige al menos 4 detecciones para mostrar tráfico de calle (esas visitas salían sin captura).
