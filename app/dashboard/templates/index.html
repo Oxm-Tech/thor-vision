@@ -2602,7 +2602,7 @@ const TL_SPANS = [0.25, 1, 3, 6, 12, 24, 72, 168];
 const TL_BUCKET = { 0.25:30, 1:120, 3:300, 6:600, 12:900, 24:1800, 72:3600, 168:10800 };
 const TL_TICK = { 0.25:120, 1:600, 3:1800, 6:3600, 12:7200, 24:10800, 72:43200, 168:86400 };
 const TL = { span:24, end:null, data:null, sel:null, hidden:new Set(), timer:null, drag:null };
-try { (JSON.parse(localStorage.getItem('thor_tl_hidden') || '[]')).forEach(k => TL.hidden.add(k)); } catch (_) {}
+try { (JSON.parse(localStorage.getItem('thor_tl_hidden2') || '[]')).forEach(k => TL.hidden.add(k)); } catch (_) {}
 try { const sp = +localStorage.getItem('thor_tl_span'); if (TL_SPANS.includes(sp)) TL.span = sp; } catch (_) {}
 
 const _tlFmt = (ts, withDay) => {
@@ -2887,7 +2887,7 @@ function initTimeline(){
       if (k === '__all'){
         if (TL.hidden.size === 0) TL_GROUPS.forEach(g => TL.hidden.add(g.k)); else TL.hidden.clear();
       } else TL.hidden.has(k) ? TL.hidden.delete(k) : TL.hidden.add(k);
-      try { localStorage.setItem('thor_tl_hidden', JSON.stringify([...TL.hidden])); } catch (_) {}
+      try { localStorage.setItem('thor_tl_hidden2', JSON.stringify([...TL.hidden])); } catch (_) {}
       _tlRender();
     }
   });

@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.2 — Dispositivos Tuya en la línea de tiempo de cada cámara (2026-10-08)
+
+La vista de una cámara muestra también los sensores y cámaras Tuya de su zona; los tres sensores sin carril ya tienen el suyo; y los filtros de la línea de tiempo vuelven a empezar con todo visible.
+
+- **Línea de tiempo · Tuya dentro de cada cámara**: Cocina muestra Puerta Comedor, Ventana y la cámara del jardín; Garage frontal la Tuya del garage y el abre-puertas; etc. (según 'related' de config/iot.yml).
+- **Línea de tiempo · Carriles nuevos**: Oficina Abr Puerta Cristal, Cocina Ventana y Oficina Adm ventana tienen carril propio.
+- **Línea de tiempo · Filtros reiniciados**: Los grupos Tuya y Sensores estaban ocultos por una preferencia guardada del navegador; se reinicia para que todo aparezca activado.
+
 ## v2.20.1 — Análisis de reglas guardados y tarjetas IoT parejas (2026-10-08)
 
 'Analizar con el modelo' guarda cada análisis y lo vuelve a mostrar al abrir la página; las tarjetas de IoT tienen el mismo tamaño dentro de cada sección.

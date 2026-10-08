@@ -45,13 +45,16 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
                        "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
     _fill_ring_images(db, events)
     events += _street_traffic(db, config, since, until)
+    iot = getattr(request.app.state, "iot", None)
+    rel = set()
+    if cam_id and iot is not None:            # en la vista de una camara tambien salen los dispositivos Tuya relacionados (sensores y camaras de esa zona)
+        rel = {d["alias"] for d in iot.devices.values() if d.get("alias") and (cam_id in (d.get("related") or []) or d.get("cam") == cam_id)}
     if cam_id:
-        events = [e for e in events if e["cam"] == cam_id]
+        events = [e for e in events if e["cam"] == cam_id or e["cam"] in rel]
         cams = [c for c in cams if c["id"] == cam_id]
     events.sort(key=lambda e: e["ts"])
-    iot = getattr(request.app.state, "iot", None)
     if iot is not None:
-        cams += [{"id": d["alias"], "name": d["name"], "zone": "tuya"} for d in iot.devices.values() if d.get("alias") and (not cam_id or d["alias"] == cam_id)]
+        cams += [{"id": d["alias"], "name": d["name"], "zone": "tuya"} for d in iot.devices.values() if d.get("alias") and (not cam_id or d["alias"] == cam_id or d["alias"] in rel)]
     return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated}
 
 

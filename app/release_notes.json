@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.20.2",
+    "date": "2026-10-08",
+    "name": "Dispositivos Tuya en la línea de tiempo de cada cámara",
+    "summary": "La vista de una cámara muestra también los sensores y cámaras Tuya de su zona; los tres sensores sin carril ya tienen el suyo; y los filtros de la línea de tiempo vuelven a empezar con todo visible.",
+    "highlights": [
+      {
+        "area": "Línea de tiempo",
+        "title": "Tuya dentro de cada cámara",
+        "text": "Cocina muestra Puerta Comedor, Ventana y la cámara del jardín; Garage frontal la Tuya del garage y el abre-puertas; etc. (según 'related' de config/iot.yml)."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Carriles nuevos",
+        "text": "Oficina Abr Puerta Cristal, Cocina Ventana y Oficina Adm ventana tienen carril propio."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Filtros reiniciados",
+        "text": "Los grupos Tuya y Sensores estaban ocultos por una preferencia guardada del navegador; se reinicia para que todo aparezca activado."
+      }
+    ]
+  },
+  {
     "version": "2.20.1",
     "date": "2026-10-08",
     "name": "Análisis de reglas guardados y tarjetas IoT parejas",
