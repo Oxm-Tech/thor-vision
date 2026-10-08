@@ -75,3 +75,18 @@ Estado a 2026-10-02 (v2.3.0). Cada línea indica qué falta y cómo sabremos que
 
 - **Hardening pendiente (no ahora):** accesos por niveles, incluida la API y el dashboard (hoy sin autenticación, solo red interna y sin usuarios), y respaldos programados de `events.db` y de los archivos de `data/`. Se hace en una fase de hardening, no antes.
 - **Tuya:** el proyecto de la nube de Tuya ya tiene IoT Core, Authorization Token Management, Smart Home Basic Service, Device Status Notification (mensajes MQTT con los cambios de estado) e IoT Video Live Stream (WebRTC/RTSP/HLS; 5 GB mensuales de flujo incluidos, luego 0.15 USD/GB). Opciones de integración: (a) agente de operación en oapc-devops por la API de la nube, (b) eventos de estado por el servicio de notificaciones, (c) conexión local con tinytuya para la puerta. Los dispositivos Zigbee no tienen IP propia: se controlan por su puerta de enlace.
+
+## Plan de precisión de personas y video (2026-10-08)
+
+Origen: dos recorridos reales de prueba (02:05 y 02:33) con registro de eventos, visitas, avisos Tuya y viajes. Conclusión medida: el detector YOLO ve a las personas; lo que falla es el **seguimiento** (una persona se parte en varias visitas), la **identidad** (cara con mal ángulo en escaleras, cowork y garage frontal) y el **enlace entre cámaras** (ReID de cuerpo con AUC 0.73).
+
+Orden propuesto:
+1. **Conjunto de evaluación:** 200–300 cuadros etiquetados (día/noche, interior/exterior) + los recorridos de prueba como verdad de terreno. Métricas: mAP, precisión y recall por imagen (`model.val()`), visitas por persona real, identidades por persona.
+2. **Tracker estándar de Ultralytics, una instancia por cámara:** empezar con ByteTrack (base) y BoT-SORT con `gmc_method: none` y ReID (`yolo26n-reid.onnx`); comparar contra el tracker casero con los recorridos.
+3. **Identidad:** aceptar caras de peor ángulo cuando cuerpo y tiempo ya apuntan a la misma persona; revisar el umbral de coseno 0.45 con datos reales.
+4. **ReID de cuerpo propio:** entrenar con visitas cuya cara ya identifica a la persona (autoetiquetado entre cámaras).
+5. **Reentrenar YOLO** solo si (1) demuestra que el detector es el límite; con negativos difíciles de las exteriores nocturnas. Evaluar inferencia por teselas (SAHI) para personas lejanas en las cámaras de 5 MP.
+6. **Video en el navegador:** servir el H.264 original (p. ej. go2rtc, WebRTC/MSE) en vez de ~5 JPEG por segundo por cámara; el navegador lo decodifica por hardware y Thor no recodifica. JPEG por hardware (nvJPEG en Jetson Thor) solo para las capturas guardadas, si el CPU lo pide.
+7. **Placas** en Garage frontal: función nueva (hoy solo exteriores 1 y 2).
+
+Pendiente de decisión: retención de recortes de personas para entrenar (hoy 30 días sin nombre), cuota de nube Tuya para evidencia al abrir Recepción, alerta de movimiento en Garage frontal.
