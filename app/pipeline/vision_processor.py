@@ -298,17 +298,17 @@ class VisionModels:
         try:
             h, w = frame.shape[:2]
             x1, y1, x2, y2 = bbox
-            if margin:
-                side = max(x2 - x1, y2 - y1) * (1 + 2 * margin)
-                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-                x1, x2 = int(cx - side / 2), int(cx + side / 2)
-                y1, y2 = int(cy - side / 2), int(cy + side / 2)
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
-            if x2 <= x1 or y2 <= y1:
+            side = max(x2 - x1, y2 - y1) * (1 + 2 * margin)      # siempre cuadrado: nunca se estira la cara
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+            x1, x2 = int(cx - side / 2), int(cx + side / 2)
+            y1, y2 = int(cy - side / 2), int(cy + side / 2)
+            if x2 <= x1 or y2 <= y1 or x2 <= 0 or y2 <= 0 or x1 >= w or y1 >= h:
                 return None
-            crop = cv2.resize(frame[y1:y2, x1:x2], (size, size),
-                              interpolation=cv2.INTER_AREA if size <= 72 else cv2.INTER_CUBIC)
+            pl, pt, pr, pb = max(0, -x1), max(0, -y1), max(0, x2 - w), max(0, y2 - h)       # borde fuera del cuadro: se rellena en vez de deformar
+            crop = frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)]
+            if pl or pt or pr or pb:
+                crop = cv2.copyMakeBorder(crop, pt, pb, pl, pr, cv2.BORDER_REPLICATE)
+            crop = cv2.resize(crop, (size, size), interpolation=cv2.INTER_AREA if size <= 72 else cv2.INTER_CUBIC)
             ok, buf = cv2.imencode(".jpg", crop, [cv2.IMWRITE_JPEG_QUALITY, 80 if margin else 70])
             return buf.tobytes() if ok else None
         except Exception as exc:

@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.20.4",
+    "date": "2026-10-08",
+    "name": "Rostros sin deformar",
+    "summary": "Los recortes de rostro eran el cuadro del detector (no cuadrado) reducido a un cuadrado, así que se estiraban; ahora se recortan siempre cuadrados, rellenando el borde cuando la cara toca el límite del cuadro, y las miniaturas del panel no se estiran.",
+    "highlights": [
+      {
+        "area": "Personas",
+        "title": "Recorte cuadrado",
+        "text": "Los rostros nuevos se guardan sin estirar. Los ya guardados no se corrigen solos (el recorte original no se conserva)."
+      },
+      {
+        "area": "Panel",
+        "title": "Miniaturas sin estirar",
+        "text": "Las imágenes de rostros y cuerpos usan 'cover' (rostros) y 'cover' alineado arriba (cuerpos) en los paneles."
+      }
+    ]
+  },
+  {
     "version": "2.20.3",
     "date": "2026-10-08",
     "name": "Reglas con nombres y definiciones completas",

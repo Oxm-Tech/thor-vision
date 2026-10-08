@@ -1003,6 +1003,8 @@ html.lite header { position:static; background:var(--bg-card); }
 html.lite .hdr-icons { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; }
 html.lite .hdr-icons .hdr-btn { min-width:64px; padding:6px 8px; }
 html.lite .hdr-icons .hdr-btn:focus, html.lite .cam-card:focus, html.lite a:focus, html.lite button:focus { outline:3px solid var(--oxm-blue); }
+.face-chip-thumb, .face-chip-thumb-mgmt, .fh-thumb, .veh-img, .ppl-simrow img { object-fit: cover; }
+.fh-body, .ppl-card img, .ppl-row img { object-fit: cover; object-position: top; }
 </style>
 {% if umami_src and umami_id %}<script>
 // Umami (analitica): no se mide el iframe de la linea de tiempo (?tl=) para no inflar las vistas

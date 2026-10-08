@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.4 — Rostros sin deformar (2026-10-08)
+
+Los recortes de rostro eran el cuadro del detector (no cuadrado) reducido a un cuadrado, así que se estiraban; ahora se recortan siempre cuadrados, rellenando el borde cuando la cara toca el límite del cuadro, y las miniaturas del panel no se estiran.
+
+- **Personas · Recorte cuadrado**: Los rostros nuevos se guardan sin estirar. Los ya guardados no se corrigen solos (el recorte original no se conserva).
+- **Panel · Miniaturas sin estirar**: Las imágenes de rostros y cuerpos usan 'cover' (rostros) y 'cover' alineado arriba (cuerpos) en los paneles.
+
 ## v2.20.3 — Reglas con nombres y definiciones completas (2026-10-08)
 
 La página de reglas muestra nombres de dispositivos Tuya en vez de ids, nombra el grupo de sensores sin cámara y define los tipos que no genera el modelo.
