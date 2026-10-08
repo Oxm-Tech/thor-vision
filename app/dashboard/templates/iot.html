@@ -13,7 +13,8 @@ main{max-width:1200px;margin:0 auto;padding:16px 20px 60px}
 table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500;font-size:12px}
 .b{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;border:1px solid var(--line)}.ok{color:var(--accent);border-color:var(--accent)}.bad{color:var(--bad);border-color:var(--bad)}.warn{color:var(--warn);border-color:var(--warn)}.muted{color:var(--muted)}
 h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}.bar{height:10px;border-radius:6px;background:var(--panel2);overflow:hidden;margin:6px 0}.bar>i{display:block;height:100%;background:var(--accent)}.bar.warn>i{background:var(--warn)}.bar.bad>i{background:var(--bad)}.camgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.cam{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}.cam img{width:100%;border-radius:8px;background:#000;min-height:120px;display:block}.cam button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;margin:8px 6px 0 0}.cam button:hover{border-color:var(--accent)}.ev{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
-.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));grid-auto-rows:1fr;gap:12px;margin-bottom:6px}.sech{margin:18px 0 8px;font-size:15px}
+.sc{min-height:150px}.sc .ctl{margin-top:auto}.sc .cmsg:empty{display:none}
 .sc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
 .sc.open{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}.sc.closed{border-left:3px solid var(--accent)}.sc.off{opacity:.65}
 .sc .top{display:flex;align-items:center;gap:12px}.sc svg.ic{width:44px;height:44px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -22,13 +23,13 @@ h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px soli
 .sc .stt{font-size:20px;font-weight:700}.sc.open .stt{color:var(--warn)}.sc.closed .stt{color:var(--accent)}.sc.nodata .stt{color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--text);text-decoration:none}a.chip:hover{border-color:var(--accent)}
 .bat{display:inline-flex;align-items:center;gap:5px;font-size:12px}.bat i{display:inline-block;width:22px;height:10px;border:1.5px solid currentColor;border-radius:3px;position:relative}.bat i:after{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:var(--p);background:currentColor;border-radius:1px}
-.ctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ctl button{padding:5px 10px;border-radius:8px;border:1px solid var(--line,#394057);background:transparent;color:inherit;cursor:pointer}.ctl button.on{border-color:var(--warn);color:var(--warn)}.ctl button:disabled{opacity:.5}
+.ctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ctl button{min-height:36px;padding:6px 12px;border-radius:8px;border:1px solid var(--line,#394057);background:transparent;color:inherit;cursor:pointer}.ctl button.on{border-color:var(--warn);color:var(--warn)}.ctl button:disabled{opacity:.5}
 </style>
 </head>
 <body>
 <header><a href="/">← Dashboard</a><h1>Dispositivos IoT (Tuya)</h1><span id="st" class="b"></span><span class="muted" style="margin-left:auto">Estado por MQTT · luces y cortinas con control (queda registro)</span></header>
 <main>
-  <div id="sensors" class="sgrid"></div>
+  <div id="sensors"></div>
   <h3>Video de las cámaras Tuya <span class="muted" style="font-weight:400">(bajo demanda; consume la cuota de la nube)</span></h3>
   <div id="usage" class="box"></div>
   <div id="cams" class="camgrid"></div>
@@ -77,7 +78,7 @@ async function tick(){
     const d = await (await fetch('/api/iot/devices')).json();
     const s = d.status || {};
     $('#st').className = 'b ' + (s.connected ? 'ok' : 'bad'); $('#st').textContent = s.connected ? 'MQTT conectado' : ('MQTT: ' + (s.error || 'sin conexión'));
-    const sec = (t, f) => { const l = d.devices.filter(f); return l.length ? `<h3 style="grid-column:1/-1;margin:10px 0 0">${t}</h3>` + l.map(card).join('') : ''; };
+    const sec = (t, f) => { const l = d.devices.filter(f); return l.length ? `<h3 class="sech">${t} <span class="muted" style="font-weight:400">${l.length}</span></h3><div class="sgrid">${l.map(card).join('')}</div>` : ''; };
     $('#sensors').innerHTML = sec('Cámaras Tuya', x => x.kind === 'camera') + sec('Puertas, ventanas y garage', x => !['camera', 'light'].includes(x.kind)) + sec('Luces', x => x.kind === 'light');
     const e = (await (await fetch('/api/iot/events?limit=40')).json()).events;
     $('#ev').innerHTML = e.length ? e.map(r => `<div class="ev"><span class="muted">${when(r.ts)}</span> · <b>${esc(r.name)}</b> · ${esc(LABEL[r.code] || r.code)}${r.value && typeof r.value === 'object' ? '' : ' = ' + esc(JSON.stringify(r.value))} <span class="muted">(${esc(r.source)})</span></div>`).join('') : 'Sin eventos todavía.';

@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.1 — Análisis de reglas guardados y tarjetas IoT parejas (2026-10-08)
+
+'Analizar con el modelo' guarda cada análisis y lo vuelve a mostrar al abrir la página; las tarjetas de IoT tienen el mismo tamaño dentro de cada sección.
+
+- **Reglas · Análisis guardados**: Cada análisis queda en la base con fecha, días y muestras; al abrir /reglas aparece el último y el botón dice 'Volver a analizar'. Historial en /api/rules/analyses?type=…
+- **IoT · Tarjetas del mismo tamaño**: Cada sección (cámaras, puertas y ventanas, luces) es su propia cuadrícula con filas iguales y los botones alineados abajo, con áreas táctiles de 36 px.
+
 ## v2.20.0 — Control de luces y cortina desde la página IoT (2026-10-08)
 
 Cada luz o interruptor (de 1, 2 o 3 botones, o foco) se enciende y apaga desde /iot, y la cortina se abre, detiene o cierra. El servicio de Tuya valida cada orden contra una lista permitida y registra quién y cuándo.

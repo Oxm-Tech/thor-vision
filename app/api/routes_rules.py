@@ -25,6 +25,15 @@ SOURCES = {
 }
 
 
+_DDL = "CREATE TABLE IF NOT EXISTS rule_analyses (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, type TEXT NOT NULL, days INTEGER, samples INTEGER, analysis TEXT NOT NULL)"
+
+
+def _ensure(db) -> None:
+    with db._lock:
+        db._conn.execute(_DDL)
+        db._conn.execute("CREATE INDEX IF NOT EXISTS idx_rule_an ON rule_analyses(type, ts)")
+
+
 def _scenes() -> dict:
     try:
         with open(SCENES_PATH, encoding="utf-8") as f:
@@ -111,4 +120,23 @@ def analyze(body: AnalyzeBody, request: Request):
         text = complete_text(report_llm(analyzer), msg, max_tokens=1100, temperature=0.2, timeout=120)
     except (OSError, ValueError, RuntimeError) as exc:
         raise HTTPException(502, f"el modelo no respondio: {exc}") from exc
-    return {"type": body.type, "samples": len(pick), "analysis": text}
+    _ensure(db)
+    ts = time.time()
+    with db._lock:
+        db._conn.execute("INSERT INTO rule_analyses (ts, type, days, samples, analysis) VALUES (?,?,?,?,?)", (ts, body.type, body.days, len(pick), text))
+    return {"type": body.type, "samples": len(pick), "analysis": text, "ts": ts}
+
+
+@router.get("/api/rules/analyses")
+def analyses(request: Request, type: str = "", limit: int = 10):
+    """Analisis guardados: sin type, el ultimo de cada tipo; con type, el historial de ese tipo."""
+    db = getattr(request.app.state, "db", None)
+    if db is None:
+        raise HTTPException(503, "sin base de datos")
+    _ensure(db)
+    with db._lock:
+        if type:
+            rows = db._conn.execute("SELECT id, ts, type, days, samples, analysis FROM rule_analyses WHERE type=? ORDER BY ts DESC LIMIT ?", (type, min(limit, 50))).fetchall()
+        else:
+            rows = db._conn.execute("SELECT id, ts, type, days, samples, analysis FROM rule_analyses WHERE id IN (SELECT MAX(id) FROM rule_analyses GROUP BY type)").fetchall()
+    return {"analyses": [{"id": i, "ts": t, "type": ty, "days": d, "samples": n, "analysis": a} for i, t, ty, d, n, a in rows]}

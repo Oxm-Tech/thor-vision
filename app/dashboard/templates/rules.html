@@ -39,6 +39,15 @@ async function load(){
       <div class="chips">${r.cams.map(c => `<a class="chip" style="color:inherit;text-decoration:none" href="/camara/${esc(c.id)}">${esc(c.name)} <b>${c.alerts}</b></a>`).join('')}${r.other_cams.map(c => `<span class="chip" title="Generó alertas de este tipo sin tenerlo permitido">${esc(c.name)} <b>${c.alerts}</b></span>`).join('')}</div>
       <button class="btn pri" data-a="${esc(r.type)}">Analizar con el modelo</button><div class="out"></div></div>`;
   }).join('');
+  try {
+    for (const a of (await (await fetch('/api/rules/analyses')).json()).analyses) showSaved(a);
+  } catch (_) {}
+}
+const fmt = ts => new Date(ts * 1000).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false});
+function showSaved(a){
+  const card = document.querySelector(`.card[data-t="${CSS.escape(a.type)}"]`); if (!card) return;
+  card.querySelector('.out').innerHTML = `<div class="muted" style="margin:6px 0 2px">Último análisis guardado · ${fmt(a.ts)} · ${a.days} d · ${a.samples} muestras</div><pre>${esc(a.analysis)}</pre>`;
+  card.querySelector('[data-a]').textContent = 'Volver a analizar';
 }
 $('#days').onchange = load;
 $('#list').addEventListener('click', async e => {
@@ -46,7 +55,7 @@ $('#list').addEventListener('click', async e => {
   const out = b.closest('.card').querySelector('.out'); b.disabled = true; out.innerHTML = '<pre>Analizando con eventos reales… (hasta 2 min)</pre>';
   try {
     const r = await fetch('/api/rules/analyze', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type: b.dataset.a, days: +$('#days').value})});
-    const d = await r.json(); out.innerHTML = `<pre>${esc(d.analysis || d.detail || 'sin respuesta')}</pre>`;
+    const d = await r.json(); if (d.analysis && d.ts) showSaved({type: d.type, ts: d.ts, days: +$('#days').value, samples: d.samples, analysis: d.analysis}); else out.innerHTML = `<pre>${esc(d.analysis || d.detail || 'sin respuesta')}</pre>`;
   } catch (err) { out.innerHTML = `<pre>Error: ${esc(err)}</pre>`; }
   b.disabled = false;
 });
