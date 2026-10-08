@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.0 — Control de luces y cortina desde la página IoT (2026-10-08)
+
+Cada luz o interruptor (de 1, 2 o 3 botones, o foco) se enciende y apaga desde /iot, y la cortina se abre, detiene o cierra. El servicio de Tuya valida cada orden contra una lista permitida y registra quién y cuándo.
+
+- **IoT · Botones por interruptor**: Los interruptores de 2 y 3 botones muestran un botón por cada uno; los focos y el enchufe uno solo.
+- **IoT · Cortina**: Abrir, detener y cerrar la cortina S.J derecho.
+- **Seguridad · Lista permitida y registro**: Solo luces y cortinas, solo códigos de interruptor, brillo y cortina, 1 orden por segundo por dispositivo; cada orden queda en control.log. Sin autenticación hasta la fase de hardening.
+
 ## v2.19.2 — Videoportero con visitas de 15 s y aviso rojo suave (2026-10-08)
 
 Pasar frente al videoportero menos de 15 s ya no es visita (era el 83% de las 798 alertas de la semana, también en el histórico de la línea de tiempo), y el contador de personas cambia con un desvanecido en vez de saltar.

@@ -22,10 +22,11 @@ h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px soli
 .sc .stt{font-size:20px;font-weight:700}.sc.open .stt{color:var(--warn)}.sc.closed .stt{color:var(--accent)}.sc.nodata .stt{color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--text);text-decoration:none}a.chip:hover{border-color:var(--accent)}
 .bat{display:inline-flex;align-items:center;gap:5px;font-size:12px}.bat i{display:inline-block;width:22px;height:10px;border:1.5px solid currentColor;border-radius:3px;position:relative}.bat i:after{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:var(--p);background:currentColor;border-radius:1px}
+.ctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ctl button{padding:5px 10px;border-radius:8px;border:1px solid var(--line,#394057);background:transparent;color:inherit;cursor:pointer}.ctl button.on{border-color:var(--warn);color:var(--warn)}.ctl button:disabled{opacity:.5}
 </style>
 </head>
 <body>
-<header><a href="/">← Dashboard</a><h1>Dispositivos IoT (Tuya)</h1><span id="st" class="b"></span><span class="muted" style="margin-left:auto">Solo lectura · llegan por MQTT</span></header>
+<header><a href="/">← Dashboard</a><h1>Dispositivos IoT (Tuya)</h1><span id="st" class="b"></span><span class="muted" style="margin-left:auto">Estado por MQTT · luces y cortinas con control (queda registro)</span></header>
 <main>
   <div id="sensors" class="sgrid"></div>
   <h3>Video de las cámaras Tuya <span class="muted" style="font-weight:400">(bajo demanda; consume la cuota de la nube)</span></h3>
@@ -36,7 +37,7 @@ h3{margin:22px 0 8px;font-size:14px}.box{background:var(--panel);border:1px soli
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const KIND = {door: 'Puerta', window: 'Ventana', garage: 'Garage', camera: 'Cámara', light: 'Luz'};
+const KIND = {door: 'Puerta', window: 'Ventana', garage: 'Garage', camera: 'Cámara', light: 'Luz', curtain: 'Cortina'};
 const when = ts => ts ? new Date(ts * 1000).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}) : '—';
 const ICON = {
   light: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
@@ -50,6 +51,14 @@ const ICON = {
   camera: '<svg class="ic" viewBox="0 0 24 24"><path d="M4 8h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z"/><path d="M16 12l5-3v8l-5-3"/></svg>',
 };
 const ago = ts => { if (!ts) return '—'; const s = Date.now() / 1000 - ts; return s < 90 ? 'ahora' : s < 3600 ? 'hace ' + Math.round(s / 60) + ' min' : s < 86400 ? 'hace ' + Math.round(s / 3600) + ' h' : 'hace ' + Math.round(s / 86400) + ' d'; };
+const ctl = (x) => {
+  if (x.kind === 'light') {
+    const sw = Object.entries(x.switches || {});
+    return `<div class="ctl">${sw.map(([c, on], i) => `<button data-d="${esc(x.device_id)}" data-c="${esc(c)}" data-v="${!on}" class="${on ? 'on' : ''}">${sw.length > 1 ? (c === 'switch_led' ? 'Foco' : 'Botón ' + c.replace('switch_', '')) + ' · ' : ''}${on ? 'Apagar' : 'Encender'}</button>`).join('') || '<span class="muted" style="font-size:12px">sin estado de la nube todavía</span>'}</div>`;
+  }
+  if (x.kind === 'curtain') return `<div class="ctl"><button data-d="${esc(x.device_id)}" data-c="control" data-v="open">Abrir</button><button data-d="${esc(x.device_id)}" data-c="control" data-v="stop">Detener</button><button data-d="${esc(x.device_id)}" data-c="control" data-v="close">Cerrar</button></div>`;
+  return '';
+};
 function card(x){
   const cam = x.kind === 'camera';
   const light = x.kind === 'light';
@@ -61,7 +70,7 @@ function card(x){
   const rel = (x.related || []).map(r => /^(cam-)/.test(r.id) ? `<a class="chip" href="/camara/${esc(r.id)}" title="Abrir la vista de esta cámara">${esc(r.name)}</a>` : `<span class="chip">${esc(r.name)}</span>`).join('');
   return `<div class="sc ${state}"><div class="top">${icon}<div><div class="nm">${esc(x.name)}</div><div class="stt">${label}</div></div></div>
     <div class="muted" style="font-size:12.5px">${known && !cam ? (light ? (x.open ? 'encendida ' : 'apagada ') : (x.open ? 'abierta ' : 'cerrada ')) + ago(x.since) + ' · ' : ''}último mensaje ${ago(x.last_ts)} ${bat ? '· ' : ''}${bat}</div>
-  </div>`;
+  ${ctl(x)}<div class="muted cmsg" style="font-size:12px"></div></div>`;
 }
 async function tick(){
   try {
@@ -95,7 +104,19 @@ async function initVideo(){
     <img alt="" src=""><div><button data-a="snap">Captura ahora</button><button data-a="live">En vivo</button><button data-a="stop">Detener</button></div><div class="muted msg"></div></div>`).join('');
   usage(); setInterval(usage, 15000);
 }
-document.addEventListener('click', e => {
+document.addEventListener('click', async e => {
+  const cb = e.target.closest('.ctl button');
+  if (cb) {
+    const msg = cb.closest('.sc').querySelector('.cmsg'); cb.disabled = true; msg.textContent = 'Enviando…';
+    let v = cb.dataset.v; if (v === 'true') v = true; else if (v === 'false') v = false;
+    try {
+      const r = await fetch(SVC + '/control/' + cb.dataset.d, {method: 'POST', body: JSON.stringify({code: cb.dataset.c, value: v})});
+      const j = await r.json(); msg.textContent = j.ok ? 'Enviado; el estado se actualiza en unos segundos' : 'No se pudo: ' + j.result;
+      setTimeout(tick, 4000);
+    } catch (er) { msg.textContent = 'Servicio de control no disponible'; }
+    setTimeout(() => { cb.disabled = false; }, 1500);
+    return;
+  }
   const b = e.target.closest('.cam button'); if (!b) return;
   const c = b.closest('.cam'), img = c.querySelector('img'), msg = c.querySelector('.msg'), id = c.dataset.id, a = b.dataset.a;
   if (a === 'stop') { img.src = ''; msg.textContent = ''; setTimeout(usage, 800); return; }

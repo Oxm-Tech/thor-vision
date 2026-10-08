@@ -109,6 +109,11 @@ class IotListener:
         if "battery_percentage" in changes:
             st["battery"] = changes["battery_percentage"]
             self._check_battery(dev_id, dev, st["battery"])
+        if dev.get("kind") == "curtain":
+            for c in ("percent_control", "percent_state"):
+                if c in changes:
+                    st["percent"] = changes[c]
+            return
         if dev.get("kind") == "light":
             sw = st.setdefault("sw", {})
             sw.update({c: bool(v) for c, v in changes.items() if re.fullmatch(r"switch(_\d+|_led)?", c)})
@@ -348,7 +353,7 @@ class IotListener:
             out.append({"device_id": dev_id, "name": dev.get("name"), "kind": dev.get("kind"), "cam": dev.get("cam"),
                         "cam_name": self.cam_names.get(dev.get("cam") or "", None), "confirmed": bool(dev.get("confirmed")),
                         "open": st.get("open"), "since": st.get("since"), "battery": st.get("battery"), "last_ts": st.get("last_ts"), "online": st.get("online"),
-                        "alias": dev.get("alias"), "role": dev.get("role"),
+                        "alias": dev.get("alias"), "role": dev.get("role"), "switches": st.get("sw"), "percent": st.get("percent"),
                         "related": [{"id": c, "name": self.cam_names.get(c) or (self.devices_by_alias.get(c) or c)} for c in (dev.get("related") or [])]})
         return out
 

@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.20.0",
+    "date": "2026-10-08",
+    "name": "Control de luces y cortina desde la página IoT",
+    "summary": "Cada luz o interruptor (de 1, 2 o 3 botones, o foco) se enciende y apaga desde /iot, y la cortina se abre, detiene o cierra. El servicio de Tuya valida cada orden contra una lista permitida y registra quién y cuándo.",
+    "highlights": [
+      {
+        "area": "IoT",
+        "title": "Botones por interruptor",
+        "text": "Los interruptores de 2 y 3 botones muestran un botón por cada uno; los focos y el enchufe uno solo."
+      },
+      {
+        "area": "IoT",
+        "title": "Cortina",
+        "text": "Abrir, detener y cerrar la cortina S.J derecho."
+      },
+      {
+        "area": "Seguridad",
+        "title": "Lista permitida y registro",
+        "text": "Solo luces y cortinas, solo códigos de interruptor, brillo y cortina, 1 orden por segundo por dispositivo; cada orden queda en control.log. Sin autenticación hasta la fase de hardening."
+      }
+    ]
+  },
+  {
     "version": "2.19.2",
     "date": "2026-10-08",
     "name": "Videoportero con visitas de 15 s y aviso rojo suave",
