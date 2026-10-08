@@ -109,7 +109,7 @@ def _street_traffic(db, config, since, until) -> list:
     with db._lock:
         rows = db._conn.execute(
             "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc, v.attrs, v.scene IS NOT NULL FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
-            f"WHERE v.fp=0 AND v.static=0 AND v.hits>=4 AND v.start_ts>=? AND v.start_ts<=? AND v.cam_id IN ({','.join('?' * len(ext))}) "
+            f"WHERE v.fp=0 AND v.static=0 AND v.hits>=6 AND v.start_ts>=? AND v.start_ts<=? AND v.cam_id IN ({','.join('?' * len(ext))}) "
             "AND (s.named=1 OR v.end_ts - v.start_ts >= 8 OR v.cam_id IN ('cam-vto')) ORDER BY v.start_ts DESC LIMIT 600", (since, until, *ext)).fetchall()
     out = []
     for vid, ts, cam, name, named, desc, at, has_scene in rows:

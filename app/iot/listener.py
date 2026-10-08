@@ -68,6 +68,7 @@ class IotListener:
         self._alerted_usage: set = set()
         self._recent: dict = {}          # (device, codigo, valor) -> ts: el mismo mensaje llega duplicado desde la nube
         self._last_motion: dict = {}     # device_id -> ts de la ultima alerta de movimiento/ruido
+        self.detections = None           # DetectionStore (lo fija main.py): sirve para elegir la camara que de verdad ve a la persona
         self.on_light = None             # callable(dev, ts): alguien movio un interruptor; pide captura a las camaras de esa zona
         self.on_motion = None            # callable(alias, ts): aviso de movimiento de una camara Tuya (viajes y rafaga en la camara de entrada)
         self._stop = threading.Event()
@@ -208,6 +209,21 @@ class IotListener:
                    "relevant": True, "alerts": [alert], "alert_types": [alert_type], "severity": severity, "confidence": "high", "iot": extra}
         return self.db.insert_event("nemotron", cam_id, payload, people=0, has_alert=True)
 
+    def _best_cam(self, dev: dict):
+        """Camara de la zona que ve a una persona justo ahora (la puerta puede no estar en el campo de la camara asignada); si ninguna, la asignada."""
+        base = dev.get("cam")
+        if self.detections is None:
+            return base
+        cands = [c for c in ([base] + list(dev.get("related") or [])) if c and str(c).startswith("cam-")]
+        now, best = time.time(), None
+        for c in dict.fromkeys(cands):
+            d = self.detections.get(c)
+            if d is not None and now - (getattr(d, "yolo_ts", 0) or 0) < 5 and (getattr(d, "yolo_persons", 0) or getattr(d, "person_count", 0) or 0) > 0:
+                n = getattr(d, "yolo_persons", 0) or getattr(d, "person_count", 0)
+                if best is None or n > best[0]:
+                    best = (n, c)
+        return best[1] if best else base
+
     def _snapshot(self, event_id: int, cam_id, trigger: str) -> None:
         buf = self.buffers.get(cam_id) if cam_id else None
         frame = buf.peek_latest() if buf is not None and hasattr(buf, "peek_latest") else None
@@ -232,7 +248,7 @@ class IotListener:
                                  "puerta_abierta", sev, {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "open",
                                                           "cam_confirmed": bool(dev.get("confirmed"))})
         self._alerted_open[dev_id] = ts
-        self._snapshot(eid, cam, "puerta")
+        self._snapshot(eid, self._best_cam(dev), "puerta")
         if self.on_motion is not None and dev.get("alias"):
             try:
                 self.on_motion(dev["alias"], ts)         # la apertura anticipa una entrada en la camara asociada (viajes)
@@ -244,9 +260,11 @@ class IotListener:
         """Cierre de una puerta/ventana: queda en la linea de tiempo (sin severidad) para ver cuanto estuvo abierta."""
         what = {"door": "puerta", "window": "ventana", "garage": "garage"}.get(dev.get("kind"), "dispositivo")
         mins = max(0, int((ts - opened_at) // 60))
-        dur = f"{mins // 60} h {mins % 60} min" if mins >= 60 else f"{mins} min"
+        secs = max(0, int(ts - opened_at))
+        dur = f"{mins // 60} h {mins % 60} min" if mins >= 60 else (f"{mins} min {secs % 60} s" if mins >= 1 else f"{secs} s")
         eid = self._insert_alert(dev.get("cam"), f"Se cerro {what}: {dev['name']} (estuvo abierta {dur})", f"{dev['name']} cerrada", "puerta_abierta", "none",
                                  {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "closed", "minutes": mins})
+        self._snapshot(eid, self._best_cam(dev), "puerta_cierre")
         self._alerted_open.pop(dev_id, None)
 
     def _usage_alert(self, msg: dict, retained: bool) -> None:

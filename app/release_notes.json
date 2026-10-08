@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.22.2",
+    "date": "2026-10-08",
+    "name": "Capturas de puertas desde la cámara que ve a la persona",
+    "summary": "Las alertas de apertura y cierre de puertas, ventanas y garage eligen, entre las cámaras de la zona, la que ve a una persona en ese instante (la puerta del garage no está en el campo de Garage frontal); el cierre también lleva captura y la duración sale en segundos cuando es menor a un minuto; y el tráfico de calle exige 6 detecciones.",
+    "highlights": [
+      {
+        "area": "IoT",
+        "title": "Cámara que sí ve",
+        "text": "Se consulta YOLO en las cámaras 'related' del dispositivo y se captura la que tiene personas; si ninguna, la asignada."
+      },
+      {
+        "area": "IoT",
+        "title": "Cierre con captura y segundos",
+        "text": "'Se cerró garage (estuvo abierta 34 s)' en lugar de '0 min'."
+      },
+      {
+        "area": "Personas",
+        "title": "Tráfico de calle más estricto",
+        "text": "6 detecciones mínimas para mostrarse en la línea de tiempo."
+      }
+    ]
+  },
+  {
     "version": "2.22.1",
     "date": "2026-10-08",
     "name": "Plantas ya no cuentan como visitas y grabadora de cajas",

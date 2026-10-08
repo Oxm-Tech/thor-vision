@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.22.2 — Capturas de puertas desde la cámara que ve a la persona (2026-10-08)
+
+Las alertas de apertura y cierre de puertas, ventanas y garage eligen, entre las cámaras de la zona, la que ve a una persona en ese instante (la puerta del garage no está en el campo de Garage frontal); el cierre también lleva captura y la duración sale en segundos cuando es menor a un minuto; y el tráfico de calle exige 6 detecciones.
+
+- **IoT · Cámara que sí ve**: Se consulta YOLO en las cámaras 'related' del dispositivo y se captura la que tiene personas; si ninguna, la asignada.
+- **IoT · Cierre con captura y segundos**: 'Se cerró garage (estuvo abierta 34 s)' en lugar de '0 min'.
+- **Personas · Tráfico de calle más estricto**: 6 detecciones mínimas para mostrarse en la línea de tiempo.
+
 ## v2.22.1 — Plantas ya no cuentan como visitas y grabadora de cajas (2026-10-08)
 
 En interiores, una detección breve (menos de 15 s) e inmóvil que se repite 3 veces en el mismo punto sin cara (una planta o un bulto) se marca falsa; y se guardan las cajas de persona de cada cámara por 7 días para repetir otros trackers sobre los mismos datos.

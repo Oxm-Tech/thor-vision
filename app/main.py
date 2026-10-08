@@ -234,6 +234,7 @@ async def lifespan(app: FastAPI):
     if os.environ.get("IOT_ENABLED", "true").lower() == "true":
         from app.iot.listener import IotListener
         app.state.iot = IotListener(db, snapshots, manager._buffers, {c.id: c.name for c in config.cameras})
+        app.state.iot.detections = detection_store
         app.state.iot.start()
         from app.vision.journeys import JourneyLinker
         app.state.journeys = JourneyLinker(db, snapshots)

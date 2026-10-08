@@ -63,7 +63,7 @@ def test_startup_state_and_retained_never_alert_but_are_stored():
     assert {r["source"] for r in m.recent()} == {"sync", "event"}
 
 
-def test_opening_creates_alert_with_snapshot_and_closing_does_not():
+def test_opening_creates_alert_with_snapshot_and_closing_has_one_too():
     m, db, sn = make()
     m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))
     m.handle("t/D1/status", msg("D1", {"doorcontact_state": True}))
@@ -72,9 +72,10 @@ def test_opening_creates_alert_with_snapshot_and_closing_does_not():
     assert typ == "nemotron" and cam == "cam-113" and has_alert and p["source"] == "iot"
     assert p["alert_types"] == ["puerta_abierta"] and p["iot"]["state"] == "open" and p["iot"]["cam_confirmed"] is False
     assert sn.saved == [("cam-113", "puerta", 1)]
-    m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))                  # cerrarse deja una entrada informativa (severidad none), sin captura
+    m.handle("t/D1/status", msg("D1", {"doorcontact_state": False}))                  # cerrarse deja una entrada informativa (severidad none) con su captura
     assert len(db.events) == 2 and m.state["D1"]["open"] is False and db.events[1][2]["severity"] == "none" and db.events[1][2]["iot"]["state"] == "closed"
-    assert len(sn.saved) == 1
+    assert len(sn.saved) == 2 and sn.saved[1][1] == "puerta_cierre"
+    assert "s)" in db.events[1][2]["activity"]                                          # menos de un minuto se muestra en segundos
 
 
 def test_open_too_long_alerts_once_per_interval():
@@ -181,3 +182,15 @@ def test_lights_track_state_without_alerts():
     m.handle("t/L1/status", msg("L1", {"switch_2": False}))
     assert m.state["L1"]["open"] is False
     assert db.events == []                    # encender o apagar no es alerta
+
+
+def test_best_cam_prefers_the_related_camera_that_sees_a_person():
+    from types import SimpleNamespace
+    m, db, sn = make()
+    now = time.time()
+    det = {"cam-228": SimpleNamespace(yolo_ts=now, yolo_persons=0, person_count=0), "cam-118": SimpleNamespace(yolo_ts=now, yolo_persons=2, person_count=2)}
+    m.detections = SimpleNamespace(get=lambda c: det.get(c))
+    dev = {"cam": "cam-228", "related": ["cam-228", "cam-118", "tuya-garaje"]}
+    assert m._best_cam(dev) == "cam-118"
+    det["cam-118"].yolo_persons = det["cam-118"].person_count = 0
+    assert m._best_cam(dev) == "cam-228"                         # nadie a la vista: la camara asignada
