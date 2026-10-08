@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.21.1 — Interruptores piden captura y empleado conocido en amarillo (2026-10-08)
+
+Mover un interruptor reanaliza los últimos segundos de las cámaras de esa zona (para capturar la cara de quien lo movió), y una 'persona nocturna' que ya es un empleado con nombre sale amarilla como advertencia, no roja.
+
+- **IoT · Interruptor → captura**: Cada luz tiene 'cams' en config/iot.yml (cocina, acceso site/jardín, taller con garage posterior, cowork, garage frontal); un cambio dispara la ráfaga de pre-roll en esas cámaras. 'ignore_codes' omite botones (la fuente del jardín).
+- **Línea de tiempo · Empleado conocido en amarillo**: Nuevo grupo 'Empleado conocido (de noche)': la alerta sigue visible pero como advertencia.
+
 ## v2.21.0 — Enlace Tuya con ventana previa y menos visitas partidas (2026-10-08)
 
 Un aviso de entrada Tuya ahora también cuenta una visita que ya estaba en cuadro hasta 20 s antes; la Tuya del garage (que apunta a las escaleras) se enlaza con Escaleras P2, Escaleras entrada y Garage frontal; y una persona ya no se parte en varias visitas por detecciones duplicadas o saltos del seguimiento.

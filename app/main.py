@@ -238,6 +238,11 @@ async def lifespan(app: FastAPI):
             for cam in _j._entry_cams(alias):
                 _vq.submit_burst(cam, "tuya")          # reanaliza el pre-roll de las camaras de entrada: la persona puede estar entrando
         app.state.iot.on_motion = _tuya_motion
+
+        def _light_moved(dev, ts, _vq=vision_queue):
+            for cam in dev.get("cams") or []:
+                _vq.submit_burst(cam, "switch")        # alguien movio un interruptor: la persona esta ahi, se reanalizan los ultimos segundos de las camaras de la zona
+        app.state.iot.on_light = _light_moved
     from app.devices.manager import DeviceManager
     app.state.devices = DeviceManager(db, config)
     from app.api.chat_agent import start_chat_probe

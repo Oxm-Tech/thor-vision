@@ -68,6 +68,7 @@ class IotListener:
         self._alerted_usage: set = set()
         self._recent: dict = {}          # (device, codigo, valor) -> ts: el mismo mensaje llega duplicado desde la nube
         self._last_motion: dict = {}     # device_id -> ts de la ultima alerta de movimiento/ruido
+        self.on_light = None             # callable(dev, ts): alguien movio un interruptor; pide captura a las camaras de esa zona
         self.on_motion = None            # callable(alias, ts): aviso de movimiento de una camara Tuya (viajes y rafaga en la camara de entrada)
         self._stop = threading.Event()
         self._retry = threading.Event()      # se activa si el broker rechaza la conexion: se vuelve a leer data/mqtt.json y se reintenta
@@ -119,6 +120,11 @@ class IotListener:
             sw.update({c: bool(v) for c, v in changes.items() if re.fullmatch(r"switch(_\d+|_led)?", c)})
             if not any(re.fullmatch(r"switch(_\d+|_led)?", c) for c in changes):
                 return
+            if self.on_light is not None and not retained and any(re.fullmatch(r"switch(_\d+|_led)?", c) and c not in (dev.get("ignore_codes") or []) for c in changes):
+                try:
+                    self.on_light(dev, ts)
+                except (TypeError, ValueError, KeyError, OSError, sqlite3.Error) as exc:
+                    logger.warning("iot: on_light: %s", exc)
             op = any(sw.values())
         else:
             op = is_open(dev, changes)

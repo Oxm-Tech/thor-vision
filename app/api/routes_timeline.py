@@ -44,6 +44,7 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],
                        "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
     _fill_ring_images(db, events)
+    _mark_known_night(db, events)
     events += _street_traffic(db, config, since, until)
     iot = getattr(request.app.state, "iot", None)
     rel = set()
@@ -70,6 +71,20 @@ def _fill_ring_images(db, events: list) -> None:
         if row:
             e["img"] = f"/api/person-visits/{row[0]}/{'scene' if row[1] else ('face' if row[2] else 'body')}"
             e["text"] = (e["text"] + " (captura del visitante cercano)")[:200]
+
+
+def _mark_known_night(db, events: list) -> None:
+    """'Persona nocturna' cuya visita cercana (+-15 s, misma camara) ya es un empleado con nombre: advertencia amarilla, no alerta roja."""
+    cand = [e for e in events if e["type"] == "persona_nocturna"]
+    if not cand:
+        return
+    with db._lock:
+        rows = db._conn.execute("SELECT v.cam_id, v.start_ts, v.end_ts FROM person_visits v JOIN subjects s ON s.id=v.subject_id "
+                                "WHERE s.named=1 AND s.category='empleado' AND v.fp=0 AND v.end_ts>=? AND v.start_ts<=?",
+                                (min(e["ts"] for e in cand) - 15, max(e["ts"] for e in cand) + 15)).fetchall()
+    for e in cand:
+        if any(c == e["cam"] and a - 15 <= e["ts"] <= b + 15 for c, a, b in rows):
+            e["type"] = "persona_conocida"
 
 
 def _effective_type(d: dict) -> str:
