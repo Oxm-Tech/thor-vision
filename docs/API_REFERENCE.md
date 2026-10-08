@@ -163,7 +163,7 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/api/iot/config` | Config |  |  |
 | GET | `/api/iot/devices` | Devices |  |  |
-| GET | `/api/iot/events` | Events | `device_id`, `limit` |  |
+| GET | `/api/iot/events` | Events | `device_id`, `limit`, `sync` |  |
 | GET | `/iot` | Iot Page |  |  |
 
 ## journeys

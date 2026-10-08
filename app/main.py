@@ -45,6 +45,9 @@ async def lifespan(app: FastAPI):
     from app.vision.detection_store import DetectionStore
     detection_store = DetectionStore()
     app.state.detection_store = detection_store
+    if os.environ.get("EVAL_SAMPLER", "true").lower() == "true":
+        from app.api.routes_eval import start_sampler
+        app.state.eval_stop = start_sampler(app)
 
     # ── Persistencia: SQLite + snapshots ──────────────────────────────────
     from app.storage import EventDB, SnapshotManager, start_retention_thread, start_report_thread
@@ -397,10 +400,17 @@ app.include_router(iot_router)
 app.include_router(people_router)
 from app.api.routes_rules import router as rules_router
 app.include_router(rules_router)
+from app.api.routes_eval import router as eval_router
+app.include_router(eval_router)
 from app.api.routes_presence import router as presence_router
 app.include_router(presence_router)
 from app.api.routes_journeys import router as journeys_router
 app.include_router(journeys_router)
+
+
+@app.get("/evaluacion", response_class=HTMLResponse)
+async def eval_page(request: Request):
+    return templates.TemplateResponse("eval.html", {"request": request})
 
 
 @app.get("/reglas", response_class=HTMLResponse)

@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.22.0",
+    "date": "2026-10-08",
+    "name": "Conjunto de evaluación de personas",
+    "summary": "Nueva página /evaluacion: cada 20 minutos se guarda un cuadro por cámara con las cajas de persona de YOLO; tú marcas las falsas y las personas que faltaron, y el informe calcula precisión y recall por cámara. Sirve de base para comparar trackers y decidir si hace falta reentrenar.",
+    "highlights": [
+      {
+        "area": "Calidad",
+        "title": "Etiquetado con clics",
+        "text": "Tocar una caja la marca falsa; arrastrar marca una persona no vista. Atajos: Enter guarda, S omite, Z deshace."
+      },
+      {
+        "area": "Calidad",
+        "title": "Informe de precisión y recall",
+        "text": "GET /api/eval/report por cámara y total. Los cuadros sin personas se muestrean 1 de cada 4 para no inflar la muestra."
+      }
+    ]
+  },
+  {
     "version": "2.21.1",
     "date": "2026-10-08",
     "name": "Interruptores piden captura y empleado conocido en amarillo",

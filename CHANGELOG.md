@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.22.0 — Conjunto de evaluación de personas (2026-10-08)
+
+Nueva página /evaluacion: cada 20 minutos se guarda un cuadro por cámara con las cajas de persona de YOLO; tú marcas las falsas y las personas que faltaron, y el informe calcula precisión y recall por cámara. Sirve de base para comparar trackers y decidir si hace falta reentrenar.
+
+- **Calidad · Etiquetado con clics**: Tocar una caja la marca falsa; arrastrar marca una persona no vista. Atajos: Enter guarda, S omite, Z deshace.
+- **Calidad · Informe de precisión y recall**: GET /api/eval/report por cámara y total. Los cuadros sin personas se muestrean 1 de cada 4 para no inflar la muestra.
+
 ## v2.21.1 — Interruptores piden captura y empleado conocido en amarillo (2026-10-08)
 
 Mover un interruptor reanaliza los últimos segundos de las cámaras de esa zona (para capturar la cara de quien lo movió), y una 'persona nocturna' que ya es un empleado con nombre sale amarilla como advertencia, no roja.
