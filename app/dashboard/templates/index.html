@@ -76,6 +76,11 @@ header {
 .persons-label { font-size:.65rem; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); font-weight:600; }
 .persons-value { font-size:1.4rem; font-weight:800; color:var(--oxm-blue); font-variant-numeric:tabular-nums; line-height:1; }
 .persons-unit.has-alert { color:var(--red-alert, #e66767); font-weight:600; }
+.persons-unit { transition: opacity .25s ease, color .5s ease, letter-spacing .4s ease; }
+.persons-unit.swap { opacity:0; }
+.persons-unit.has-alert { animation: pu-alert 2.4s ease-in-out infinite; }
+@keyframes pu-alert { 0%,100% { text-shadow:0 0 0 rgba(230,103,103,0); } 50% { text-shadow:0 0 8px rgba(230,103,103,.55); } }
+@media (prefers-reduced-motion: reduce) { .persons-unit.has-alert { animation:none; } }
 .persons-unit  { max-width:170px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:.6rem; color:var(--text-muted); margin-top:-1px; }
 
 /* ── VLM health card ── */
@@ -1440,7 +1445,13 @@ function updateDetections(detections, totalPersons) {
     const _warn = n => withAlert.includes(n);
     const _parts = withP.map(x => { const nm = x.replace(/ ×\d+$/, ''); return (_warn(nm) ? '⚠ ' : '') + x; });
     withAlert.filter(n => !withP.some(x => x.replace(/ ×\d+$/, '') === n)).forEach(n => _parts.push('⚠ ' + n));
-    unitEl.textContent = _parts.length ? 'en ' + _parts.join(', ') : 'en cámaras';
+    const _txt = _parts.length ? 'en ' + _parts.join(', ') : 'en cámaras';
+    if (unitEl.dataset.k !== _txt) {                      // cambio suave: se desvanece, se actualiza el texto y reaparece
+      const first = unitEl.dataset.k === undefined;
+      unitEl.dataset.k = _txt;
+      if (first) unitEl.textContent = _txt;
+      else { unitEl.classList.add('swap'); setTimeout(() => { unitEl.textContent = _txt; unitEl.classList.remove('swap'); }, 220); }
+    }
     unitEl.title = withAlert.length ? 'Alerta activa en: ' + withAlert.join(', ') : 'Sin alertas activas';
     unitEl.classList.toggle('has-alert', withAlert.length > 0);
   }

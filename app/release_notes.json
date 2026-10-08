@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.19.2",
+    "date": "2026-10-08",
+    "name": "Videoportero con visitas de 15 s y aviso rojo suave",
+    "summary": "Pasar frente al videoportero menos de 15 s ya no es visita (era el 83% de las 798 alertas de la semana, también en el histórico de la línea de tiempo), y el contador de personas cambia con un desvanecido en vez de saltar.",
+    "highlights": [
+      {
+        "area": "Videoportero",
+        "title": "Visita desde 15 s",
+        "text": "El mínimo sube de 8 a 15 s; el timbre y las personas con nombre siguen alertando siempre. Las visitas viejas de menos de 15 s pasan a tráfico de calle."
+      },
+      {
+        "area": "Panel",
+        "title": "Aviso rojo suave",
+        "text": "El texto del contador se desvanece al cambiar, marca ⚠ junto a la cámara y late con un brillo discreto."
+      }
+    ]
+  },
+  {
     "version": "2.19.1",
     "date": "2026-10-07",
     "name": "Línea de tiempo con carriles Tuya y eventos IoT sin ruido",

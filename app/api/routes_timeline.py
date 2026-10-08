@@ -77,7 +77,7 @@ def _effective_type(d: dict) -> str:
         return "sensor_puerta"
     if src == "doorbell" and t == "visita_videoportero":
         db_ = d.get("doorbell") or {}
-        if (db_.get("duration_s") or 0) < 8 and "(" not in (d.get("activity") or ""):
+        if (db_.get("duration_s") or 0) < 15 and "(" not in (d.get("activity") or ""):
             return "trafico_calle"
     return t
 

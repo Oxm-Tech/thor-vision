@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.19.2 — Videoportero con visitas de 15 s y aviso rojo suave (2026-10-08)
+
+Pasar frente al videoportero menos de 15 s ya no es visita (era el 83% de las 798 alertas de la semana, también en el histórico de la línea de tiempo), y el contador de personas cambia con un desvanecido en vez de saltar.
+
+- **Videoportero · Visita desde 15 s**: El mínimo sube de 8 a 15 s; el timbre y las personas con nombre siguen alertando siempre. Las visitas viejas de menos de 15 s pasan a tráfico de calle.
+- **Panel · Aviso rojo suave**: El texto del contador se desvanece al cambiar, marca ⚠ junto a la cámara y late con un brillo discreto.
+
 ## v2.19.1 — Línea de tiempo con carriles Tuya y eventos IoT sin ruido (2026-10-07)
 
 Las alertas de puertas, garage y cámaras Tuya aparecen en su propio carril de la línea de tiempo, y la lista de eventos de IoT ya no muestra sincronizaciones ni interruptores internos.

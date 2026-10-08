@@ -13,7 +13,7 @@ from app.onvif.dahua_events import DahuaError
 logger = logging.getLogger(__name__)
 
 RING_CODES = {c.strip() for c in os.environ.get("DOORBELL_CODES", "Invite,CallNoAnswered,BackKeyLight").split(",") if c.strip()}
-MIN_VISIT_S = float(os.environ.get("DOORBELL_MIN_VISIT_S", "8"))       # menos que esto sin timbre ni nombre = transito (trafico), no visita
+MIN_VISIT_S = float(os.environ.get("DOORBELL_MIN_VISIT_S", "15"))       # menos que esto sin timbre ni nombre = transito (trafico), no visita
 RING_WINDOW_S = float(os.environ.get("DOORBELL_RING_WINDOW_S", "90"))
 DEBOUNCE_S = float(os.environ.get("DOORBELL_DEBOUNCE_S", "10"))
 
