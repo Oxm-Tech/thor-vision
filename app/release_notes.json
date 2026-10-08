@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.20.5",
+    "date": "2026-10-08",
+    "name": "Sensores de puertas: solo cambios de estado",
+    "summary": "Se acabaron los avisos repetidos 'lleva N min abierta'; cada puerta o ventana avisa al abrirse y al cerrarse, y el cierre anota cuánto duró abierta (en horas y minutos).",
+    "highlights": [
+      {
+        "area": "IoT",
+        "title": "Sin avisos repetidos",
+        "text": "alert_open_minutes queda en 0 en config/iot.yml; poner un número reactiva el aviso periódico."
+      },
+      {
+        "area": "IoT",
+        "title": "Duración al cerrar",
+        "text": "'Se cerró … (estuvo abierta 5 h 20 min)'. Los avisos repetidos anteriores se ocultan del historial."
+      }
+    ]
+  },
+  {
     "version": "2.20.4",
     "date": "2026-10-08",
     "name": "Rostros sin deformar",

@@ -46,7 +46,7 @@ def msg(dev, changes, ts=None):
 
 def test_repo_map_parses_and_has_the_sensors():
     cfg = li.load_map("config/iot.yml")
-    assert cfg["devices"]["ebd84e19bf42731470j1ao"]["kind"] == "door" and cfg["alert_open_minutes"] == 10
+    assert cfg["devices"]["ebd84e19bf42731470j1ao"]["kind"] == "door" and cfg["alert_open_minutes"] == 0
 
 
 def test_is_open():

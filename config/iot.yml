@@ -1,7 +1,7 @@
 # Dispositivos Tuya que thor-vision vigila por MQTT (el puente tuya_bridge publica en oxm/tuya/<id>/status).
 # cam: camara de thor-vision de la que se toma la captura cuando el dispositivo cambia (confirmed: false = suposicion por confirmar).
 # open_code/open_value: que cambio significa "abierto". Los ids no son secretos.
-alert_open_minutes: 10        # alerta de nuevo si sigue abierto este tiempo
+alert_open_minutes: 0         # 0 = sin avisos repetidos; solo cambios de estado (al cerrar se anota cuanto estuvo abierta). Un numero > 0 reactiva el aviso periodico
 low_battery_pct: 15
 devices:
   ebd84e19bf42731470j1ao: {name: "Recepcion Puerta (cristal)", kind: door,   cam: cam-113,       confirmed: true, alias: door-recepcion, related: [cam-113], role: "Inicia el viaje de Escaleras entrada", open_code: doorcontact_state, open_value: true}

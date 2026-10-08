@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.20.5 — Sensores de puertas: solo cambios de estado (2026-10-08)
+
+Se acabaron los avisos repetidos 'lleva N min abierta'; cada puerta o ventana avisa al abrirse y al cerrarse, y el cierre anota cuánto duró abierta (en horas y minutos).
+
+- **IoT · Sin avisos repetidos**: alert_open_minutes queda en 0 en config/iot.yml; poner un número reactiva el aviso periódico.
+- **IoT · Duración al cerrar**: 'Se cerró … (estuvo abierta 5 h 20 min)'. Los avisos repetidos anteriores se ocultan del historial.
+
 ## v2.20.4 — Rostros sin deformar (2026-10-08)
 
 Los recortes de rostro eran el cuadro del detector (no cuadrado) reducido a un cuadrado, así que se estiraban; ahora se recortan siempre cuadrados, rellenando el borde cuando la cara toca el límite del cuadro, y las miniaturas del panel no se estiran.

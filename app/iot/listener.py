@@ -238,7 +238,8 @@ class IotListener:
         """Cierre de una puerta/ventana: queda en la linea de tiempo (sin severidad) para ver cuanto estuvo abierta."""
         what = {"door": "puerta", "window": "ventana", "garage": "garage"}.get(dev.get("kind"), "dispositivo")
         mins = max(0, int((ts - opened_at) // 60))
-        eid = self._insert_alert(dev.get("cam"), f"Se cerro {what}: {dev['name']} (estuvo abierta {mins} min)", f"{dev['name']} cerrada", "puerta_abierta", "none",
+        dur = f"{mins // 60} h {mins % 60} min" if mins >= 60 else f"{mins} min"
+        eid = self._insert_alert(dev.get("cam"), f"Se cerro {what}: {dev['name']} (estuvo abierta {dur})", f"{dev['name']} cerrada", "puerta_abierta", "none",
                                  {"device_id": dev_id, "name": dev["name"], "kind": dev.get("kind"), "state": "closed", "minutes": mins})
         self._alerted_open.pop(dev_id, None)
 
@@ -269,7 +270,9 @@ class IotListener:
     def check_open_too_long(self, now: float | None = None) -> None:
         """Llamar periodicamente: alerta de nuevo si una puerta o ventana sigue abierta mas de alert_open_minutes."""
         now = now or time.time()
-        limit = float(self.cfg.get("alert_open_minutes", 10)) * 60
+        limit = float(self.cfg.get("alert_open_minutes", 0)) * 60
+        if limit <= 0:
+            return                       # apagado: solo se avisa en cada cambio de estado (al cerrar queda cuanto duro)
         for dev_id, st in self.state.items():
             dev = self.devices.get(dev_id, {})
             if not st.get("open") or dev.get("kind") == "camera":
