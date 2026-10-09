@@ -223,6 +223,7 @@ class VisitManager:
                       "snap_requests": 0, "snap_faces": 0, "snap_wins": 0,
                       "vlm_skipped": 0, "snap_fail": 0, "stream_good": 0, "snap_good": 0,
                       "pre_bursts": 0, "pre_frames": 0, "best_pre": 0, "best_snap": 0, "best_stream": 0}
+        self.any_cb = None      # callable(cam_id, dict): toda visita cerrada (armado absoluto)
         self.burst_cb = None    # callable(cam_id, reason): pide analisis retroactivo del pre-roll
         self._models = None
         self._face_db = None
@@ -542,6 +543,12 @@ class VisitManager:
                     "last_ts": tr.last_ts, "scene": tr.scene, "face": tr.face})
             except (KeyError, TypeError, ValueError, OSError) as exc:      # un fallo de alerta no debe romper el cierre de la visita
                 logger.warning("visit_cb: %s", exc)
+        if self.any_cb is not None and tr.visit_id is not None and not tr.static and not tr.ghost:
+            try:
+                self.any_cb(cam_id, {"visit_id": tr.visit_id, "subject_id": tr.subject_id, "name": self._known_name(tr)[0], "first_ts": tr.first_ts,
+                                     "last_ts": tr.last_ts, "scene": tr.scene, "face": tr.face, "body": tr.body})
+            except (KeyError, TypeError, ValueError, OSError) as exc:
+                logger.warning("any_cb: %s", exc)
         if tr.body and not tr.static and not tr.ghost and self._analyzer is not None and self._vlm_worth(cam_id, tr):
             try:
                 self._vlm_q.put_nowait((cam_id, tr.visit_id, tr.body, tr.face, tr.scene))

@@ -215,6 +215,28 @@ async def lifespan(app: FastAPI):
     app.state.parked.snapshots = snapshots
     from app.vision.doorbell import DoorAlerts
     _door_cams = [c.strip() for c in os.environ.get("DOORBELL_CAMS", "cam-vto").split(",") if c.strip()]
+    def _armed_alert(cam_id, v, _snap=snapshots, _db=db, _names={c.id: c.name for c in config.cameras}):
+        """Armado absoluto: cada visita que cierra es una alerta con su captura (escena, cuerpo o cara)."""
+        from app.vision import arming
+        if not arming.is_absolute():
+            return
+        import cv2
+        import numpy as np
+        dur = int(v["last_ts"] - v["first_ts"])
+        who = f" ({v['name']})" if v.get("name") else ""
+        txt = f"Armado absoluto: persona{who} en {_names.get(cam_id, cam_id)} durante {dur} s"
+        eid = _db.insert_event("nemotron", cam_id, {"schema": 2, "source": "arming", "people": 1, "persons": [], "vehicles": 0, "activity": txt, "scene": "",
+                                                    "relevant": True, "alerts": [txt], "alert_types": ["actividad_armado"], "severity": "high", "confidence": "high",
+                                                    "visit": {"visit_id": v["visit_id"], "subject_id": v.get("subject_id")}}, people=1, has_alert=True)
+        img = v.get("scene") or v.get("body") or v.get("face")
+        frame = cv2.imdecode(np.frombuffer(img, np.uint8), cv2.IMREAD_COLOR) if img else None
+        if frame is not None and _snap is not None:
+            try:
+                _snap.save(cam_id, frame, "armado", event_id=eid)
+            except (OSError, ValueError, cv2.error) as exc:
+                logger.warning("armado: no se pudo guardar la captura: %s", exc)
+    if visit_manager is not None:
+        visit_manager.any_cb = _armed_alert
     app.state.doorbell = None
     for _dc in _door_cams:
         _cfg = next((c for c in config.cameras if c.id == _dc), None)
@@ -406,6 +428,8 @@ from app.api.routes_rules import router as rules_router
 app.include_router(rules_router)
 from app.api.routes_eval import router as eval_router
 app.include_router(eval_router)
+from app.api.routes_arming import router as arming_router
+app.include_router(arming_router)
 from app.api.routes_presence import router as presence_router
 app.include_router(presence_router)
 from app.api.routes_journeys import router as journeys_router

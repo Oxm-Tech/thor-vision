@@ -42,6 +42,8 @@ DEFS = {
     "entrada_sin_captura": "un aviso de entrada (Tuya o sensor) sin persona vista en la cámara que debía verla",
     "movimiento_tuya": "movimiento detectado por una cámara Tuya (una alerta por cámara cada 120 s)",
     "ruido_tuya": "ruido fuerte detectado por una cámara Tuya",
+    "actividad_armado": "toda persona vista mientras el armado absoluto esta activo, con su captura; sin excepciones por empleados conocidos",
+    "estado_armado": "se activo o desactivo el armado absoluto",
     "sin_tipo": "alerta del modelo sin tipo reconocido; candidata a descartarse o reclasificarse",
 }
 

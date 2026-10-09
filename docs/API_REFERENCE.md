@@ -108,6 +108,22 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | GET | `/dispositivos` | Devices Page |  |  |
 
+## eval
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/eval/image/{iid}` | Image | `iid`* |  |
+| POST | `/api/eval/label` | Label |  | Label |
+| GET | `/api/eval/next` | Nxt | `cam` |  |
+| GET | `/api/eval/report` | Report |  |  |
+| POST | `/api/eval/sample` | Sample Now |  |  |
+
+## evaluacion
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/evaluacion` | Eval Page |  |  |
+
 ## events
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |

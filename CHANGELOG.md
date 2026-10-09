@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.23.0 — Armado absoluto (2026-10-09)
+
+Nuevo interruptor ARMAR en el encabezado: con el armado absoluto, toda persona, a cualquier hora y en cualquier cámara (empleados conocidos incluidos), es alerta, y cada visita que cierra genera su propia alerta con captura. El cambio de estado queda en la línea de tiempo y el estado sobrevive a los reinicios.
+
+- **Seguridad · Interruptor global**: GET/POST /api/arming (normal | absoluto); botón ARMAR/ARMADO en el panel, con confirmación.
+- **Seguridad · Sin excepciones**: Ignora horario, fin de semana, personas conocidas exentas y el amarillo de empleado conocido.
+- **Línea de tiempo · Grupo Armado absoluto**: Alertas 'actividad_armado' (una por visita, con captura) y 'estado_armado' (activación/desactivación) en rojo.
+
 ## v2.22.3 — Mosaico de todas las cámaras en la alerta del garage (2026-10-08)
 
 La alerta de apertura y cierre de una zona con varias cámaras (garage: frontal, posterior y exteriores) guarda un mosaico 2x2 con la vista de todas, con borde verde en las que ven una persona.

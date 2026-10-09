@@ -75,8 +75,9 @@ def _fill_ring_images(db, events: list) -> None:
 
 def _mark_known_night(db, events: list) -> None:
     """'Persona nocturna' cuya visita cercana (+-15 s, misma camara) ya es un empleado con nombre: advertencia amarilla, no alerta roja."""
+    from app.vision import arming
     cand = [e for e in events if e["type"] == "persona_nocturna"]
-    if not cand:
+    if not cand or arming.is_absolute():
         return
     with db._lock:
         rows = db._conn.execute("SELECT v.cam_id, v.start_ts, v.end_ts FROM person_visits v JOIN subjects s ON s.id=v.subject_id "

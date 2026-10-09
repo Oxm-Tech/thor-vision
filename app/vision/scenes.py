@@ -7,6 +7,8 @@ from typing import Optional
 
 import yaml
 
+from app.vision import arming
+
 logger = logging.getLogger(__name__)
 
 SCENES_PATH = os.environ.get("SCENES_PATH", "/app/config/scenes.yml")
@@ -55,6 +57,8 @@ class SceneContext:
     def _rule(self, now: Optional[float] = None) -> tuple:
         lt = time.localtime(now or time.time())
         weekend = lt.tm_wday >= 5
+        if arming.is_absolute():
+            return True, "alert", weekend            # armado absoluto: cualquier persona, a cualquier hora, es alerta
         if weekend and self.weekend_mode == "alert_all":
             return True, "alert", True
         base = self.cam_night or self.night_hours
@@ -235,7 +239,7 @@ def normalize_result(result: dict, scene: SceneContext, yolo_people: Optional[in
         types.remove("persona_nocturna")
         if not types:
             alerts = []
-    if scene.known_exempt and types and KNOWN_PRESENT is not None:
+    if scene.known_exempt and types and KNOWN_PRESENT is not None and not arming.is_absolute():
         try:
             known = KNOWN_PRESENT(scene.cam_id)
         except Exception:
