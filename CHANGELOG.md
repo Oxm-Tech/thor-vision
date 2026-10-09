@@ -2,6 +2,12 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.23.1 — Banner de armado absoluto en todas las pantallas (2026-10-09)
+
+Mientras el armado absoluto está activo, una franja roja fija arriba de cada pantalla (panel, TV y vista de cámara) lo indica con la hora de activación, y el título de la pestaña empieza con 🔴 ARMADO.
+
+- **Seguridad · Estado siempre visible**: Franja roja y título de pestaña; se actualiza cada 10 s sin recargar.
+
 ## v2.23.0 — Armado absoluto (2026-10-09)
 
 Nuevo interruptor ARMAR en el encabezado: con el armado absoluto, toda persona, a cualquier hora y en cualquier cámara (empleados conocidos incluidos), es alerta, y cada visita que cierra genera su propia alerta con captura. El cambio de estado queda en la línea de tiempo y el estado sobrevive a los reinicios.

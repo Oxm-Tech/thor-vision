@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.23.1",
+    "date": "2026-10-09",
+    "name": "Banner de armado absoluto en todas las pantallas",
+    "summary": "Mientras el armado absoluto está activo, una franja roja fija arriba de cada pantalla (panel, TV y vista de cámara) lo indica con la hora de activación, y el título de la pestaña empieza con 🔴 ARMADO.",
+    "highlights": [
+      {
+        "area": "Seguridad",
+        "title": "Estado siempre visible",
+        "text": "Franja roja y título de pestaña; se actualiza cada 10 s sin recargar."
+      }
+    ]
+  },
+  {
     "version": "2.23.0",
     "date": "2026-10-09",
     "name": "Armado absoluto",

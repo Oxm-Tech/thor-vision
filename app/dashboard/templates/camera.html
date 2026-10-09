@@ -143,5 +143,23 @@ $('#vw').addEventListener('touchend', e => { if (sx === null) return; const dx =
 })();
 load(); setInterval(() => { if (!$('#vw').classList.contains('on')) load(); }, 60000);
 </script>
+<script>
+// Banner de armado absoluto: visible en todas las pantallas mientras el modo esta activo
+(function(){
+  const bar = document.createElement('div');
+  bar.id = 'arm-banner'; bar.hidden = true; bar.setAttribute('role', 'status');
+  bar.style.cssText = 'position:sticky;top:0;z-index:9999;background:#ff3b30;color:#fff;font:700 13px/1 system-ui,sans-serif;letter-spacing:.06em;text-align:center;padding:9px 12px;box-shadow:0 2px 12px rgba(255,59,48,.5)';
+  document.body.prepend(bar);
+  const base = document.title.replace(/^🔴 ARMADO · /, '');
+  const paint = st => {
+    const on = st.mode === 'absoluto';
+    bar.hidden = !on;
+    document.title = on ? '🔴 ARMADO · ' + base : base;
+    if (on) bar.textContent = 'ARMADO ABSOLUTO ACTIVO · toda persona es alerta · desde ' + new Date(st.since * 1000).toLocaleString('es-MX', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false});
+  };
+  const poll = () => fetch('/api/arming', {cache: 'no-store'}).then(r => r.json()).then(paint).catch(() => {});
+  poll(); setInterval(poll, 10000);
+})();
+</script>
 </body>
 </html>
