@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import threading
+import time
 
 import numpy as np
 
@@ -13,6 +14,8 @@ LIBS = os.environ.get("EMBED_LIBS", "/app/data/pylibs-emb")
 MODEL = os.environ.get("EMBED_MODEL", "google/embeddinggemma-2")
 DIM = int(os.environ.get("EMBED_DIM", "256"))             # 256 conserva casi toda la calidad (guia del modelo) y ocupa 512 bytes por vector
 _lock = threading.Lock()
+_waiting = 0                     # consultas de usuario esperando el modelo: el indexador de fondo les cede el turno
+_wlock = threading.Lock()
 _model = None
 _failed = False
 
@@ -55,20 +58,33 @@ def embed_texts(texts: list, query: bool = False, batch: int = 64) -> np.ndarray
     m = _load()
     if m is None or not texts:
         return np.zeros((0, DIM), np.float32)
-    out = []
-    for i in range(0, len(texts), 128):                # el modelo se suelta entre lotes: una consulta del usuario no espera detras de miles de textos
-        with _lock:
-            out.append(m.encode(list(texts[i:i + 128]), prompt_name="SearchQuery" if query else "Document", batch_size=batch, convert_to_numpy=True))
-    return _norm(np.concatenate(out))
+    global _waiting
+    if query:
+        with _wlock:
+            _waiting += 1
+    try:
+        out = []
+        for i in range(0, len(texts), 64):             # el modelo se suelta entre lotes: una consulta del usuario no espera detras de miles de textos
+            while not query and _waiting:
+                time.sleep(0.05)                       # el indexador espera si hay una consulta de usuario en curso
+            with _lock:
+                out.append(m.encode(list(texts[i:i + 64]), prompt_name="SearchQuery" if query else "Document", batch_size=batch, convert_to_numpy=True))
+        return _norm(np.concatenate(out))
+    finally:
+        if query:
+            with _wlock:
+                _waiting -= 1
 
 
-def embed_images(images: list, batch: int = 32) -> np.ndarray:
+def embed_images(images: list, batch: int = 16) -> np.ndarray:
     """images: rutas de archivo o imagenes PIL."""
     m = _load()
     if m is None or not images:
         return np.zeros((0, DIM), np.float32)
     out = []
     for i in range(0, len(images), batch):
+        while _waiting:
+            time.sleep(0.05)
         with _lock:
             out.append(m.encode([{"image": x} for x in images[i:i + batch]], batch_size=batch, convert_to_numpy=True))
     return _norm(np.concatenate(out))

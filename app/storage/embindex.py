@@ -26,18 +26,15 @@ def _pack(v) -> bytes:
 
 
 def _matrix(db, kind: str):
-    """(ids, ts, matriz) con cache; se recarga cuando cambia el numero de filas."""
+    """(ids, ts, matriz) en memoria; solo se leen las filas nuevas desde la ultima consulta (rowid mayor)."""
+    last, ids, ts, mat = _cache.get(kind, (0, np.zeros(0, np.int64), np.zeros(0, np.float64), np.zeros((0, embedder.DIM), np.float32)))
     with db._lock:
-        n = db._conn.execute("SELECT COUNT(*) FROM emb_index WHERE kind=?", (kind,)).fetchone()[0]
-    c = _cache.get(kind)
-    if c and c[0] == n:
-        return c[1], c[2], c[3]
-    with db._lock:
-        rows = db._conn.execute("SELECT ref_id, ts, vec FROM emb_index WHERE kind=?", (kind,)).fetchall()
-    ids = np.array([r[0] for r in rows], np.int64)
-    ts = np.array([r[1] or 0 for r in rows], np.float64)
-    mat = np.frombuffer(b"".join(r[2] for r in rows), np.float16).reshape(len(rows), -1).astype(np.float32) if rows else np.zeros((0, embedder.DIM), np.float32)
-    _cache[kind] = (n, ids, ts, mat)
+        rows = db._conn.execute("SELECT rowid, ref_id, ts, vec FROM emb_index WHERE kind=? AND rowid>? ORDER BY rowid", (kind, last)).fetchall()
+    if rows:
+        ids = np.concatenate([ids, np.array([r[1] for r in rows], np.int64)])
+        ts = np.concatenate([ts, np.array([r[2] or 0 for r in rows], np.float64)])
+        mat = np.concatenate([mat, np.frombuffer(b"".join(r[3] for r in rows), np.float16).reshape(len(rows), -1).astype(np.float32)])
+        _cache[kind] = (rows[-1][0], ids, ts, mat)
     return ids, ts, mat
 
 

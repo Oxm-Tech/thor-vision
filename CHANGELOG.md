@@ -8,6 +8,7 @@ Las consultas ya no esperan detrás del lote del indexador (bajó de ~10 s a un 
 
 - **Búsqueda · Lotes pequeños**: El indexador vectoriza en lotes de 128 textos o 32 imágenes liberando el modelo entre ellos.
 - **Búsqueda · Indexado con pausas**: Lotes de 500 eventos con 3 s de pausa mientras haya pendiente (antes sin pausa).
+- **Búsqueda · Consultas con prioridad**: El indexador cede el modelo mientras haya una consulta de usuario y la matriz de vectores se actualiza solo con las filas nuevas.
 
 ## v2.24.0 — Búsqueda semántica con EmbeddingGemma 2 (2026-10-10)
 

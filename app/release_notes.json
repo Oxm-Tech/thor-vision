@@ -14,6 +14,11 @@
         "area": "Búsqueda",
         "title": "Indexado con pausas",
         "text": "Lotes de 500 eventos con 3 s de pausa mientras haya pendiente (antes sin pausa)."
+      },
+      {
+        "area": "Búsqueda",
+        "title": "Consultas con prioridad",
+        "text": "El indexador cede el modelo mientras haya una consulta de usuario y la matriz de vectores se actualiza solo con las filas nuevas."
       }
     ]
   },
