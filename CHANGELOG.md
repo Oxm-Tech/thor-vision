@@ -2,6 +2,12 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.24.1 — Búsqueda semántica sin esperas (2026-10-10)
+
+Las consultas ya no esperan detrás del lote del indexador (bajó de ~10 s a un instante): el modelo se suelta entre lotes de 128, y no consulta internet al cargar una vez descargado.
+
+- **Búsqueda · Lotes pequeños**: El indexador vectoriza en lotes de 128 textos o 32 imágenes liberando el modelo entre ellos.
+
 ## v2.24.0 — Búsqueda semántica con EmbeddingGemma 2 (2026-10-10)
 
 El Vision Agent y la API buscan eventos mezclando el índice de palabras con EmbeddingGemma 2 (P@10 0.45 → 0.58 y MRR 0.55 → 0.86 sobre 45,654 descripciones reales), y encuentran personas por cómo se ven en los recortes de cuerpo (P@10 0.16 → 0.29 por color de ropa). Corre en la GPU de Thor, fuera de la imagen.

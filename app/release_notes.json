@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.24.1",
+    "date": "2026-10-10",
+    "name": "Búsqueda semántica sin esperas",
+    "summary": "Las consultas ya no esperan detrás del lote del indexador (bajó de ~10 s a un instante): el modelo se suelta entre lotes de 128, y no consulta internet al cargar una vez descargado.",
+    "highlights": [
+      {
+        "area": "Búsqueda",
+        "title": "Lotes pequeños",
+        "text": "El indexador vectoriza en lotes de 128 textos o 32 imágenes liberando el modelo entre ellos."
+      }
+    ]
+  },
+  {
     "version": "2.24.0",
     "date": "2026-10-10",
     "name": "Búsqueda semántica con EmbeddingGemma 2",

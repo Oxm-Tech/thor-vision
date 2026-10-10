@@ -28,6 +28,8 @@ def _load():
             if LIBS and os.path.isdir(LIBS) and LIBS not in sys.path:
                 sys.path.append(LIBS)
             os.environ.setdefault("HF_HOME", os.environ.get("EMBED_HF_HOME", "/app/data/models/hf"))
+            if os.path.isdir(os.path.join(os.environ["HF_HOME"], "hub", "models--" + MODEL.replace("/", "--"))):
+                os.environ.setdefault("HF_HUB_OFFLINE", "1")          # ya descargado: sin consultas a internet al cargar
             import torch
             from sentence_transformers import SentenceTransformer
             dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -53,8 +55,11 @@ def embed_texts(texts: list, query: bool = False, batch: int = 64) -> np.ndarray
     m = _load()
     if m is None or not texts:
         return np.zeros((0, DIM), np.float32)
-    with _lock:
-        return _norm(m.encode(list(texts), prompt_name="SearchQuery" if query else "Document", batch_size=batch, convert_to_numpy=True))
+    out = []
+    for i in range(0, len(texts), 128):                # el modelo se suelta entre lotes: una consulta del usuario no espera detras de miles de textos
+        with _lock:
+            out.append(m.encode(list(texts[i:i + 128]), prompt_name="SearchQuery" if query else "Document", batch_size=batch, convert_to_numpy=True))
+    return _norm(np.concatenate(out))
 
 
 def embed_images(images: list, batch: int = 32) -> np.ndarray:
@@ -63,7 +68,7 @@ def embed_images(images: list, batch: int = 32) -> np.ndarray:
     if m is None or not images:
         return np.zeros((0, DIM), np.float32)
     out = []
-    with _lock:
-        for i in range(0, len(images), batch):
+    for i in range(0, len(images), batch):
+        with _lock:
             out.append(m.encode([{"image": x} for x in images[i:i + batch]], batch_size=batch, convert_to_numpy=True))
     return _norm(np.concatenate(out))
