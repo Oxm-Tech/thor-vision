@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.24.4 — El modelo de visión ahora es Athena (2026-10-10)
+
+El modelo de visión pasa a llamarse Athena: NEMOTRON_MODEL=Athena en docker-compose.yml (el alias anterior thor-vision dejó de aceptar imágenes en el gateway: 'capability_mismatch'), y el panel, la animación, las reglas y la documentación dicen Athena en lugar de Qwen.
+
+- **Modelo · Nombre en la API**: /api/vlm devuelve model=Athena; model_real se llena con lo que responde el backend en la primera llamada correcta.
+- **Panel · Chips y textos**: El chip de la tarjeta de cada cámara dice ATHENA y el resumen 'Athena última hora'.
+
 ## v2.24.3 — Línea de tiempo con ventanas anchas sin huecos (2026-10-10)
 
 Con rangos de varios días la línea de tiempo se quedaba con los últimos 4,000 eventos y mostraba 0 alertas en lo más viejo (por eso Garage frontal y 'todas las cámaras' salían vacías entre el 07 y el 08). Ahora, cuando hay más de 4,000, se agrupa por cámara, tipo y tramo de tiempo, mostrando un punto por grupo con su cantidad, y los contadores suman todo.

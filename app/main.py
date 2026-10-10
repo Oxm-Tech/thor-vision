@@ -139,7 +139,7 @@ async def lifespan(app: FastAPI):
     app.state.vision_models = vision_models
     vision_models.faces_only = {c.id for c in config.cameras if getattr(c, "mode", "full") == "faces"}
 
-    # ── Movimiento nativo de las camaras (SUNAPI) como disparador de Qwen ──
+    # ── Movimiento nativo de las camaras (SUNAPI) como disparador de Athena ──
     motion_monitors = {}
     if os.environ.get("NATIVE_MOTION_ENABLED", "true").lower() == "true":
         from app.capture.camera_motion import CameraMotionMonitor

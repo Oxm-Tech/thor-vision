@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.24.4",
+    "date": "2026-10-10",
+    "name": "El modelo de visión ahora es Athena",
+    "summary": "El modelo de visión pasa a llamarse Athena: NEMOTRON_MODEL=Athena en docker-compose.yml (el alias anterior thor-vision dejó de aceptar imágenes en el gateway: 'capability_mismatch'), y el panel, la animación, las reglas y la documentación dicen Athena en lugar de Qwen.",
+    "highlights": [
+      {
+        "area": "Modelo",
+        "title": "Nombre en la API",
+        "text": "/api/vlm devuelve model=Athena; model_real se llena con lo que responde el backend en la primera llamada correcta."
+      },
+      {
+        "area": "Panel",
+        "title": "Chips y textos",
+        "text": "El chip de la tarjeta de cada cámara dice ATHENA y el resumen 'Athena última hora'."
+      }
+    ]
+  },
+  {
     "version": "2.24.3",
     "date": "2026-10-10",
     "name": "Línea de tiempo con ventanas anchas sin huecos",

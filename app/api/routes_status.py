@@ -148,7 +148,7 @@ def _chat_health(app):
 
 @router.get("/api/pipeline")
 def pipeline(request: Request):
-    """Estado por camara de las 3 etapas: movimiento -> YOLO -> Qwen (VLM)."""
+    """Estado por camara de las 3 etapas: movimiento -> YOLO -> Athena (VLM)."""
     st = request.app.state
     monitors = getattr(st, "motion_monitors", {}) or {}
     workers = {w.cam_id: w for w in (getattr(st, "vlm_workers", []) or [])
