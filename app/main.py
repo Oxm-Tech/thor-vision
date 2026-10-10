@@ -71,6 +71,9 @@ async def lifespan(app: FastAPI):
         max_face_sightings  = int(  os.environ.get("RETENTION_MAX_FACE_SIGHTINGS","100000")),
     )
     app.state.retention_stop = retention_stop
+    if os.environ.get("EMBED_ENABLED", "true").lower() == "true":                 # busqueda semantica (EmbeddingGemma 2); si el modelo no esta, el indexador se queda quieto
+        from app.storage.embindex import start_indexer
+        app.state.embed_stop = start_indexer(db)
 
     # ── YOLO + InsightFace — bboxes rápidos (paralelo a VLM) ─────────
     from app.vision.face_db            import FaceDB
@@ -430,6 +433,8 @@ from app.api.routes_eval import router as eval_router
 app.include_router(eval_router)
 from app.api.routes_arming import router as arming_router
 app.include_router(arming_router)
+from app.api.routes_semantic import router as semantic_router
+app.include_router(semantic_router)
 from app.api.routes_presence import router as presence_router
 app.include_router(presence_router)
 from app.api.routes_journeys import router as journeys_router

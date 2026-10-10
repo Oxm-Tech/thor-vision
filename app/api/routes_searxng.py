@@ -135,10 +135,10 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
 
     # busqueda por descripcion (ej. "persona con bolsa naranja"): indice de texto de las descripciones del VLM
     try:
-        from app.storage import textindex
+        from app.storage import embindex
         explicit = rc._explicit_hours(query) is not None or _clock_range(query, now) is not None
         t_since = since if explicit else now - 7 * 86400
-        hits = textindex.search(db, query, t_since, until if explicit else now, cams or None, limit=10)
+        hits = embindex.hybrid_events(db, query, t_since, until if explicit else now, cams or None, limit=10)      # FTS + EmbeddingGemma 2 (solo FTS si el modelo no esta)
         for h in hits:
             cam_name = names.get(h["cam"], h["cam"])
             when = time.strftime("%d-%b %H:%M", time.localtime(h["ts"]))
@@ -149,6 +149,19 @@ def searxng_search(request: Request, q: str = "", format: str = "json"):
             results.append(item)
     except (sqlite3.Error, ImportError) as exc:
         logger.warning("fts search: %s", exc)
+
+    # personas por como se ven ("persona con chamarra roja"): busqueda de imagen sobre los recortes de cuerpo
+    try:
+        if re.search(r"persona|hombre|mujer|alguien|gente", nq) and re.search(r"camiseta|playera|chamarra|chaqueta|sudadera|gorra|capucha|pantal|ropa|vest|lleva|con ", nq):
+            from app.storage import embindex as _ei
+            for vid, sim in _ei.search_text(db, query, since, until, k=4, kind="visit"):
+                row = db._conn.execute("SELECT cam_id, start_ts FROM person_visits WHERE id=?", (vid,)).fetchone()
+                if row:
+                    results.append({"title": f"{names.get(row[0], row[0])} · {time.strftime('%d-%b %H:%M', time.localtime(row[1]))} · coincidencia por imagen",
+                                    "url": f"{base}/api/person-visits/{vid}/body", "img_src": f"{base}/api/person-visits/{vid}/body",
+                                    "content": f"Recorte de una persona que se parece a «{query}» (similitud {sim:.2f}); es una coincidencia visual, no una identificación."})
+    except (sqlite3.Error, ImportError) as exc:
+        logger.warning("busqueda por imagen: %s", exc)
 
     for p in people:
         visits = _person_visits(db, names, p, since, until)

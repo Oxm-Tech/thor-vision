@@ -15,6 +15,13 @@ La documentacion interactiva esta en `/docs`. Guia de uso y significado de los d
 |---|---|---|---|---|
 | POST | `/api/admin/rotate` | Admin Rotate |  |  |
 
+## arming
+
+| Metodo | Ruta | Resumen | Parametros | Cuerpo |
+|---|---|---|---|---|
+| GET | `/api/arming` | Get State |  |  |
+| POST | `/api/arming` | Set State |  | Mode |
+
 ## attendance
 
 | Metodo | Ruta | Resumen | Parametros | Cuerpo |

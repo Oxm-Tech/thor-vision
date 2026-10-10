@@ -2,6 +2,14 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.24.0 — Búsqueda semántica con EmbeddingGemma 2 (2026-10-10)
+
+El Vision Agent y la API buscan eventos mezclando el índice de palabras con EmbeddingGemma 2 (P@10 0.45 → 0.58 y MRR 0.55 → 0.86 sobre 45,654 descripciones reales), y encuentran personas por cómo se ven en los recortes de cuerpo (P@10 0.16 → 0.29 por color de ropa). Corre en la GPU de Thor, fuera de la imagen.
+
+- **Búsqueda · Híbrido FTS + embeddings**: GET /api/search/semantic?q=…&mode=hybrid|semantic|fts; el buscador del Vision Agent usa la mezcla y, si el modelo no está, cae al FTS de siempre.
+- **Búsqueda · Personas por apariencia**: GET /api/search/semantic?kind=visit; el agente también devuelve recortes parecidos a 'persona con chamarra roja' (pista visual, no identificación).
+- **Operación · Instalación fuera de la imagen**: Dependencias en data/pylibs-emb (scripts/install_embed.sh); EMBED_ENABLED=false lo apaga. Índice en la tabla emb_index; GET /api/search/status. Benchmark en docs/BENCHMARK-embeddinggemma2.md.
+
 ## v2.23.1 — Banner de armado absoluto en todas las pantallas (2026-10-09)
 
 Mientras el armado absoluto está activo, una franja roja fija arriba de cada pantalla (panel, TV y vista de cámara) lo indica con la hora de activación, y el título de la pestaña empieza con 🔴 ARMADO.

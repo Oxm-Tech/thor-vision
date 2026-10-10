@@ -1,5 +1,28 @@
 [
   {
+    "version": "2.24.0",
+    "date": "2026-10-10",
+    "name": "Búsqueda semántica con EmbeddingGemma 2",
+    "summary": "El Vision Agent y la API buscan eventos mezclando el índice de palabras con EmbeddingGemma 2 (P@10 0.45 → 0.58 y MRR 0.55 → 0.86 sobre 45,654 descripciones reales), y encuentran personas por cómo se ven en los recortes de cuerpo (P@10 0.16 → 0.29 por color de ropa). Corre en la GPU de Thor, fuera de la imagen.",
+    "highlights": [
+      {
+        "area": "Búsqueda",
+        "title": "Híbrido FTS + embeddings",
+        "text": "GET /api/search/semantic?q=…&mode=hybrid|semantic|fts; el buscador del Vision Agent usa la mezcla y, si el modelo no está, cae al FTS de siempre."
+      },
+      {
+        "area": "Búsqueda",
+        "title": "Personas por apariencia",
+        "text": "GET /api/search/semantic?kind=visit; el agente también devuelve recortes parecidos a 'persona con chamarra roja' (pista visual, no identificación)."
+      },
+      {
+        "area": "Operación",
+        "title": "Instalación fuera de la imagen",
+        "text": "Dependencias en data/pylibs-emb (scripts/install_embed.sh); EMBED_ENABLED=false lo apaga. Índice en la tabla emb_index; GET /api/search/status. Benchmark en docs/BENCHMARK-embeddinggemma2.md."
+      }
+    ]
+  },
+  {
     "version": "2.23.1",
     "date": "2026-10-09",
     "name": "Banner de armado absoluto en todas las pantallas",

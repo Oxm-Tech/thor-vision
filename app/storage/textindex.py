@@ -92,3 +92,19 @@ def search(db, query: str, since: float, until: float, cams=None, limit: int = 1
                 snap = db._conn.execute("SELECT id FROM snapshots WHERE event_id=? ORDER BY id LIMIT 1", (eid,)).fetchone()
                 out.append({"id": eid, "cam": cam, "ts": ts, "text": event_text(payload), "snapshot_id": snap[0] if snap else None})
     return out
+
+
+def fetch_events(db, ids: list, cams=None) -> dict:
+    """{id: hit} con el mismo formato que search(), para ids que vienen de otro buscador (embeddings)."""
+    out = {}
+    with db._lock:
+        for eid in ids:
+            row = db._conn.execute("SELECT id, cam_id, ts, data FROM events WHERE id=?", (eid,)).fetchone()
+            if not row or (cams and row[1] not in cams):
+                continue
+            payload = _load(row[3])
+            if payload is None:
+                continue
+            snap = db._conn.execute("SELECT id FROM snapshots WHERE event_id=? ORDER BY id LIMIT 1", (eid,)).fetchone()
+            out[eid] = {"id": eid, "cam": row[1], "ts": row[2], "text": event_text(payload), "snapshot_id": snap[0] if snap else None}
+    return out
