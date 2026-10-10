@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.24.2",
+    "date": "2026-10-10",
+    "name": "Página de búsqueda con comparación lado a lado",
+    "summary": "Nueva página /buscar (botón BUSCAR del encabezado): la misma frase buscada por palabras (antes) y por palabras + significado (ahora) con las capturas de cada resultado, y búsqueda de personas por apariencia. La API de búsqueda declara UTF-8 para que los acentos no se rompan en algunos visores.",
+    "highlights": [
+      {
+        "area": "Búsqueda",
+        "title": "Comparación lado a lado",
+        "text": "Dos columnas con el mismo texto, capturas y cámara; ejemplos con un clic."
+      },
+      {
+        "area": "API",
+        "title": "UTF-8 declarado",
+        "text": "Content-Type: application/json; charset=utf-8 en /api/search/semantic."
+      }
+    ]
+  },
+  {
     "version": "2.24.1",
     "date": "2026-10-10",
     "name": "Búsqueda semántica sin esperas",

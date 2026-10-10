@@ -441,6 +441,11 @@ from app.api.routes_journeys import router as journeys_router
 app.include_router(journeys_router)
 
 
+@app.get("/buscar", response_class=HTMLResponse)
+async def search_page(request: Request):
+    return templates.TemplateResponse("search.html", {"request": request})
+
+
 @app.get("/evaluacion", response_class=HTMLResponse)
 async def eval_page(request: Request):
     return templates.TemplateResponse("eval.html", {"request": request})

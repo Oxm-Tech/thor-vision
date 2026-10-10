@@ -1,12 +1,20 @@
 """Busqueda semantica (EmbeddingGemma 2): descripciones de eventos y recortes de personas."""
 import time
 
+import json
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 
 from app.storage import embindex, textindex
 from app.vision import embedder
 
 router = APIRouter()
+
+
+def _json(obj) -> Response:
+    """JSON con la codificacion declarada: algunos visores leian los acentos como Latin-1."""
+    return Response(json.dumps(obj, ensure_ascii=False), media_type="application/json; charset=utf-8")
 
 
 @router.get("/api/search/semantic")
@@ -20,14 +28,14 @@ def semantic(request: Request, q: str, kind: str = "event", hours: float = 168, 
     k = min(max(k, 1), 50)
     if kind == "visit":
         hits = embindex.search_text(db, q, since, now, k=k, kind="visit")
-        return {"kind": kind, "model_ready": embedder.available(), "results": [{"visit_id": i, "score": round(s, 3), "image": f"/api/person-visits/{i}/body"} for i, s in hits]}
+        return _json({"kind": kind, "model_ready": embedder.available(), "results": [{"visit_id": i, "score": round(s, 3), "image": f"/api/person-visits/{i}/body"} for i, s in hits]})
     if mode == "fts":
         res = textindex.search(db, q, since, now, None, limit=k)
     elif mode == "semantic":
         res = list(textindex.fetch_events(db, [i for i, _ in embindex.search_text(db, q, since, now, k=k)]).values())
     else:
         res = embindex.hybrid_events(db, q, since, now, None, limit=k)
-    return {"kind": "event", "mode": mode, "model_ready": embedder.available(), "results": res}
+    return _json({"kind": "event", "mode": mode, "model_ready": embedder.available(), "results": res})
 
 
 @router.get("/api/search/status")

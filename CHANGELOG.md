@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.24.2 — Página de búsqueda con comparación lado a lado (2026-10-10)
+
+Nueva página /buscar (botón BUSCAR del encabezado): la misma frase buscada por palabras (antes) y por palabras + significado (ahora) con las capturas de cada resultado, y búsqueda de personas por apariencia. La API de búsqueda declara UTF-8 para que los acentos no se rompan en algunos visores.
+
+- **Búsqueda · Comparación lado a lado**: Dos columnas con el mismo texto, capturas y cámara; ejemplos con un clic.
+- **API · UTF-8 declarado**: Content-Type: application/json; charset=utf-8 en /api/search/semantic.
+
 ## v2.24.1 — Búsqueda semántica sin esperas (2026-10-10)
 
 Las consultas ya no esperan detrás del lote del indexador (bajó de ~10 s a un instante): el modelo se suelta entre lotes de 128, y no consulta internet al cargar una vez descargado.
