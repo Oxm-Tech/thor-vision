@@ -22,17 +22,31 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
     cams = [{"id": c.id, "name": c.name, "zone": c.zone} for c in config.cameras]
     if db is None:
         return {"since": since, "until": until, "cams": cams, "events": [], "truncated": False}
+    SEL = ("SELECT e.id, e.ts, e.cam_id, e.people, e.data, e.review_label, "
+           "(SELECT s.id FROM snapshots s WHERE s.event_id = e.id ORDER BY s.id DESC LIMIT 1) FROM events e ")
+    WH = "WHERE e.type='nemotron' AND e.has_alert=1 AND e.ts>=? AND e.ts<=? "
+    group_n: dict = {}
     with db._lock:
-        rows = db._conn.execute(
-            "SELECT e.id, e.ts, e.cam_id, e.people, e.data, e.review_label, "
-            "(SELECT s.id FROM snapshots s WHERE s.event_id = e.id ORDER BY s.id DESC LIMIT 1) "
-            "FROM events e WHERE e.type='nemotron' AND e.has_alert=1 AND e.ts>=? AND e.ts<=? "
-            "ORDER BY e.ts DESC LIMIT ?", (since, until, _MAX_EVENTS + 1)).fetchall()
-    truncated = len(rows) > _MAX_EVENTS
+        total = db._conn.execute("SELECT COUNT(*) FROM events e " + WH, (since, until)).fetchone()[0]
+        if total <= _MAX_EVENTS:
+            rows = db._conn.execute(SEL + WH + "ORDER BY e.ts DESC LIMIT ?", (since, until, _MAX_EVENTS + 1)).fetchall()
+        else:
+            # ventana muy ancha: en vez de quedarse con los ultimos N eventos (y dejar vacio lo mas viejo), se agrupa por camara, tipo y tramo de tiempo
+            # y se devuelve un evento representativo de cada grupo con su cantidad (n)
+            bucket = max(60.0, (until - since) / 500)
+            grp = db._conn.execute("SELECT MIN(e.id), COUNT(*) FROM events e " + WH +
+                                   "GROUP BY e.cam_id, json_extract(e.data,'$.alert_types[0]'), CAST((e.ts-?)/? AS INTEGER)", (since, until, since, bucket)).fetchall()
+            group_n = {i: n for i, n in grp}
+            ids = list(group_n)
+            rows = []
+            for k in range(0, len(ids), 500):
+                chunk = ids[k:k + 500]
+                rows += db._conn.execute(SEL + f"WHERE e.id IN ({','.join('?' * len(chunk))}) ORDER BY e.ts DESC", chunk).fetchall()
+    truncated = total > _MAX_EVENTS
     events = []
     _iot = getattr(request.app.state, "iot", None)
     iot_alias = {i: d.get("alias") for i, d in (_iot.devices.items() if _iot is not None else []) if d.get("alias")}
-    for eid, ts, cam, people, data, label, sid in rows[:_MAX_EVENTS]:
+    for eid, ts, cam, people, data, label, sid in (rows if group_n else rows[:_MAX_EVENTS]):
         try:
             d = json.loads(data or "{}")
         except ValueError:
@@ -42,7 +56,7 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
         events.append({"id": eid, "ts": ts, "cam": cam, "people": people or 0,
                        "type": _effective_type(d),
                        "sev": d.get("severity") or "", "text": (d.get("activity") or "")[:160],
-                       "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None})
+                       "review": label, "img": f"/api/snapshots/file/{sid}" if sid else None, **({"n": group_n[eid]} if group_n.get(eid, 1) > 1 else {})})
     _fill_ring_images(db, events)
     _mark_known_night(db, events)
     events += _street_traffic(db, config, since, until)
@@ -56,7 +70,7 @@ def timeline(request: Request, since: Optional[float] = None, until: Optional[fl
     events.sort(key=lambda e: e["ts"])
     if iot is not None:
         cams += [{"id": d["alias"], "name": d["name"], "zone": "tuya"} for d in iot.devices.values() if d.get("alias") and (not cam_id or d["alias"] == cam_id or d["alias"] in rel)]
-    return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated}
+    return {"since": since, "until": until, "cams": cams, "events": events, "truncated": truncated, "total": total, "thinned": bool(group_n)}
 
 
 def _fill_ring_images(db, events: list) -> None:
@@ -111,7 +125,7 @@ def _street_traffic(db, config, since, until) -> list:
         rows = db._conn.execute(
             "SELECT v.id, v.start_ts, v.cam_id, COALESCE(s.name, 'Persona #'||s.id), s.named, v.vlm_desc, v.attrs, v.scene IS NOT NULL FROM person_visits v LEFT JOIN subjects s ON s.id=v.subject_id "
             f"WHERE v.fp=0 AND v.static=0 AND v.hits>=6 AND v.start_ts>=? AND v.start_ts<=? AND v.cam_id IN ({','.join('?' * len(ext))}) "
-            "AND (s.named=1 OR v.end_ts - v.start_ts >= 8 OR v.cam_id IN ('cam-vto')) ORDER BY v.start_ts DESC LIMIT 600", (since, until, *ext)).fetchall()
+            "AND (s.named=1 OR v.end_ts - v.start_ts >= 8 OR v.cam_id IN ('cam-vto')) ORDER BY v.start_ts DESC LIMIT 3000", (since, until, *ext)).fetchall()
     out = []
     for vid, ts, cam, name, named, desc, at, has_scene in rows:
         who = name if named else "Persona sin identificar"

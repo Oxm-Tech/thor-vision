@@ -2,6 +2,13 @@
 
 Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboard). Versionado semántico: mayor = cambia el modelo de datos o el flujo; menor = funciones nuevas; parche = correcciones.
 
+## v2.24.3 — Línea de tiempo con ventanas anchas sin huecos (2026-10-10)
+
+Con rangos de varios días la línea de tiempo se quedaba con los últimos 4,000 eventos y mostraba 0 alertas en lo más viejo (por eso Garage frontal y 'todas las cámaras' salían vacías entre el 07 y el 08). Ahora, cuando hay más de 4,000, se agrupa por cámara, tipo y tramo de tiempo, mostrando un punto por grupo con su cantidad, y los contadores suman todo.
+
+- **Línea de tiempo · Sin huecos en rangos anchos**: Respuesta con total, thinned y n por grupo; el resumen avisa 'ventana ancha: se muestra un evento por grupo'. Ventanas cortas, igual que antes.
+- **Línea de tiempo · Tráfico de calle**: El límite de visitas de calle subió de 600 a 3,000.
+
 ## v2.24.2 — Página de búsqueda con comparación lado a lado (2026-10-10)
 
 Nueva página /buscar (botón BUSCAR del encabezado): la misma frase buscada por palabras (antes) y por palabras + significado (ahora) con las capturas de cada resultado, y búsqueda de personas por apariencia. La API de búsqueda declara UTF-8 para que los acentos no se rompan en algunos visores.

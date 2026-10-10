@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.24.3",
+    "date": "2026-10-10",
+    "name": "Línea de tiempo con ventanas anchas sin huecos",
+    "summary": "Con rangos de varios días la línea de tiempo se quedaba con los últimos 4,000 eventos y mostraba 0 alertas en lo más viejo (por eso Garage frontal y 'todas las cámaras' salían vacías entre el 07 y el 08). Ahora, cuando hay más de 4,000, se agrupa por cámara, tipo y tramo de tiempo, mostrando un punto por grupo con su cantidad, y los contadores suman todo.",
+    "highlights": [
+      {
+        "area": "Línea de tiempo",
+        "title": "Sin huecos en rangos anchos",
+        "text": "Respuesta con total, thinned y n por grupo; el resumen avisa 'ventana ancha: se muestra un evento por grupo'. Ventanas cortas, igual que antes."
+      },
+      {
+        "area": "Línea de tiempo",
+        "title": "Tráfico de calle",
+        "text": "El límite de visitas de calle subió de 600 a 3,000."
+      }
+    ]
+  },
+  {
     "version": "2.24.2",
     "date": "2026-10-10",
     "name": "Página de búsqueda con comparación lado a lado",

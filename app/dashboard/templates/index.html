@@ -2625,7 +2625,7 @@ const _tlTypeLabel = t => (t || 'sin_tipo').replace(/_/g, ' ');
 function _tlLegend(){
   const el = document.getElementById('tl-legend');
   const counts = TL_GROUPS.map(() => 0);
-  (TL.data ? TL.data.events : []).forEach(e => { counts[TL_T2G[e.type] ?? 6] += 1; });
+  (TL.data ? TL.data.events : []).forEach(e => { counts[TL_T2G[e.type] ?? 6] += (e.n || 1); });
   const allOn = TL.hidden.size === 0;
   el.innerHTML = `<button type="button" class="tl-leg tl-all" data-k="__all" title="${allOn ? 'Ocultar todas las categorías' : 'Mostrar todas las categorías'}">${allOn ? 'Ninguna' : 'Todas'}</button>`
     + TL_GROUPS.map((g, i) => `<button type="button" class="tl-leg${TL.hidden.has(g.k) ? ' off' : ''}" data-k="${g.k}" aria-pressed="${!TL.hidden.has(g.k)}">`
@@ -2691,7 +2691,7 @@ function _tlRender(animate){
   const bucket = TL_BUCKET[TL.span];
   const nb = Math.ceil((until - since) / bucket);
   const counts = Array.from({ length: nb }, () => TL_GROUPS.map(() => 0));
-  evs.forEach(e => { const b = Math.min(nb - 1, Math.floor((e.ts - since) / bucket)); if (b >= 0) counts[b][TL_T2G[e.type] ?? 6] += 1; });
+  evs.forEach(e => { const b = Math.min(nb - 1, Math.floor((e.ts - since) / bucket)); if (b >= 0) counts[b][TL_T2G[e.type] ?? 6] += (e.n || 1); });
   const maxT = Math.max(1, ...counts.map(c => c.reduce((a, b) => a + b, 0)));
   TL.geom.counts = counts; TL.geom.bucket = bucket;
 
@@ -2764,10 +2764,10 @@ function _tlRender(animate){
   svg.classList.toggle('tl-anim', !!animate);
 
   // resumen
-  const total = evs.length;
+  const total = evs.reduce((a, e) => a + (e.n || 1), 0);
   let pk = -1, pv = 0; counts.forEach((c, b) => { const v = c.reduce((p, q) => p + q, 0); if (v > pv){ pv = v; pk = b; } });
   const camsWith = new Set(evs.map(e => e.cam)).size;
-  document.getElementById('tl-sum').textContent = `${total} alertas · ${camsWith} cámaras` + (pk >= 0 ? ` · pico ${_tlFmt(since + pk * bucket)} (${pv})` : '') + (TL.data.truncated ? ' · recortado' : '');
+  document.getElementById('tl-sum').textContent = `${total} alertas · ${camsWith} cámaras` + (pk >= 0 ? ` · pico ${_tlFmt(since + pk * bucket)} (${pv})` : '') + (TL.data.thinned ? ' · ventana ancha: se muestra un evento por grupo' : (TL.data.truncated ? ' · recortado' : ''));
   document.getElementById('tl-range').textContent = `${_tlFmt(since, true)} → ${TL.end ? _tlFmt(until, true) : 'ahora'}`;
   document.getElementById('tl-span').textContent = TL.span < 1 ? `${TL.span * 60} min` : TL.span >= 24 ? `${TL.span / 24} d`.replace('1 d', '24 h') : `${TL.span} h`;
   _tlLegend();
