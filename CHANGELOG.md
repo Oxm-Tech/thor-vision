@@ -7,6 +7,7 @@ Generado desde `app/release_notes.json` (la misma fuente que muestra el dashboar
 Las consultas ya no esperan detrás del lote del indexador (bajó de ~10 s a un instante): el modelo se suelta entre lotes de 128, y no consulta internet al cargar una vez descargado.
 
 - **Búsqueda · Lotes pequeños**: El indexador vectoriza en lotes de 128 textos o 32 imágenes liberando el modelo entre ellos.
+- **Búsqueda · Indexado con pausas**: Lotes de 500 eventos con 3 s de pausa mientras haya pendiente (antes sin pausa).
 
 ## v2.24.0 — Búsqueda semántica con EmbeddingGemma 2 (2026-10-10)
 

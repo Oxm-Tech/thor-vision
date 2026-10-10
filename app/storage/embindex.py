@@ -67,7 +67,7 @@ def rrf(rank_lists: list, k: int = 20, c: int = 60) -> list:
     return [x for x, _ in sorted(score.items(), key=lambda t: -t[1])[:k]]
 
 
-def index_events(db, days: float = 7, limit: int = 4000) -> int:
+def index_events(db, days: float = 7, limit: int = 500) -> int:
     """Vectoriza las descripciones que el FTS ya considera nuevas (ev_fts) y aun no estan en emb_index."""
     since = time.time() - days * 86400
     with db._lock:
@@ -128,8 +128,9 @@ def start_indexer(db, every_s: float = 120.0) -> threading.Event:
                     a, b = index_events(db), index_visits(db)
                     if a or b:
                         logger.info("embindex: +%d eventos, +%d visitas", a, b)
-                        if a == 4000:
-                            continue                       # hay mas pendiente: sin esperar
+                        if a == 500:
+                            stop.wait(3)                   # hay mas pendiente: pausa corta para que las consultas del usuario pasen
+                            continue
             except Exception as exc:                       # noqa: BLE001 - el indexador no debe morir por un lote malo
                 logger.warning("embindex: %s", exc, exc_info=True)
             stop.wait(every_s)

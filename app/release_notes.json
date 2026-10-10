@@ -9,6 +9,11 @@
         "area": "Búsqueda",
         "title": "Lotes pequeños",
         "text": "El indexador vectoriza en lotes de 128 textos o 32 imágenes liberando el modelo entre ellos."
+      },
+      {
+        "area": "Búsqueda",
+        "title": "Indexado con pausas",
+        "text": "Lotes de 500 eventos con 3 s de pausa mientras haya pendiente (antes sin pausa)."
       }
     ]
   },
